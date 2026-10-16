@@ -27,7 +27,7 @@ const {chromium}=require('playwright');
    if(await tile.count())await tile.click();
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
  }
- async function layout(count=4){
+ async function layout(count=13){
    assert.equal(await page.locator('.module-grid .module-tile').count(),count);
    const g=await page.locator('.module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -64,6 +64,9 @@ const {chromium}=require('playwright');
    await page.getByRole('button',{name:'Se connecter'}).click();
    await page.locator('.module-grid').waitFor();
    await layout();
+   assert.deepEqual(await page.locator('.module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury']);
+   assert.equal(await page.locator('.module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');
+   assert.equal(await page.locator('.module-grid [data-go="team"]').getAttribute('data-company-id'),'1');
    assert.equal(await page.locator('#mobileNav').count(),0);
    assert.equal(await page.locator('.home-quick-actions').count(),0);
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
@@ -78,7 +81,7 @@ const {chromium}=require('playwright');
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/activities')),[]);
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/tasks')),[]);
    assert.equal(await page.locator('#calendarTasks').count(),0);
-   for(const [module,title] of [['leads','Devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons'],['emails','E-mails']]){
+   for(const [module,title] of [['requests','Demandes'],['treasury','Trésorerie'],['leads','Devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons'],['emails','E-mails']]){
      await goModule(module);
      await page.locator('#content h1').filter({hasText:title}).waitFor();
      assert(page.url().includes('#/'+module));

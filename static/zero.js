@@ -14,8 +14,17 @@ function refreshHomeBadges(badges){
 
 async function zeroDashboard(){
  const state=await api(`/api/companies/${company.id}/cockpit`);
- const cards=[['requests','Demandes','📥',state.badges.requests],['prospects','Prospection','🤝',state.badges.prospects],['calendar','Agenda','🗓️',state.badges.calendar],['treasury','Trésorerie','💶',state.badges.treasury]];
- $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header><section id="priorityBlock" aria-label="Action prioritaire"></section><nav class="module-grid" aria-label="Modules principaux">${cards.map(([route,title,icon,n])=>`<a class="module-tile ${route==='calendar'?'blue':'green'}" data-go="${route}" href="#/${route}" ${route==='prospects'&&me.role!=='owner'?'aria-disabled="true"':''}><span class="module-icon" aria-hidden="true">${icon}</span><span class="module-copy"><strong>${title}</strong></span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a>`).join('')}</nav>`;
+ const cards=[
+  ['requests','Demandes','📥',state.badges.requests],
+  ['clients','Clients','👤'],['activities','Activités','✅'],['leads','Devis','📄'],['emails','E-mails','✉️'],
+  ...(me.role==='owner'?[['prospects','Prospection','🤝',state.badges.prospects]]:[]),
+  ['calendar','Agenda','🗓️',state.badges.calendar],['reports','Rapports','📊'],
+  ...(me.role==='owner'?[['drafts','Brouillons','✉️']]:[]),
+  ['companies','Entreprises','🏢'],['company-edit','Identité & tarifs','🎨',0,company.id],
+  ...(me.role==='owner'?[['team','Équipe','👥',0,company.id]]:[]),
+  ['treasury','Trésorerie','💶',state.badges.treasury]
+ ];
+ $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header><section id="priorityBlock" aria-label="Action prioritaire"></section><nav class="module-grid" aria-label="Fonctions de l’entreprise">${cards.map(([route,title,icon,n,id])=>`<a class="module-tile ${route==='calendar'?'blue':'green'}" data-go="${route}" href="#/${route}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${icon}</span><span class="module-copy"><strong>${title}</strong></span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a>`).join('')}</nav>`;
  await renderPriorities();
 }
 
