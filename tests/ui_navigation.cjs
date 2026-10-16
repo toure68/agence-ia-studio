@@ -294,7 +294,22 @@ const {chromium}=require('playwright');
    await page.locator('.profile-details summary').click();assert.equal(await page.locator('#profile-siret').inputValue(),'73282932000074');
    await page.locator('#scanKind').selectOption('quote');await page.locator('#scanFile').setInputFiles({name:'tarifs-test.pdf',mimeType:'application/pdf',buffer:fs.readFileSync('/tmp/ui-quote.pdf')});
    await page.locator('#readDocument').click();await page.locator('.imported-rate').waitFor({timeout:60000});assert.equal(await page.locator('.imported-rate [data-rate="unit_price"]').inputValue(),'25.50');
-   assert.equal(await page.locator('#documentReview [data-import-field]').count(),0);await page.locator('#documentReview button[type="submit"]').click();await page.locator('#scanForm').waitFor();await backHome();
+   assert.equal(await page.locator('#documentReview [data-import-field]').count(),0);await page.locator('#documentReview button[type="submit"]').click();await page.locator('#scanForm').waitFor();
+   for(const [kind,file,number] of [['passport','/tmp/ui-passport.png','L898902C3'],['identity','/tmp/ui-identity.png','D23145890']]){
+    await page.locator('#scanKind').selectOption(kind);assert((await page.locator('#scanHint').innerText()).length>20);
+    await page.locator('#scanFile').setInputFiles({name:kind+'-specimen.png',mimeType:'image/png',buffer:fs.readFileSync(file)});
+    await page.locator('#readDocument').click();await page.locator('#documentReview').waitFor({timeout:60000});
+    assert.equal(await page.locator('#import-last_name').inputValue(),'ERIKSSON');assert.equal(await page.locator('#import-first_name').inputValue(),'ANNA MARIA');
+    assert.equal(await page.locator('#import-document_number').inputValue(),number);assert.equal(await page.locator('#import-birth_date').inputValue(),'12/08/1974');
+    assert.equal(await page.locator('#import-expiry_date').inputValue(),'15/04/2012');assert.equal(await page.locator('#import-legal_name').count(),0);
+    assert.equal(await page.locator('#documentReview input[type="checkbox"]').count(),0);
+    await page.locator('#documentReview button[type="submit"]').click();await page.locator('#scanForm').waitFor();
+    const saved=(await page.evaluate(()=>api('/api/companies/1/profile'))).fields;assert.equal(saved.document_number,number);assert.equal(saved.legal_name,'TEST SERVICES');
+   }
+   await page.locator('#scanKind').selectOption('address');await page.locator('#scanFile').setInputFiles({name:'justificatif-test.pdf',mimeType:'application/pdf',buffer:fs.readFileSync('/tmp/ui-address.pdf')});
+   await page.locator('#readDocument').click();await page.locator('#documentReview').waitFor({timeout:60000});
+   assert.equal(await page.locator('#import-personal_address').inputValue(),'12 rue du Test 75001 Paris');assert.equal(await page.locator('#import-document_holder').inputValue(),'ALICE MARTIN');
+   await page.locator('#documentReview button[type="submit"]').click();await page.locator('#scanForm').waitFor();await backHome();
    await goModule('leads');await page.locator('[data-go="quote-new"]').click();await page.locator('#catalogTariff').waitFor();
    const tariff=(await page.evaluate(()=>api('/api/companies/1/tariff-catalog')))[0];await page.locator('#catalogTariff').selectOption(String(tariff.id));
    assert.equal(await page.locator('.quote-line [name="unit_price"]').inputValue(),'25.50');await backHome();await layout();

@@ -20,12 +20,14 @@ from fastapi import HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from starlette.concurrency import run_in_threadpool
+from document_understanding import IDENTITY_KINDS, interpret_document, read_mrz
 
 MAX_BYTES=8*1024*1024
 MAX_BODY=12*1024*1024
 MAX_COMPANY_BYTES=32*1024*1024
 OCR_SLOTS=threading.BoundedSemaphore(2)
-PROFILE_KEYS=('legal_name','siret','iban','address','email','phone','rcs_number','legal_form','capital','trade_name','activity','representative','last_name','first_name','birth_date','birth_place','nationality','document_number','expiry_date','personal_address','account_holder','bic','insurer','policy_number')
+ANALYSIS_VERSION=2
+PROFILE_KEYS=('legal_name','siret','iban','address','email','phone','rcs_number','legal_form','capital','trade_name','activity','representative','last_name','first_name','birth_date','birth_place','nationality','document_number','expiry_date','personal_address','account_holder','bic','insurer','policy_number','sex','issue_date','issuing_authority','issuing_country','document_holder')
 KINDS={'kbis','rib','quote','identity','passport','residence','address','registration','insurance','other'}
 
 def profile_cipher(secret):
@@ -93,15 +95,12 @@ def extract_proposal(text,kind):
     def fold(value):
         return ''.join(''.join(c for c in unicodedata.normalize('NFD',ch) if not unicodedata.combining(c)) for ch in value).lower().replace('’',"'").replace('‘',"'")
     business=kind in ('kbis','registration','quote','other')
-    person=kind in ('identity','passport','residence','address','other')
+    person=kind=='other'
     labels=[]
     if business:
         labels += [('legal_name',r'denomination(?:\s+ou raison sociale)?|raison sociale|entreprise'),('address',r'adresse du siege|siege social|adresse'),('rcs_number',r'immatriculation au rcs,?\s*(?:numero)?|numero rcs|rcs'),('legal_form',r'forme juridique'),('capital',r'capital social'),('trade_name',r'nom commercial'),('activity',r'activite\(?s?\)?\s+exercee\(?s?\)?|activite principale|activite'),('representative',r'nom,?\s*prenoms?|representant legal|gerant')]
     if person:
         labels += [('last_name',r'nom de famille|nom de naissance|surname|nom'),('first_name',r'prenoms?\(?s?\)?|given names?'),('birth_date',r'date de naissance|date of birth|ne\(e\) le'),('birth_place',r'lieu de naissance|place of birth'),('nationality',r'nationalite|nationality'),('document_number',r'numero (?:du (?:document|titre)|de (?:carte|passeport))|document no\.?|passport no\.?'),('expiry_date',r'date d.expiration|date de fin de validite|valable jusqu.au|date of expiry'),('personal_address',r'adresse(?: du domicile)?|domicile(?: personnel)?')]
-    if kind=='rib':labels += [('account_holder',r'titulaire(?: du compte)?|beneficiaire'),('bic',r'code bic|bic(?:\s*/\s*swift)?|swift')]
-    if kind=='insurance':labels += [('insurer',r'assureur|compagnie d.assurance'),('policy_number',r'numero (?:de contrat|de police)|contrat n[°o]?'),('expiry_date',r'valable jusqu.au|date d.expiration')]
-    if kind=='address':labels += [('last_name',r'titulaire|destinataire'),('personal_address',r'adresse de consommation|adresse de fourniture|adresse du logement')]
     # Longest matching label wins (e.g. "nom commercial" before "nom").
     def label_match(line):
         candidates=[]
@@ -122,29 +121,27 @@ def extract_proposal(text,kind):
                 if following<len(lines) and re.match(r'^\d{5}\s+\D',lines[following]):value+=' '+lines[following]
             fields[key]=value[:600];evidence[key]=(line+' '+value if end>=len(line) else line)[:600]
     for i,line in enumerate(lines):
-        if 'siret' in line.lower():
+        if kind in ('kbis','registration','rib','quote','other') and 'siret' in line.lower():
             source=line+' '+(lines[i+1] if i+1<len(lines) else '')
             for m in re.finditer(r'(?<!\d)(?:\d[ .]?){13}\d(?!\d)',source):
                 value=re.sub(r'\D','',m[0])
                 if valid_siret(value):fields['siret']=value;evidence['siret']=line[:600]
                 else:notes.append('Un numéro SIRET lu n’a pas passé le contrôle : vérifiez le document.')
-        if 'iban' in line.lower() or re.match(r'^[A-Z]{2}\s*\d{2}',line):
-            compact=re.sub(r'\s','',line.upper())
+        if kind in ('kbis','registration','rib','quote','other') and ('iban' in line.lower() or re.match(r'^[A-Z]{2}\s*\d{2}',line)):
+            compact=re.sub(r'\s','',(line+' '+(lines[i+1] if i+1<len(lines) else '')).upper())
             for start in re.finditer(r'[A-Z]{2}\d{2}',compact):
                 for length in range(34,14,-1):
                     candidate=compact[start.start():start.start()+length]
                     if len(candidate)==length and valid_iban(candidate):fields['iban']=candidate;evidence['iban']=line[:600];break
                 if 'iban' in fields:break
-        if kind in KINDS:
+        if kind in ('kbis','registration','quote','other'):
             m=re.search(r'[^\s@<>]+@[^\s@<>]+\.[A-Za-z]{2,}',line)
             if m:fields['email']=m[0].rstrip('.,;');evidence['email']=line[:600]
             m=re.search(r'(?:t[ée]l(?:[ée]phone)?|phone)\s*[:.]?\s*(\+?[\d ()\-.]{8,30})',line,re.I)
             if m:fields['phone']=m[1].strip();evidence['phone']=line[:600]
-    if kind=='address' and 'personal_address' not in fields:
-        for i,line in enumerate(lines):
-            if re.search(r'\b\d{5}\s+[A-Za-zÀ-ÿ]',line):
-                street=line if re.match(r'^\d+\s+\D',line) and re.search(r'\b(rue|avenue|boulevard|route|place|chemin|impasse|allee)\b',fold(line)) else (lines[i-1]+' '+line if i and re.match(r'^\d+\s+',lines[i-1]) else '')
-                if street:fields['personal_address']=street[:600];evidence['personal_address']=street[:600];break
+    if kind in IDENTITY_KINDS|{'address','rib','insurance'}:
+        typed,proof,warnings=interpret_document(text,kind);fields.update(typed);evidence.update(proof);notes+=warnings
+    if kind=='rib' and re.search(r'\bIBAN\b',text,re.I) and 'iban' not in fields:notes.append('L’IBAN n’a pas passé le contrôle de lecture : vérifiez la photo ou le numéro.')
     if kind in ('kbis','registration') and 'rcs_number' in fields and 'siret' not in fields:
         notes.append('Le numéro RCS est repris séparément. Aucun SIRET n’est déduit de ce numéro.')
     rates=[]
@@ -165,7 +162,7 @@ def ocr_languages():
     result=subprocess.run(['tesseract','--list-langs'],capture_output=True,text=True,timeout=5)
     return 'fra+eng' if 'fra' in result.stdout.splitlines() else 'eng'
 
-def image_text(raw):
+def image_text(raw,kind=None):
     from PIL import Image, ImageOps, UnidentifiedImageError
     try:
         with warnings.catch_warnings():
@@ -176,13 +173,23 @@ def image_text(raw):
             image=ImageOps.autocontrast(image.convert('L'));image.thumbnail((2600,2600))
             with tempfile.TemporaryDirectory(prefix='aia-ocr-') as folder:
                 path=Path(folder)/'scan.png';image.save(path)
-                result=subprocess.run(['tesseract',str(path),'stdout','-l',ocr_languages(),'--psm','6'],capture_output=True,timeout=20)
+                result=subprocess.run(['tesseract',str(path),'stdout','-l',ocr_languages(),'--psm','6','-c','preserve_interword_spaces=1'],capture_output=True,timeout=20)
                 if result.returncode:raise HTTPException(422,'Lecture impossible : utilisez une photo plus nette.')
-                return result.stdout.decode('utf-8',errors='replace')[:100000]
+                text=result.stdout.decode('utf-8',errors='replace')[:100000]
+                if kind in IDENTITY_KINDS and not read_mrz(text)[0]:
+                    # A targeted second reading avoids mixing portrait/background
+                    # text into the machine-readable lines at the bottom.
+                    crop=image.crop((0,int(image.height*.52),image.width,image.height));crop.save(path)
+                    try:
+                        extra=subprocess.run(['tesseract',str(path),'stdout','-l','eng','--psm','6','-c','tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'],capture_output=True,timeout=12)
+                        candidate=extra.stdout.decode('utf-8',errors='replace') if extra.returncode==0 else ''
+                    except subprocess.TimeoutExpired:candidate=''
+                    if read_mrz(candidate)[0]:text+='\n'+candidate
+                return text[:100000]
     except (UnidentifiedImageError,OSError,Image.DecompressionBombError,Image.DecompressionBombWarning):
         raise HTTPException(422,'Image illisible. Utilisez JPEG ou PNG.')
 
-def read_document(raw):
+def read_document(raw,kind=None):
     try:
         if raw.startswith(b'%PDF-'):
             from pypdf import PdfReader
@@ -200,10 +207,10 @@ def read_document(raw):
                     result=subprocess.run(['pdftoppm','-f','1','-l','3','-scale-to','2400','-png',str(source),str(Path(folder)/'page')],capture_output=True,timeout=25)
                     if result.returncode:raise HTTPException(422,'Impossible de lire ce PDF scanné.')
                     pages=sorted(Path(folder).glob('page-*.png'))
-                    texts=[image_text(page.read_bytes()) for page in pages]
+                    texts=[image_text(page.read_bytes(),kind) for page in pages]
             return '\n'.join(texts)[:100000],'application/pdf'
         if raw.startswith(b'\x89PNG\r\n\x1a\n') or raw.startswith(b'\xff\xd8\xff'):
-            return image_text(raw),'image/png' if raw.startswith(b'\x89PNG') else 'image/jpeg'
+            return image_text(raw,kind),'image/png' if raw.startswith(b'\x89PNG') else 'image/jpeg'
         raise HTTPException(415,'Formats acceptés : JPEG, PNG et PDF.')
     except subprocess.TimeoutExpired:raise HTTPException(422,'Lecture trop longue : importez une page plus simple ou plus nette.')
 
@@ -244,6 +251,11 @@ def install(app,db,require,own_company,utcnow,secret):
         con.execute('INSERT INTO company_profiles VALUES (?,?,?,?) ON CONFLICT(company_id) DO UPDATE SET payload=excluded.payload,version=excluded.version,updated=excluded.updated',
           (cid,encrypt(fields),version,utcnow()))
 
+    async def analyze(raw,kind):
+        if not OCR_SLOTS.acquire(blocking=False):raise HTTPException(429,'Deux lectures sont déjà en cours. Réessayez dans un instant.')
+        try:return await run_in_threadpool(read_document,raw,kind)
+        finally:OCR_SLOTS.release()
+
     @app.get('/api/companies/{cid}/profile')
     def read_profile(cid:int,req:Request):
         scope(req,cid)
@@ -283,6 +295,19 @@ def install(app,db,require,own_company,utcnow,secret):
         ext={'application/pdf':'pdf','image/png':'png','image/jpeg':'jpg'}[row['mime']]
         return Response(cipher.decrypt(row['original']),media_type='application/octet-stream',headers={'Content-Disposition':f'attachment; filename="document-{did}.{ext}"'})
 
+    @app.post('/api/companies/{cid}/documents/{did}/reanalyze')
+    async def reanalyze(cid:int,did:int,req:Request):
+        scope(req,cid,True)
+        with db() as con:row=get_doc(con,cid,did)
+        if row['reviewed']:raise HTTPException(409,'Ce document a déjà été validé.')
+        text,mime=await analyze(cipher.decrypt(row['original']),row['kind'])
+        payload={'text':text,'proposal':extract_proposal(text,row['kind']),'analysis_version':ANALYSIS_VERSION}
+        with db() as con:
+            con.execute('BEGIN IMMEDIATE');current=get_doc(con,cid,did)
+            if current['reviewed']:raise HTTPException(409,'Ce document vient d’être validé. Rechargez la page.')
+            con.execute('UPDATE source_documents SET payload=? WHERE company_id=? AND id=?',(encrypt(payload),cid,did));con.execute('COMMIT')
+        return {'ok':True}
+
     @app.delete('/api/companies/{cid}/documents/{did}')
     def remove_document(cid:int,did:int,req:Request):
         scope(req,cid,True)
@@ -308,17 +333,14 @@ def install(app,db,require,own_company,utcnow,secret):
         with db() as con:
             old=con.execute('SELECT id FROM source_documents WHERE company_id=? AND digest=? AND kind=?',(cid,digest,data.kind)).fetchone()
             if old:return {'id':old['id'],'duplicate':True}
-        if not OCR_SLOTS.acquire(blocking=False):raise HTTPException(429,'Deux lectures sont déjà en cours. Réessayez dans un instant.')
-        try:
-            text,mime=await run_in_threadpool(read_document,raw)
-        finally:OCR_SLOTS.release()
+        text,mime=await analyze(raw,data.kind)
         proposal=extract_proposal(text,data.kind)
         with db() as con:
             con.execute('BEGIN IMMEDIATE')
             count,size=con.execute('SELECT COUNT(*),COALESCE(SUM(size),0) FROM source_documents WHERE company_id=?',(cid,)).fetchone()
             if count>=100 or size+len(raw)>MAX_COMPANY_BYTES:raise HTTPException(413,'Limite d’archives atteinte pour cette entreprise.')
             con.execute('INSERT OR IGNORE INTO source_documents(company_id,user_id,filename,kind,digest,mime,size,original,payload,created) VALUES (?,?,?,?,?,?,?,?,?,?)',
-              (cid,user['id'],data.filename,data.kind,digest,mime,len(raw),cipher.encrypt(raw),encrypt({'text':text,'proposal':proposal}),utcnow()))
+              (cid,user['id'],data.filename,data.kind,digest,mime,len(raw),cipher.encrypt(raw),encrypt({'text':text,'proposal':proposal,'analysis_version':ANALYSIS_VERSION}),utcnow()))
             did=con.execute('SELECT id FROM source_documents WHERE company_id=? AND digest=? AND kind=?',(cid,digest,data.kind)).fetchone()['id']
             con.execute('COMMIT')
         return {'id':did,'duplicate':False}

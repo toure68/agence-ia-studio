@@ -144,7 +144,7 @@ def test_label_values_next_line_and_document_specific_fields():
 
 def test_identity_save_encryption_and_quote_privacy(env,monkeypatch):
     import document_routes
-    monkeypatch.setattr(document_routes,'read_document',lambda raw:('Nom MARTIN\nPrénom ALICE\nNuméro de passeport ABC123456\nAdresse 12 rue du Test 75001 Paris','application/pdf'))
+    monkeypatch.setattr(document_routes,'read_document',lambda raw,kind=None:('Nom MARTIN\nPrénom ALICE\nNuméro de passeport ABC123456\nAdresse 12 rue du Test 75001 Paris','application/pdf'))
     c,h=owner(env);did=upload(c,h,'passport',quote_pdf()).json()['id']
     fields=c.get(f'/api/companies/1/documents/{did}').json()['proposal']['fields']
     assert fields['last_name']=='MARTIN' and fields['document_number']=='ABC123456'
