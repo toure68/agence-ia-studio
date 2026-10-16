@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import threading
 import warnings
+import unicodedata
 
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request
@@ -24,8 +25,8 @@ MAX_BYTES=8*1024*1024
 MAX_BODY=12*1024*1024
 MAX_COMPANY_BYTES=32*1024*1024
 OCR_SLOTS=threading.BoundedSemaphore(2)
-PROFILE_KEYS=('legal_name','siret','iban','address','email','phone')
-KINDS={'kbis','rib','quote','other'}
+PROFILE_KEYS=('legal_name','siret','iban','address','email','phone','rcs_number','legal_form','capital','trade_name','activity','representative','last_name','first_name','birth_date','birth_place','nationality','document_number','expiry_date','personal_address','account_holder','bic','insurer','policy_number')
+KINDS={'kbis','rib','quote','identity','passport','residence','address','registration','insurance','other'}
 
 def profile_cipher(secret):
     return Fernet(base64.urlsafe_b64encode(hashlib.sha256(('aia-documents:'+secret).encode()).digest()))
@@ -71,28 +72,59 @@ class Tariff(BaseModel):
 
 class Review(BaseModel):
     confirmed:bool=False
-    profile_fields:dict[str,str]=Field(default_factory=dict,max_length=6)
+    profile_fields:dict[str,str]=Field(default_factory=dict,max_length=len(PROFILE_KEYS))
     rates:list[Tariff]=Field(default_factory=list,max_length=30)
 
 class ProfileUpdate(BaseModel):
     confirmed:bool=False
-    fields:dict[str,str]=Field(max_length=6)
+    fields:dict[str,str]=Field(max_length=len(PROFILE_KEYS))
     version:int=Field(ge=0)
 
 class Upload(BaseModel):
     filename:str=Field(min_length=1,max_length=200)
-    kind:str=Field(pattern='^(kbis|rib|quote|other)$')
+    kind:str=Field(pattern='^('+'|'.join(sorted(KINDS))+')$')
     data:str=Field(min_length=4,max_length=MAX_BODY)
 
 def extract_proposal(text,kind):
     fields={};evidence={};notes=[]
     lines=[l.strip() for l in text.splitlines() if l.strip()]
+    # Fold one character at a time so match offsets still refer to the original
+    # accented value. Labels may precede a value in the same row or on the next.
+    def fold(value):
+        return ''.join(''.join(c for c in unicodedata.normalize('NFD',ch) if not unicodedata.combining(c)) for ch in value).lower().replace('’',"'").replace('‘',"'")
+    business=kind in ('kbis','registration','quote','other')
+    person=kind in ('identity','passport','residence','address','other')
+    labels=[]
+    if business:
+        labels += [('legal_name',r'denomination(?:\s+ou raison sociale)?|raison sociale|entreprise'),('address',r'adresse du siege|siege social|adresse'),('rcs_number',r'immatriculation au rcs,?\s*(?:numero)?|numero rcs|rcs'),('legal_form',r'forme juridique'),('capital',r'capital social'),('trade_name',r'nom commercial'),('activity',r'activite\(?s?\)?\s+exercee\(?s?\)?|activite principale|activite'),('representative',r'nom,?\s*prenoms?|representant legal|gerant')]
+    if person:
+        labels += [('last_name',r'nom de famille|nom de naissance|surname|nom'),('first_name',r'prenoms?\(?s?\)?|given names?'),('birth_date',r'date de naissance|date of birth|ne\(e\) le'),('birth_place',r'lieu de naissance|place of birth'),('nationality',r'nationalite|nationality'),('document_number',r'numero (?:du (?:document|titre)|de (?:carte|passeport))|document no\.?|passport no\.?'),('expiry_date',r'date d.expiration|date de fin de validite|valable jusqu.au|date of expiry'),('personal_address',r'adresse(?: du domicile)?|domicile(?: personnel)?')]
+    if kind=='rib':labels += [('account_holder',r'titulaire(?: du compte)?|beneficiaire'),('bic',r'code bic|bic(?:\s*/\s*swift)?|swift')]
+    if kind=='insurance':labels += [('insurer',r'assureur|compagnie d.assurance'),('policy_number',r'numero (?:de contrat|de police)|contrat n[°o]?'),('expiry_date',r'valable jusqu.au|date d.expiration')]
+    if kind=='address':labels += [('last_name',r'titulaire|destinataire'),('personal_address',r'adresse de consommation|adresse de fourniture|adresse du logement')]
+    # Longest matching label wins (e.g. "nom commercial" before "nom").
+    def label_match(line):
+        candidates=[]
+        for key,pattern in labels:
+            m=re.match(r'^(?:'+pattern+r')(?=\s|[:\-]|$)\s*[:\-]?\s*',fold(line))
+            if m:candidates.append((m.end(),key))
+        return max(candidates,default=None)
     for i,line in enumerate(lines):
-        for key,pattern in [('legal_name',r'(?:d[ée]nomination(?: ou raison sociale)?|raison sociale|nom commercial|entreprise)\s*[:\-]\s*(.+)'),('address',r'(?:adresse(?: du si[èe]ge)?|si[èe]ge social)\s*[:\-]\s*(.+)')]:
-            m=re.search(pattern,line,re.I)
-            if m and key not in fields:fields[key]=m[1][:600];evidence[key]=line[:600]
+        match=label_match(line)
+        if not match:continue
+        end,key=match;value=line[end:].strip(' :\t-')
+        if not value and i+1<len(lines) and not label_match(lines[i+1]):
+            candidate=lines[i+1]
+            if not re.match(r'^(identification|gestion|renseignements|gerant|extrait|fin de)',fold(candidate)):value=candidate
+        if value and key not in fields:
+            if key in ('address','personal_address'):
+                following=i+1 if line[end:].strip(' :\t-') else i+2
+                if following<len(lines) and re.match(r'^\d{5}\s+\D',lines[following]):value+=' '+lines[following]
+            fields[key]=value[:600];evidence[key]=(line+' '+value if end>=len(line) else line)[:600]
+    for i,line in enumerate(lines):
         if 'siret' in line.lower():
-            for m in re.finditer(r'(?<!\d)(?:\d[ .]?){13}\d(?!\d)',line):
+            source=line+' '+(lines[i+1] if i+1<len(lines) else '')
+            for m in re.finditer(r'(?<!\d)(?:\d[ .]?){13}\d(?!\d)',source):
                 value=re.sub(r'\D','',m[0])
                 if valid_siret(value):fields['siret']=value;evidence['siret']=line[:600]
                 else:notes.append('Un numéro SIRET lu n’a pas passé le contrôle : vérifiez le document.')
@@ -103,11 +135,18 @@ def extract_proposal(text,kind):
                     candidate=compact[start.start():start.start()+length]
                     if len(candidate)==length and valid_iban(candidate):fields['iban']=candidate;evidence['iban']=line[:600];break
                 if 'iban' in fields:break
-        if kind in ('kbis','rib'):
+        if kind in KINDS:
             m=re.search(r'[^\s@<>]+@[^\s@<>]+\.[A-Za-z]{2,}',line)
             if m:fields['email']=m[0].rstrip('.,;');evidence['email']=line[:600]
             m=re.search(r'(?:t[ée]l(?:[ée]phone)?|phone)\s*[:.]?\s*(\+?[\d ()\-.]{8,30})',line,re.I)
             if m:fields['phone']=m[1].strip();evidence['phone']=line[:600]
+    if kind=='address' and 'personal_address' not in fields:
+        for i,line in enumerate(lines):
+            if re.search(r'\b\d{5}\s+[A-Za-zÀ-ÿ]',line):
+                street=line if re.match(r'^\d+\s+\D',line) and re.search(r'\b(rue|avenue|boulevard|route|place|chemin|impasse|allee)\b',fold(line)) else (lines[i-1]+' '+line if i and re.match(r'^\d+\s+',lines[i-1]) else '')
+                if street:fields['personal_address']=street[:600];evidence['personal_address']=street[:600];break
+    if kind in ('kbis','registration') and 'rcs_number' in fields and 'siret' not in fields:
+        notes.append('Le numéro RCS est repris séparément. Aucun SIRET n’est déduit de ce numéro.')
     rates=[]
     if kind=='quote':
         for line in lines:
@@ -231,7 +270,11 @@ def install(app,db,require,own_company,utcnow,secret):
         scope(req,cid)
         with db() as con:
             row=get_doc(con,cid,did)
-            return {'id':did,'filename':row['filename'],'kind':row['kind'],'reviewed':bool(row['reviewed']),**decrypt(row['payload'])}
+            payload=decrypt(row['payload'])
+            # Proposals are derived from retained OCR text; re-read with the current
+            # parser without modifying a reviewed document or saved profile.
+            if not row['reviewed']:payload['proposal']=extract_proposal(payload['text'],row['kind'])
+            return {'id':did,'filename':row['filename'],'kind':row['kind'],'reviewed':bool(row['reviewed']),**payload}
 
     @app.get('/api/companies/{cid}/documents/{did}/source')
     def original(cid:int,did:int,req:Request):

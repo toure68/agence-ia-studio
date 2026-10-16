@@ -4,7 +4,7 @@ import shutil
 import pytest
 from fastapi.testclient import TestClient
 from test_app import env,auth
-from document_fixtures import kbis_png,quote_pdf
+from document_fixtures import kbis_png,quote_pdf,two_column_kbis_png,KBIS_ROWS
 from document_routes import valid_siret,valid_iban,extract_proposal
 
 def owner(env):
@@ -106,3 +106,50 @@ def test_document_removal_keeps_verified_profile(env):
     assert c.get(f'/api/companies/1/documents/{did}/source').status_code==404
     assert c.get('/api/companies/1/tariff-catalog').json()==[]
     assert c.get('/api/companies/1/profile').json()['fields']['legal_name']=='Profil à conserver'
+
+@pytest.mark.skipif(not shutil.which('tesseract'),reason='OCR executable required')
+def test_two_column_kbis_ocr_saved_fields_and_legacy_document(env):
+    c,h=owner(env);did=upload(c,h,'kbis',two_column_kbis_png(),'kbis-colonnes.png').json()['id']
+    path=f'/api/companies/1/documents/{did}'
+    doc=c.get(path).json();fields=doc['proposal']['fields']
+    assert fields['legal_name']=='INFONET'
+    assert fields['rcs_number']=='123 456 789 R.C.S. Paris'
+    assert '75008 Paris' in fields['address'] and fields['trade_name']=='INFONET WEB GROUP'
+    assert fields['representative'].startswith('JULIEN DUP') and fields['activity']=='PORTAILS INTERNET'
+    assert 'siret' not in fields and 'personal_address' not in fields
+    # Previously failed imports recover on opening, without reupload or changes
+    # to either the stored source or the existing company profile.
+    from document_routes import profile_cipher
+    with env.db() as con:
+        cipher=profile_cipher(env.SECRET)
+        payload=json.loads(cipher.decrypt(con.execute('SELECT payload FROM source_documents WHERE id=?',(did,)).fetchone()['payload']))
+        payload['proposal']['fields']={}
+        con.execute('UPDATE source_documents SET payload=? WHERE id=?',(cipher.encrypt(json.dumps(payload).encode()),did))
+    assert c.get(path).json()['proposal']['fields']==fields
+    assert c.get('/api/companies/1/profile').json()['fields']=={}
+    assert c.post(path+'/confirm',headers=h,json={'confirmed':True,'profile_fields':fields}).status_code==200
+    assert c.get('/api/companies/1/profile').json()['fields']==fields
+
+def test_label_values_next_line_and_document_specific_fields():
+    text='\n'.join(x for row in KBIS_ROWS for x in row)
+    fields=extract_proposal(text,'kbis')['fields']
+    assert fields['legal_name']=='INFONET' and fields['activity']=='PORTAILS INTERNET'
+    assert fields['address']=='75 avenue des Champs-Élysées 75008 Paris'
+    identity='Nom: MARTIN\nPrénoms: ALICE\nDate de naissance 12/05/1990\nLieu de naissance LYON\nNationalité FRANÇAISE\nNuméro de carte ABC123456\nDate d’expiration 12/05/2030\nAdresse du domicile 12 rue du Test\n75001 Paris'
+    fields=extract_proposal(identity,'identity')['fields']
+    assert fields=={'last_name':'MARTIN','first_name':'ALICE','birth_date':'12/05/1990','birth_place':'LYON','nationality':'FRANÇAISE','document_number':'ABC123456','expiry_date':'12/05/2030','personal_address':'12 rue du Test 75001 Paris'}
+    assert 'legal_name' not in fields and 'address' not in fields
+    assert extract_proposal('Titulaire du compte ALICE MARTIN\nIBAN\nFR1420041010050500013M02606\nBIC PSSTFRPPPAR','rib')['fields']=={'account_holder':'ALICE MARTIN','iban':'FR1420041010050500013M02606','bic':'PSSTFRPPPAR'}
+    assert extract_proposal('Facture électricité\n12 rue du Test\n75001 Paris','address')['fields']['personal_address']=='12 rue du Test 75001 Paris'
+
+def test_identity_save_encryption_and_quote_privacy(env,monkeypatch):
+    import document_routes
+    monkeypatch.setattr(document_routes,'read_document',lambda raw:('Nom MARTIN\nPrénom ALICE\nNuméro de passeport ABC123456\nAdresse 12 rue du Test 75001 Paris','application/pdf'))
+    c,h=owner(env);did=upload(c,h,'passport',quote_pdf()).json()['id']
+    fields=c.get(f'/api/companies/1/documents/{did}').json()['proposal']['fields']
+    assert fields['last_name']=='MARTIN' and fields['document_number']=='ABC123456'
+    assert c.post(f'/api/companies/1/documents/{did}/confirm',headers=h,json={'confirmed':True,'profile_fields':fields}).status_code==200
+    assert c.get('/api/companies/1/profile').json()['fields']==fields
+    with env.db() as con:assert b'ABC123456' not in con.execute('SELECT payload FROM company_profiles WHERE company_id=1').fetchone()['payload']
+    q=c.post('/api/companies/1/quotations',headers=h,json={'customer_name':'Client test','title':'Devis test identité','lines':[{'description':'Prestation','quantity':1,'unit_price':'10'}]}).json()
+    assert 'document_number' not in q['issuer'] and 'personal_address' not in q['issuer'] and 'last_name' not in q['issuer']
