@@ -89,7 +89,7 @@ async function renderTaskForm(){
  <button class="btn primary">Enregistrer</button></form>`);
  $('#taskForm').onsubmit=async e=>{
    e.preventDefault();
-   const button=e.target.querySelector('button');
+   const button=e.submitter||e.target.querySelector('button[type="submit"],button:not([type])');
    const form=new FormData(e.target);
    button.disabled=true;
    try{
