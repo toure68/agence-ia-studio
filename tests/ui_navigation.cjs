@@ -250,7 +250,7 @@ const {chromium}=require('playwright');
    assert((await page.locator('#content').innerText()).includes('Disponible'));await backHome();
    const wid=await page.evaluate(async()=>{const w=await api('/api/companies/1/activities',{method:'POST',body:JSON.stringify({title:'Chantier matériel test'})});return w.id;});
    await page.evaluate(id=>openTab('material',{recordId:id}),wid);await page.locator('#materialNeeds').fill('Perceuse : 3');
-   await Promise.all([page.waitForResponse(r=>r.url().includes('/material')&&r.request().method()==='PUT'&&r.status()===200),page.locator('#materialForm button').click()]);
+   await Promise.all([page.waitForResponse(r=>r.url().includes('/material')&&r.request().method()==='PUT'&&r.status()===200),page.locator('#materialForm button.btn.primary').click()]);
    await page.waitForFunction(()=>document.querySelector('#content .msg.err')?.textContent.includes('1 manquant'));
    await page.evaluate(id=>openTab('activity',{recordId:id}),wid);
    assert((await page.locator('#activityMaterialStatus').innerText()).includes('1 manquant'));
