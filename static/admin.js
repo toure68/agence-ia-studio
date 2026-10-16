@@ -7,7 +7,7 @@ let me=null,companies=[],company=null,leads=[],prospects=[],tab='dashboard',curr
 function notify(m){const e=$('#toast');e.textContent=m;e.classList.remove('hide');setTimeout(()=>e.classList.add('hide'),4500);}
 async function api(path,opts={}){const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...opts,headers});const obj=await response.json().catch(()=>({}));if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
-function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#mobileNav').classList.remove('hide');$('#userEmail').textContent=me.email;$$$('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
+function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#mobileNav').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
 function showAuth(){me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');$('#mobileNav').classList.add('hide');}
 async function refreshCompanies(){companies=await api('/api/companies');if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name+' · '+c.city;option.selected=company?.id===c.id;return option;}));}
 async function openTab(next,{updateHistory=true,taskId=null}={}){
@@ -18,8 +18,8 @@ async function openTab(next,{updateHistory=true,taskId=null}={}){
   tab=next;
   const route='#/'+next+(next==='calendar'&&taskId?'/'+taskId:'');
   if(updateHistory&&location.hash!==route)history.pushState(null,'',route);
-  $('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));
-  $$('[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===next));
+  document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));
+  document.querySelectorAll('[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===next));
   $('#topLabel').textContent=labels[next];
   $('#moduleBack').classList.toggle('hide',next==='dashboard');
   $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
