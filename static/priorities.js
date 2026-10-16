@@ -41,7 +41,7 @@ async function renderPriorities() {
       if (card.action.type === 'example') return await openTab('priority-example',{recordId:card.action.id});
       if (card.action.type === 'client') return await openTab('client-edit',{recordId:card.action.id});
       if (card.action.type === 'document') return await openTab('document',{recordId:card.action.id});
-      if (card.action.type === 'activity-new') return openVoiceCommand('activity',true);
+      if (card.action.type === 'activity-new') return openCommand('activity');
       if (card.action.type === 'risk') return await openTab('risks',{recordId:card.action.id});
       if (card.action.type === 'equipment') return await openTab('equipment',{recordId:card.action.id});
       if (card.action.type === 'material') return await openTab('material',{recordId:card.action.id});
