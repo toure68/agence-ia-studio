@@ -11,6 +11,7 @@ from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from conformity import matrix
 from priority_routes import next_occurrence
+from business_routes import client_revision
 
 # Step 3 was explicitly authorized after the home layout was validated.
 OPERATIONS_ENABLED = True
@@ -77,6 +78,60 @@ class Needs(BaseModel):
 
 def today():return datetime.now(ZoneInfo('Europe/Paris')).date()
 
+def module_states(con,cid,user,risks):
+    """Operational state, independent of personally dismissed home cards."""
+    states={};weights={'neutral':0,'success':1,'info':2,'warning':3,'danger':4}
+    def put(key,state,label):
+        if weights[state]>weights.get(states.get(key,{}).get('state','neutral'),-1):states[key]={'state':state,'label':label}
+    for r in con.execute('SELECT c.*,r.revision AS verified FROM clients c LEFT JOIN client_reviews r ON c.id=r.client_id WHERE c.company_id=? AND c.archived=0',(cid,)):
+        pending=client_revision(dict(r))!=r['verified'];put('clients','warning' if pending else 'success','À valider' if pending else 'Validés')
+    for r in con.execute('SELECT status,priority,due FROM work_items WHERE company_id=?',(cid,)):
+        if r['status']=='cancelled':continue
+        if r['status']=='done':put('activities','success','Terminées');continue
+        urgent=r['priority']=='urgent' or bool(r['due'] and r['due']<=today().isoformat())
+        state='danger' if urgent else 'warning' if r['priority']=='high' or r['status']=='waiting' else 'info'
+        put('activities',state,'Urgent' if urgent else 'En attente' if r['status']=='waiting' else 'Important' if state=='warning' else 'En cours' if r['status']=='doing' else 'À faire')
+    for r in con.execute('SELECT status FROM quotations WHERE company_id=?',(cid,)):
+        state,label={'draft':('warning','À finaliser'),'sent':('info','En attente'),'accepted':('success','Acceptés'),'declined':('neutral','Normal')}[r['status']]
+        put('leads',state,label);put('requests',state,'À traiter' if state=='warning' else label)
+    for r in con.execute('SELECT status FROM leads WHERE company_id=?',(cid,)):
+        if r['status'] in ('Nouveau','À rappeler'):put('requests','warning','À traiter')
+        elif r['status']=='Devis envoyé':put('requests','info','En cours')
+    for r in con.execute('SELECT send_status FROM mail_messages WHERE company_id=? AND user_id=?',(cid,user['id'])):
+        state,label=('danger','À vérifier') if r['send_status']=='uncertain' else ('warning','À relire') if r['send_status']=='draft' else ('info','Envoi en cours') if r['send_status']=='sending' else ('success','Traités')
+        put('emails',state,label);put('requests',state,label)
+    for task in con.execute('SELECT * FROM calendar_tasks WHERE company_id=?',(cid,)):
+        done={r['occurrence'] for r in con.execute('SELECT occurrence FROM task_completions WHERE task_id=?',(task['id'],))}
+        due=next_occurrence(dict(task),done)
+        if not due:put('calendar','success','À jour')
+        elif due<=today():put('calendar','danger','Échéance proche')
+        elif due<=today()+timedelta(days=7):put('calendar','warning','À prévoir')
+        else:put('calendar','info','Planifié')
+    for r in con.execute('SELECT condition,maintenance_due FROM equipment WHERE company_id=?',(cid,)):
+        overdue=r['maintenance_due'] and r['maintenance_due']<=today().isoformat()
+        put('equipment','danger' if r['condition']=='broken' or overdue else 'warning' if r['condition']=='worn' else 'success','En panne' if r['condition']=='broken' else 'Révision à faire' if overdue else 'À remplacer' if r['condition']=='worn' else 'Disponible')
+    for r in con.execute('SELECT completed,due FROM risk_obligations WHERE company_id=?',(cid,)):
+        if r['completed']:put('risks','success','À jour')
+        elif r['due']<=today().isoformat():put('risks','danger','À traiter')
+        elif r['due']<=(today()+timedelta(days=7)).isoformat():put('risks','warning','À prévoir')
+        else:put('risks','info','Planifié')
+    for card in risks:
+        state='danger' if card['rank']==0 or card['action']['type']=='material' else 'warning'
+        key={'risk':'risks','equipment':'equipment','material':'activities'}[card['action']['type']]
+        put(key,state,'Bloquant' if card['action']['type']=='material' else 'À traiter')
+        if card['action']['type']=='material':put('equipment','danger','Manquant')
+        if key=='risks':put('calendar',state,'À traiter')
+    for r in con.execute('SELECT checked FROM cash_movements WHERE company_id=?',(cid,)):
+        put('treasury','success' if r['checked'] else 'warning','Vérifiés' if r['checked'] else 'À vérifier')
+    if user['role']=='owner':
+        for r in con.execute('SELECT reviewed FROM source_documents WHERE company_id=?',(cid,)):
+            put('scanner','success' if r['reviewed'] else 'warning','Vérifiés' if r['reviewed'] else 'À vérifier')
+        for r in con.execute('SELECT stage FROM prospects'):
+            if r['stage'] in ('Réponse reçue','Accord de principe','Intéressé'):put('prospects','warning','À suivre')
+            elif r['stage']=='Signé':put('prospects','success','Signés')
+            elif r['stage']!='Refus':put('prospects','info','En cours')
+    return states
+
 
 def init_schema(db):
     with db() as con:
@@ -124,22 +179,22 @@ def risk_cards(con,cid):
     for r in con.execute('SELECT * FROM risk_obligations WHERE company_id=? AND completed=0 AND due<=? ORDER BY due,id',(cid,limit)):
         result.append({'key':f"risk-{r['id']}-{r['updated']}",'kind':'calendar','title':r['title'],
           'description':f"Échéance : {r['due']}"+(' · '+r['responsible'] if r['responsible'] else ''),
-          'action':{'type':'risk','id':r['id']},'action_label':'Contrôler et valider','rank':0 if r['due']<=today().isoformat() else 3,'due':r['due']})
+          'action':{'type':'risk','id':r['id']},'action_label':'Contrôler et valider','rank':0 if r['due']<=today().isoformat() else 3,'due':r['due'],'state':'danger' if r['due']<=today().isoformat() else 'warning','state_label':'À traiter' if r['due']<=today().isoformat() else 'À prévoir'})
     for r in con.execute('SELECT * FROM equipment WHERE company_id=? AND maintenance_due<=? ORDER BY maintenance_due,id',(cid,limit)):
         result.append({'key':f"equipment-{r['id']}-{r['updated']}",'kind':'calendar','title':'Réviser : '+r['name'],
           'description':'Révision prévue : '+r['maintenance_due'],'action':{'type':'equipment','id':r['id']},'action_label':'Vérifier le matériel',
-          'rank':0 if r['maintenance_due']<=today().isoformat() else 3,'due':r['maintenance_due']})
+          'rank':0 if r['maintenance_due']<=today().isoformat() else 3,'due':r['maintenance_due'],'state':'danger' if r['maintenance_due']<=today().isoformat() else 'warning','state_label':'Révision à faire'})
     for r in con.execute("SELECT * FROM equipment WHERE company_id=? AND condition IN ('worn','broken') AND quantity>0 ORDER BY id",(cid,)):
         result.append({'key':f"condition-{r['id']}-{r['updated']}",'kind':'urgent',
           'title':('Réparer : ' if r['condition']=='broken' else 'Remplacer : ')+r['name'],
           'description':f"{r['quantity']} unité(s) : "+('en panne' if r['condition']=='broken' else 'à remplacer'),
-          'action':{'type':'equipment','id':r['id']},'action_label':'Contrôler le matériel','rank':1,'due':None})
+          'action':{'type':'equipment','id':r['id']},'action_label':'Contrôler le matériel','rank':1,'due':None,'state':'danger' if r['condition']=='broken' else 'warning','state_label':'En panne' if r['condition']=='broken' else 'À remplacer'})
     for r in con.execute("SELECT id,title FROM work_items WHERE company_id=? AND status IN ('todo','doing','waiting')",(cid,)):
         check=material_check(con,cid,r['id'])
         if check['alerts']:
             result.append({'key':f"material-{r['id']}",'kind':'urgent','title':'Matériel manquant : '+r['title'],
               'description':', '.join(f"{x['name']} : {x['missing']} manquant(s)" for x in check['alerts']),
-              'action':{'type':'material','id':r['id']},'action_label':'Vérifier le chantier','rank':1,'due':None})
+              'action':{'type':'material','id':r['id']},'action_label':'Vérifier le chantier','rank':1,'due':None,'state':'danger','state_label':'Bloquant'})
     for card in result:
         card['key']=hashlib.sha256((str(cid)+':'+card['key']+':'+card['description']).encode()).hexdigest()
     return result
@@ -172,7 +227,8 @@ def install(app,db,require,own_company,utcnow):
                 agenda+=bool(due and due<=today()+timedelta(days=7))
             risks=risk_cards(con,cid)
             pending=con.execute('SELECT COUNT(*) FROM cash_movements WHERE company_id=? AND checked=0',(cid,)).fetchone()[0]
-        return {'badges':{'requests':incoming+quotes+mails,'prospects':prospect,'calendar':agenda+len(risks),'treasury':pending},'risk_cards':risks}
+            states=module_states(con,cid,user,risks)
+        return {'badges':{'requests':incoming+quotes+mails,'prospects':prospect,'calendar':agenda+len(risks),'treasury':pending},'risk_cards':risks,'module_states':states}
 
     @app.get('/api/companies/{cid}/conformity')
     def conformity(cid:int,req:Request):

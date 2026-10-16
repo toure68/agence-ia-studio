@@ -92,6 +92,7 @@ def install(app, db, require, own_company, utcnow):
                 {'type': 'activity', 'id': item['id']}, 'Traiter l’activité',
                 0 if overdue or item['priority'] == 'urgent' else 1 if due_now else 2 if item['priority']=='high' else 4 if item['priority']=='normal' else 5,
                 item['due'])
+            cards[-1]['workflow_status']=item['status']
 
         for row in con.execute('SELECT * FROM leads WHERE company_id=?', (cid,)):
             lead = dict(row)

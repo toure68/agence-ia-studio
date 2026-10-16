@@ -1,10 +1,22 @@
+function priorityPresentation(c){
+ if(c.state)return tileState(c.state,c.state_label);
+ if(c.rank===0)return tileState('danger','Urgent');
+ if(c.rank<=2)return tileState('warning',c.action.type==='document'?'À vérifier':'Important');
+ if(['client','quote','document','email'].includes(c.action.type))return tileState('warning',({client:'À valider',quote:'À finaliser',document:'À vérifier',email:'À relire'})[c.action.type]);
+ if(c.action.type==='task')return tileState('warning','À prévoir');
+ if(c.workflow_status==='waiting')return tileState('warning','En attente');
+ if(c.workflow_status==='doing')return tileState('info','En cours');
+ if(c.action.type==='activity')return tileState('info','À faire');
+ return tileState('neutral',c.fallback?'À préparer':'À faire');
+}
 function priorityMarkup(cards){
  if(!cards.length)return '';
  return `<div class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
   const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
   const importance=c.importance||({client:'À valider',document:'À vérifier',quote:'À finaliser'})[c.action.type]||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
   const icon=({activity:'✅',task:'🗓️',client:'👤',document:'📄',quote:'🧾',email:'✉️'})[c.action.type]||'📥';
-  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile ${c.kind==='calendar'?'blue':'green'}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(importance)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(importance)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${['task','activity'].includes(c.action.type)?`<button class="btn primary priority-validate" data-priority-complete="${i}">Marquer comme faite</button>`:''}${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+  const presentation=priorityPresentation(c);
+  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance">${clean(presentation.label)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${['task','activity'].includes(c.action.type)?`<button class="btn primary priority-validate" data-priority-complete="${i}">Marquer comme faite</button>`:''}${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>`;
 }
 'use strict';
@@ -17,10 +29,10 @@ async function renderPriorities() {
   if (!host || !cid) return;
   const request=++priorityRequest;
   const [actualCards,cockpit] = await Promise.all([api(`/api/companies/${cid}/priorities`),api(`/api/companies/${cid}/cockpit`)]);
-  refreshHomeBadges(cockpit.badges,cockpit.risk_cards);
   actualCards.sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
   const cards = actualCards.length ? actualCards : await routinePriorities(cid);
   if (!host.isConnected || company?.id !== cid || request!==priorityRequest) return;
+  refreshHomeBadges(cockpit.badges,cockpit.risk_cards,cockpit.module_states);
   priorityCards = cards;
   host.innerHTML = priorityMarkup(cards);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {

@@ -3,7 +3,7 @@ const operationsEnabled=true;
 const riskKinds={vehicle:'Véhicule / révision',epi:'EPI',consumable:'Consommables',insurance:'Assurance',qualification:'Habilitation',other:'Autre échéance'};
 const assetStates={ready:'Disponible',worn:'À remplacer',broken:'En panne'};
 
-function refreshHomeBadges(badges,riskCards=[]){
+function refreshHomeBadges(badges,riskCards=[],states={}){
  if(tab!=='dashboard')return;
  badges={...badges,equipment:riskCards.filter(c=>c.action.type==='equipment'||c.action.type==='material').length,risks:riskCards.filter(c=>c.action.type==='risk').length};
  for(const [key,count] of Object.entries(badges)){
@@ -11,6 +11,12 @@ function refreshHomeBadges(badges,riskCards=[]){
   tile.querySelector('.module-count')?.remove();
   if(count){const badge=document.createElement('span');badge.className='module-count';badge.textContent=String(count);badge.setAttribute('aria-label',count+' élément(s) à traiter');tile.append(badge);}
  }
+ document.querySelectorAll('.module-grid [data-go]').forEach(tile=>{
+  const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});
+  for(const state of tileStates)tile.classList.toggle('state-'+state,state===p.state);
+  tile.dataset.state=p.state;tile.querySelector('.module-state').textContent=p.label;
+  tile.setAttribute('aria-label',tile.querySelector('strong').textContent+' · '+p.label);
+ });
 }
 
 async function zeroDashboard(){
