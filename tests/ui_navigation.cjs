@@ -12,7 +12,7 @@ const {chromium}=require('playwright');
    await page.locator('.module-grid').waitFor();
  }
  async function layout(count=10){
-   assert.equal(await page.locator('.module-tile').count(),count);
+   assert.equal(await page.locator('.module-grid .module-tile').count(),count);
    const g=await page.locator('.module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
      return {columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,
@@ -21,6 +21,16 @@ const {chromium}=require('playwright');
        helperText:el.querySelectorAll('.module-copy small,.module-copy>span').length};
    });
    assert.equal(g.columns,2);assert(g.sameRow&&g.nextRow);assert(!g.overflow);assert.equal(g.helperText,0);
+ }
+ async function priorityLayout(count){
+   assert.equal(await page.locator('.priority-card').count(),count);
+   assert.equal(await page.locator('.priority-controls,.priority-rail,#priorityNext,#priorityPrev,#priorityPosition,.priority-heading').count(),0);
+   const geometry=await page.locator('.priority-stack').evaluate(el=>({cards:[...el.querySelectorAll('.priority-tile')].map(x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,width:r.width,height:r.height,radius:getComputedStyle(x).borderRadius,border:getComputedStyle(x).borderTopColor};}),module:(()=>{const e=document.querySelector('.module-tile:not(.priority-tile)');return {height:e.getBoundingClientRect().height,radius:getComputedStyle(e).borderRadius,border:getComputedStyle(e).borderTopColor};})(),overflow:document.documentElement.scrollWidth>innerWidth}));
+   const cards=geometry.cards;assert(!geometry.overflow);
+   for(let i=1;i<cards.length;i++){assert(cards[i].top>=cards[i-1].bottom,'Stack must remain vertical');assert(cards[i].height<=cards[i-1].height,'Priority heights must decrease');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}
+   assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
+   for(const card of cards)assert.equal(card.radius,geometry.module.radius);
+   if(count>=4)assert.equal(cards[3].height,geometry.module.height);
  }
  async function formVisible(id){
    await page.locator('#'+id).waitFor();
@@ -41,7 +51,8 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#mobileNav').count(),0);
    assert.equal(await page.locator('.home-quick-actions').count(),0);
    await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===3);
-   assert((await page.locator('#priorityBlock').innerText()).includes('Exemples'));
+   assert((await page.locator('.home-heading').innerText()).startsWith('Bonjour'));
+   await priorityLayout(3);
    await page.locator('[data-priority-open]').first().click();
    await page.locator('#finishPriorityExample').click();
    await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===2);
@@ -127,8 +138,7 @@ const {chromium}=require('playwright');
      await renderPriorities();
    });
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===6);
-   await page.locator('#priorityNext').click();
-   await page.waitForFunction(()=>document.querySelector('.priority-rail').scrollLeft>0);
+   await priorityLayout(6);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
    await page.screenshot({path:'/tmp/ui-images/home-iphone.png',fullPage:true});
    await page.locator('[data-priority-dismiss]').nth(1).click();
@@ -137,6 +147,7 @@ const {chromium}=require('playwright');
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
    await page.setViewportSize({width:1440,height:1000});
    await layout();
+   await priorityLayout(5);
    await page.screenshot({path:'/tmp/ui-images/home-desktop.png',fullPage:true});
    // The same circular arrow closes account dialogs.
    await page.locator('.account-menu summary').click();

@@ -38,7 +38,7 @@ async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null
  const active=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies',team:'companies'})[next]||next;
  document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));
  document.querySelectorAll('[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===active));
- $('#topLabel').textContent=labels[next];
+ $('#topLabel').textContent=next==='dashboard'?'':labels[next];
  $('#moduleBack').classList.toggle('hide',next==='dashboard');
  $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
  try{
@@ -93,7 +93,7 @@ async function dashboard(){
   ...(company?[{tab:'company-edit',id:company.id,icon:'🎨',name:'Identité & tarifs'}]:[]),
   ...(company&&me.role==='owner'?[{tab:'team',id:company.id,icon:'👥',name:'Équipe'}]:[])
  ];
- $('#content').innerHTML=`<header class="home-heading"><h1>Agence IA Studio</h1></header>
+ $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header>
  <section id="priorityBlock" aria-label="Actions prioritaires"></section>
  <nav class="module-grid" aria-label="Fonctions de l’entreprise">${modules.map(m=>`<a class="module-tile ${m.tone||'green'}" href="#/${m.tab}${m.id?'/'+m.id:''}" data-go="${m.tab}"${m.id?` data-company-id="${m.id}"`:''}><span class="module-icon" aria-hidden="true">${m.icon}</span><span class="module-copy"><strong>${m.name}</strong></span><span class="module-chevron" aria-hidden="true">›</span></a>`).join('')}</nav>
 `;

@@ -1,9 +1,11 @@
 function priorityMarkup(cards){
- if(!cards.length)return '<div class="priority-empty" role="status"><span class="priority-check" aria-hidden="true">✓</span><span>Tout est à jour</span><button class="text-button" id="resetPriorityExamples">Revoir les exemples</button></div>';
- const examples=cards.every(c=>c.example);
- return `<div class="priority-heading"><h2>${examples?'Exemples de priorités':'À traiter'} <span class="badge">${cards.length}</span></h2></div>
- <div class="priority-rail" aria-label="Cartes prioritaires" tabindex="0">${cards.map((c,i)=>`<article class="priority-card ${c.kind==='calendar'?'calendar':'urgent'} ${c.example?'example-card':''}" data-priority="${clean(c.key)}" aria-label="Priorité ${i+1} sur ${cards.length}"><div class="priority-badges"><span class="badge">${c.example?'Exemple':c.kind==='calendar'?'Échéance':'Suivi'}</span><span class="importance ${clean(c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal'))}">${clean(c.importance||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir'))}</span></div><h3>${clean(c.title)}</h3><p>${clean(c.description)}</p><div class="priority-actions"><button class="btn primary" data-priority-open="${i}">${clean(c.action_label)} →</button><button class="btn small" data-priority-dismiss="${i}" title="Retirer de mes priorités sans modifier le dossier">Masquer</button></div></article>`).join('')}</div>
- <div class="priority-controls"><span class="tiny sub" id="priorityPosition" aria-live="polite">1 / ${cards.length}</span><div class="row"><button class="back-circle carousel-control" id="priorityPrev" aria-label="Priorité précédente">‹</button><button class="back-circle carousel-control" id="priorityNext" aria-label="Priorité suivante">›</button></div></div>`;
+ if(!cards.length)return '';
+ return `<div class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
+  const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
+  const importance=c.importance||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
+  const icon=c.action.type==='activity'?'✅':c.kind==='calendar'?'🗓️':'📥';
+  return `<article class="priority-card priority-tier-${Math.min(i+1,4)} ${c.example?'example-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile ${c.kind==='calendar'?'blue':'green'}" data-priority-open="${i}" aria-label="${clean(c.title)} · ${clean(importance)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(importance)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button><button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button></article>`;
+ }).join('')}</div>`;
 }
 'use strict';
 let priorityCards = [];
@@ -17,21 +19,6 @@ async function renderPriorities() {
   if (!host.isConnected || company?.id !== cid) return;
   priorityCards = cards;
   host.innerHTML = priorityMarkup(cards);
-  const reset = host.querySelector('#resetPriorityExamples');
-  if(reset)reset.onclick=async()=>{try{sessionStorage.removeItem(exampleStorageKey());}catch(e){}await renderPriorities();};
-  const rail = host.querySelector('.priority-rail');
-  if (!rail) return;
-  const updatePosition = () => {
-    const items = [...rail.children];
-    const index = items.reduce((best, el, i) => Math.abs(el.getBoundingClientRect().left - rail.getBoundingClientRect().left) < Math.abs(items[best].getBoundingClientRect().left - rail.getBoundingClientRect().left) ? i : best, 0);
-    host.querySelector('#priorityPosition').textContent = `${index+1} / ${cards.length}`;
-    host.querySelector('#priorityPrev').disabled = rail.scrollLeft < 2;
-    host.querySelector('#priorityNext').disabled = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2;
-  };
-  rail.addEventListener('scroll', updatePosition, {passive:true});
-  host.querySelector('#priorityPrev').onclick = () => rail.scrollBy({left: -rail.clientWidth, behavior:'smooth'});
-  host.querySelector('#priorityNext').onclick = () => rail.scrollBy({left: rail.clientWidth, behavior:'smooth'});
-  updatePosition();
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const card = cards[Number(btn.dataset.priorityOpen)];
     try {
