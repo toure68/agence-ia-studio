@@ -142,12 +142,18 @@ def init_db():
             con.execute('INSERT INTO users(email,password_hash,role,company_id,created) VALUES (?,?,?,?,?)',
                         (email, make_hash(pwd), 'owner', None, utcnow()))
 
+    from business_routes import init_schema as init_business_schema
+    init_business_schema(db)
+
 
 init_db()
 
 from priority_routes import install as install_priorities
 install_priorities(app, db, require=lambda *a, **kw: require(*a, **kw),
                    own_company=lambda *a: own_company(*a), utcnow=utcnow)
+from business_routes import install as install_business
+install_business(app, db, require=lambda *a, **kw: require(*a, **kw),
+                 own_company=lambda *a: own_company(*a), utcnow=utcnow)
 
 
 @app.middleware('http')

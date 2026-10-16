@@ -1,7 +1,8 @@
 function priorityMarkup(cards){
- if(!cards.length)return '<div class="priority-empty" role="status"><span class="priority-check" aria-hidden="true">✓</span><span>Tout est à jour</span></div>';
- return `<div class="priority-heading"><h2>À traiter <span class="badge">${cards.length}</span></h2></div>
- <div class="priority-rail" aria-label="Cartes prioritaires" tabindex="0">${cards.map((c,i)=>`<article class="priority-card ${c.kind==='calendar'?'calendar':'urgent'}" data-priority="${clean(c.key)}" aria-label="Priorité ${i+1} sur ${cards.length}"><span class="badge">${c.kind==='calendar'?'Échéance':'Suivi'}</span><h3>${clean(c.title)}</h3><p>${clean(c.description)}</p><div class="priority-actions"><button class="btn primary" data-priority-open="${i}">${clean(c.action_label)} →</button><button class="btn small" data-priority-dismiss="${i}" title="Retirer de mes priorités sans modifier le dossier">Masquer</button></div></article>`).join('')}</div>
+ if(!cards.length)return '<div class="priority-empty" role="status"><span class="priority-check" aria-hidden="true">✓</span><span>Tout est à jour</span><button class="text-button" id="resetPriorityExamples">Revoir les exemples</button></div>';
+ const examples=cards.every(c=>c.example);
+ return `<div class="priority-heading"><h2>${examples?'Exemples de priorités':'À traiter'} <span class="badge">${cards.length}</span></h2></div>
+ <div class="priority-rail" aria-label="Cartes prioritaires" tabindex="0">${cards.map((c,i)=>`<article class="priority-card ${c.kind==='calendar'?'calendar':'urgent'} ${c.example?'example-card':''}" data-priority="${clean(c.key)}" aria-label="Priorité ${i+1} sur ${cards.length}"><div class="priority-badges"><span class="badge">${c.example?'Exemple':c.kind==='calendar'?'Échéance':'Suivi'}</span><span class="importance ${clean(c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal'))}">${clean(c.importance||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir'))}</span></div><h3>${clean(c.title)}</h3><p>${clean(c.description)}</p><div class="priority-actions"><button class="btn primary" data-priority-open="${i}">${clean(c.action_label)} →</button><button class="btn small" data-priority-dismiss="${i}" title="Retirer de mes priorités sans modifier le dossier">Masquer</button></div></article>`).join('')}</div>
  <div class="priority-controls"><span class="tiny sub" id="priorityPosition" aria-live="polite">1 / ${cards.length}</span><div class="row"><button class="back-circle carousel-control" id="priorityPrev" aria-label="Priorité précédente">‹</button><button class="back-circle carousel-control" id="priorityNext" aria-label="Priorité suivante">›</button></div></div>`;
 }
 'use strict';
@@ -11,10 +12,13 @@ async function renderPriorities() {
   const host = document.querySelector('#priorityBlock');
   const cid = company?.id;
   if (!host || !cid) return;
-  const cards = await api(`/api/companies/${cid}/priorities`);
+  const actualCards = await api(`/api/companies/${cid}/priorities`);
+  const cards = actualCards.length ? actualCards : visibleExamples();
   if (!host.isConnected || company?.id !== cid) return;
   priorityCards = cards;
   host.innerHTML = priorityMarkup(cards);
+  const reset = host.querySelector('#resetPriorityExamples');
+  if(reset)reset.onclick=async()=>{try{sessionStorage.removeItem(exampleStorageKey());}catch(e){}await renderPriorities();};
   const rail = host.querySelector('.priority-rail');
   if (!rail) return;
   const updatePosition = () => {
@@ -31,6 +35,8 @@ async function renderPriorities() {
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const card = cards[Number(btn.dataset.priorityOpen)];
     try {
+      if (card.action.type === 'example') return await openTab('priority-example',{recordId:card.action.id});
+      if (card.action.type === 'activity') return await openTab('activity',{recordId:card.action.id});
       if (card.action.type === 'task') return await openTab('calendar', {taskId:card.action.id});
       if (card.action.type === 'prospect') {
         await openTab('prospects');
@@ -43,9 +49,11 @@ async function renderPriorities() {
   host.querySelectorAll('[data-priority-dismiss]').forEach(btn => btn.onclick = async () => {
     btn.disabled = true;
     try {
+      const card=cards[Number(btn.dataset.priorityDismiss)];
+      if(card.example){completeExample(card.action.id);await renderPriorities();return;}
       await api(`/api/companies/${cid}/priorities/dismiss`, {method:'POST', body:JSON.stringify({key:cards[Number(btn.dataset.priorityDismiss)].key})});
       await renderPriorities();
-      notify('Carte retirée de vos priorités. Le dossier reste disponible.');
+      notify('Priorité masquée.');
     } catch(e) { btn.disabled = false; notify(e.message); }
   });
 }

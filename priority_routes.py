@@ -73,6 +73,25 @@ def install(app, db, require, own_company, utcnow):
                 {'type': 'task', 'id': task['id'], 'occurrence': task['next_due']},
                 'Ouvrir la tâche', 0 if delta <= 0 else 3, task['next_due'])
 
+
+        for row in con.execute("SELECT * FROM work_items WHERE company_id=? AND status NOT IN ('done','cancelled')", (cid,)):
+            item = dict(row)
+            overdue = bool(item['due'] and item['due'] < today.isoformat())
+            due_now = bool(item['due'] and item['due'] <= today.isoformat())
+            if item['priority'] not in ('high', 'urgent') and not due_now:
+                continue
+            importance = {'urgent': 'Urgente', 'high': 'Importante', 'normal': 'Normale', 'low': 'Faible'}[item['priority']]
+            parts = [importance]
+            if item['assignee']:
+                parts.append('Responsable : ' + item['assignee'])
+            if item['due']:
+                parts.append(('En retard : ' if overdue else 'Échéance : ') + date.fromisoformat(item['due']).strftime('%d/%m/%Y'))
+            add('urgent', 'activity-' + str(item['id']), str(item['version']),
+                item['title'], ' · '.join(parts),
+                {'type': 'activity', 'id': item['id']}, 'Traiter l’activité',
+                0 if overdue or item['priority'] == 'urgent' else 1 if due_now else 2,
+                item['due'])
+
         for row in con.execute('SELECT * FROM leads WHERE company_id=?', (cid,)):
             lead = dict(row)
             age = (today - datetime.fromisoformat(lead['updated']).date()).days

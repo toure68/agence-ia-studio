@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
    await page.locator('#moduleBack [data-back]').click();
    await page.locator('.module-grid').waitFor();
  }
- async function layout(count=6){
+ async function layout(count=10){
    assert.equal(await page.locator('.module-tile').count(),count);
    const g=await page.locator('.module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -38,22 +38,64 @@ const {chromium}=require('playwright');
    await page.getByRole('button',{name:'Se connecter'}).click();
    await page.locator('.module-grid').waitFor();
    await layout();
-   assert.match(await page.locator('#priorityBlock').innerText(),/Tout est à jour/);
+   assert.equal(await page.locator('#mobileNav').count(),0);
+   assert.equal(await page.locator('.home-quick-actions').count(),0);
+   await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===3);
+   assert((await page.locator('#priorityBlock').innerText()).includes('Exemples'));
+   await page.locator('[data-priority-open]').first().click();
+   await page.locator('#finishPriorityExample').click();
+   await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===2);
+   assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/activities')),[]);
+   assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/tasks')),[]);
    assert.equal(await page.locator('#calendarTasks').count(),0);
-   for(const [module,title] of [['leads','Demandes de devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda']]){
+   for(const [module,title] of [['leads','Demandes de devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons']]){
      await page.locator('.module-tile[data-go="'+module+'"]').click();
      await page.locator('#content h1').filter({hasText:title}).waitFor();
      assert(page.url().includes('#/'+module));
      assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
      await backHome();
    }
-   for(const [route,form] of [['prospect-new','prospectForm'],['company-new','companyForm'],['task-new','taskForm'],['company-edit','companyForm'],['team','userForm']]){
-     await page.locator('[data-go="'+route+'"]').click();
+   for(const [module,route,form] of [['prospects','prospect-new','prospectForm'],['companies','company-new','companyForm'],['calendar','task-new','taskForm'],['clients','client-new','clientForm'],['activities','activity-new','activityForm']]){
+     await page.locator('.module-tile[data-go="'+module+'"]').click();
+     await page.locator('#content [data-go="'+route+'"]').click();
      await formVisible(form);
      await page.reload({waitUntil:'networkidle'});
      await formVisible(form);
+     await page.locator('#moduleBack [data-back]').click();
+     await page.locator('#content h1').waitFor();
      await backHome();
    }
+   await page.locator('.module-tile[data-go="clients"]').click();
+   await page.locator('[data-go="client-new"]').click();
+   await page.locator('#clientName').fill('Client interface');
+   await page.locator('#clientEmail').fill('client@example.test');
+   await page.locator('#clientForm button').click();
+   await page.locator('[data-client-open]').waitFor();
+   await backHome();
+   await page.locator('.module-tile[data-go="activities"]').click();
+   await page.locator('[data-go="activity-new"]').click();
+   await page.locator('#activityTitle').fill('Préparer intervention');
+   await page.locator('#activityPriority').selectOption('urgent');
+   await page.locator('#activityAssignee').fill('Responsable test');
+   await page.locator('#activityClient').selectOption({label:'Client interface'});
+   await page.locator('#activityForm button').click();
+   await page.locator('[data-activity-open]').waitFor();
+   await backHome();
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.example-card)').length===1);
+   assert.equal(await page.locator('.example-card').count(),0);
+   await page.locator('[data-priority-open]').click();
+   await page.locator('[data-work-status="doing"]').click();
+   await page.locator('[data-work-status="doing"]').waitFor({state:'detached'});
+   await page.locator('[data-work-status="done"]').click();
+   await page.locator('[data-work-status="done"]').waitFor({state:'detached'});
+   await backHome();
+   await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===2);
+   await page.locator('.module-tile[data-go="reports"]').click();
+   assert((await page.locator('#content').innerText()).includes('Activités terminées'));
+   const report=await page.evaluate(()=>api('/api/companies/1/reports'));
+   assert.equal(report.clients_active,1);assert.equal(report.activities.done,1);
+   await backHome();
+   await page.locator('.module-tile[data-go="calendar"]').click();
    await page.locator('[data-go="task-new"]').click();
    await page.locator('#taskTitle').fill('Valider les éléments de paie');
    await page.locator('#taskDescription').fill('Contrôler les éléments variables.');
@@ -67,7 +109,7 @@ const {chromium}=require('playwright');
    await page.locator('#completeTask').click();
    await page.locator('.task-row').waitFor();
    await backHome();
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===0);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.example-card)').length===0);
    // The Add action in Agenda opens only the form; back returns to Agenda.
    await page.locator('[data-go="calendar"]').click();
    await page.locator('[data-go="task-new"]').click();
@@ -100,7 +142,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#closeModal.back-circle svg').count(),1);
    await page.locator('#closeModal').click();
    assert.deepEqual(errors,[]);
-   console.log('PASS: clean home, six useful modules, five direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
+   console.log('PASS: clean home, ten useful modules, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
  }catch(error){
    console.error('UI details',JSON.stringify({errors,body:await page.locator('body').innerText()}));
    fs.mkdirSync('/tmp/ui-images',{recursive:true});

@@ -7,17 +7,18 @@ let me=null,companies=[],company=null,leads=[],prospects=[],tab='dashboard',curr
 function notify(m){const e=$('#toast');e.textContent=m;e.classList.remove('hide');setTimeout(()=>e.classList.add('hide'),4500);}
 async function api(path,opts={}){const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...opts,headers});const obj=await response.json().catch(()=>({}));if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
-function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#mobileNav').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
-function showAuth(){me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');$('#mobileNav').classList.add('hide');}
+function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
+function showAuth(){me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
 async function refreshCompanies(){companies=await api('/api/companies');if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name+' · '+c.city;option.selected=company?.id===c.id;return option;}));}
 function finishForm(parent){
  if(history.state?.aiaFrom===parent&&(history.state?.aiaDepth||0)>0){history.back();return;}
  return openTab(parent,{replaceHistory:true});
 }
-async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null,companyId=null}={}){
+async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null,companyId=null,recordId=null}={}){
  if(!me)return;
- const labels={dashboard:'Accueil',leads:'Demandes',prospects:'Prospection',companies:'Entreprises',calendar:'Agenda','prospect-new':'Nouveau prospect','task-new':'Nouvelle échéance','company-new':'Nouvelle entreprise','company-edit':'Identité & tarifs',team:'Équipe'};
- const ownerTabs=new Set(['prospects','prospect-new','company-new','team']);
+ const labels={dashboard:'Accueil',leads:'Demandes',prospects:'Prospection',companies:'Entreprises',calendar:'Agenda','prospect-new':'Nouveau prospect','task-new':'Nouvelle échéance','company-new':'Nouvelle entreprise','company-edit':'Identité & tarifs',team:'Équipe',clients:'Clients','client-new':'Nouveau client','client-edit':'Client',activities:'Activités','activity-new':'Nouvelle activité','activity-edit':'Modifier l’activité',activity:'Activité',reports:'Rapports',drafts:'Brouillons',draft:'Brouillon','priority-example':'Exemple'};
+ const ownerTabs=new Set(['prospects','prospect-new','company-new','team','drafts','draft']);
+ const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example']);
  if(!labels[next]||(ownerTabs.has(next)&&me.role!=='owner'))next='dashboard';
  if(['company-edit','team'].includes(next)){
    companyId=companyId||company?.id;
@@ -27,7 +28,7 @@ async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null
  document.querySelector('.account-menu')?.removeAttribute('open');
  const previousTab=tab;
  tab=next;
- const id=next==='calendar'?taskId:['company-edit','team'].includes(next)?companyId:null;
+ const id=next==='calendar'?taskId:['company-edit','team'].includes(next)?companyId:recordRoutes.has(next)?recordId:null;
  const route='#/'+next+(id?'/'+id:'');
  if(updateHistory&&location.hash!==route){
    const depth=history.state?.aiaDepth||0;
@@ -51,13 +52,24 @@ async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null
    else if(next==='company-new')renderCompanyForm();
    else if(next==='company-edit')renderCompanyForm(companyId);
    else if(next==='team')renderTeamForm(companyId);
+   else if(next==='clients')await renderClients();
+   else if(next==='client-new')await renderClientForm();
+   else if(next==='client-edit')await renderClientForm(recordId);
+   else if(next==='activities')await renderActivities();
+   else if(next==='activity-new')await renderActivityForm();
+   else if(next==='activity-edit')await renderActivityForm(recordId);
+   else if(next==='activity')await renderActivity(recordId);
+   else if(next==='reports')await renderReports();
+   else if(next==='drafts')await renderDrafts();
+   else if(next==='draft')await renderDrafts(recordId);
+   else if(next==='priority-example')await renderPriorityExample(recordId);
    window.scrollTo(0,0);
  }catch(err){$('#content').innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
 }
 function readRoute(){
  const parts=location.hash.replace(/^#\/?/,'').split('/');
  const id=/^\d+$/.test(parts[1]||'')?Number(parts[1]):null;
- return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null};
+ return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example'].includes(parts[0])?id:null};
 }
 function backIcon(){return '<svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
 function renderFormPage(html){
@@ -65,14 +77,18 @@ function renderFormPage(html){
 }
 function goBack(){
  if((history.state?.aiaDepth||0)>0){history.back();return;}
- const parent=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies','team':'companies'})[tab]||'dashboard';
+ const parent=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies','team':'companies',clients:'dashboard','client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities',activities:'dashboard',draft:'drafts',drafts:'dashboard',reports:'dashboard','priority-example':'dashboard'})[tab]||'dashboard';
  return openTab(parent,{replaceHistory:true});
 }
 async function dashboard(){
  const modules=[
+  {tab:'clients',icon:'👤',name:'Clients'},
+  {tab:'activities',icon:'✅',name:'Activités'},
   {tab:'leads',icon:'📥',name:'Demandes'},
   ...(me.role==='owner'?[{tab:'prospects',icon:'🤝',name:'Prospection'}]:[]),
   {tab:'calendar',icon:'🗓️',name:'Agenda',tone:'blue'},
+  {tab:'reports',icon:'📊',name:'Rapports'},
+  ...(me.role==='owner'?[{tab:'drafts',icon:'✉️',name:'Brouillons'}]:[]),
   {tab:'companies',icon:'🏢',name:'Entreprises'},
   ...(company?[{tab:'company-edit',id:company.id,icon:'🎨',name:'Identité & tarifs'}]:[]),
   ...(company&&me.role==='owner'?[{tab:'team',id:company.id,icon:'👥',name:'Équipe'}]:[])
@@ -80,11 +96,7 @@ async function dashboard(){
  $('#content').innerHTML=`<header class="home-heading"><h1>Agence IA Studio</h1></header>
  <section id="priorityBlock" aria-label="Actions prioritaires"></section>
  <nav class="module-grid" aria-label="Fonctions de l’entreprise">${modules.map(m=>`<a class="module-tile ${m.tone||'green'}" href="#/${m.tab}${m.id?'/'+m.id:''}" data-go="${m.tab}"${m.id?` data-company-id="${m.id}"`:''}><span class="module-icon" aria-hidden="true">${m.icon}</span><span class="module-copy"><strong>${m.name}</strong></span><span class="module-chevron" aria-hidden="true">›</span></a>`).join('')}</nav>
- <section class="quick-actions" aria-label="Créer"><h2>Créer</h2><div class="quick-actions-row">
- ${me.role==='owner'?'<a class="quick-action" href="#/prospect-new" data-go="prospect-new"><span aria-hidden="true">＋</span> Prospect</a>':''}
- <a class="quick-action" href="#/task-new" data-go="task-new"><span aria-hidden="true">＋</span> Échéance</a>
- ${me.role==='owner'?'<a class="quick-action" href="#/company-new" data-go="company-new"><span aria-hidden="true">＋</span> Entreprise</a>':''}
- </div></section>`;
+`;
  await renderPriorities();
 }
 async function renderLeads(){if(!company)return;leads=await api('/api/companies/'+company.id+'/leads');$('#content').innerHTML=`<div class="heading"><div><h1>Demandes de devis</h1><p class="sub">${clean(company.name)} · ${leads.length} demande(s) dans la base centralisée</p></div><div class="row"><button class="btn" id="reloadLeads" aria-label="Actualiser" title="Actualiser">↻</button><a class="btn" href="/api/companies/${company.id}/leads-export">Exporter CSV</a></div></div>${leads.length?`<div class="tablewrap"><table><thead><tr><th>Client</th><th>Prestation</th><th>Montant estimé</th><th>Statut</th><th>Date</th><th></th></tr></thead><tbody>${leads.map(l=>`<tr><td><b>${clean(l.name)}</b><div class="tiny sub">${clean(l.phone)}</div></td><td>${clean(({'home':'Logement','office':'Bureaux','after':'Après travaux','windows':'Vitres'})[l.service]||l.service)}<div class="tiny sub">${l.area} m²</div></td><td>${money(l.amount)}</td><td><span class="badge">${clean(l.status)}</span></td><td>${timestamp(l.created)}</td><td><button class="linklike" data-lead="${l.id}">Détails →</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Aucune demande.</div>'}`;$('#reloadLeads').onclick=renderLeads;}
@@ -110,7 +122,7 @@ function renderCompanyForm(id){
 }
 function userForm(id){return openTab('team',{companyId:id});}
 function renderTeamForm(id){const c=companies.find(x=>x.id===id);renderFormPage(`<h1>Accès équipe</h1><p class="form-context">${clean(c?.name||'')}</p><form id="userForm" class="stack"><div class="field"><label>Email du gestionnaire</label><input name="email" type="email" required></div><div class="field"><label>Mot de passe initial (12 caractères minimum)</label><input name="password" type="password" minlength="12" autocomplete="new-password" required></div><button class="btn primary">Créer le compte</button></form>`);$('#userForm').onsubmit=async e=>{e.preventDefault();try{await api('/api/companies/'+id+'/users',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.target).entries()))});notify('Compte créé');await finishForm('companies');}catch(err){notify(err.message)}};}
-async function start(){try{me=await api('/api/me');csrf=me.csrf;showApp();await refreshCompanies();const route=readRoute();if(!Number.isInteger(history.state?.aiaDepth))history.replaceState({aiaDepth:0},'',location.href);await openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,updateHistory:false});}catch(err){showAuth();try{const s=await api('/api/setup');if(!s.ready)$('#authMessage').textContent='Configuration requise : renseignez ADMIN_EMAIL et ADMIN_PASSWORD (12 caractères min.) sur le serveur, puis redémarrez.';}catch(e){$('#authMessage').textContent='Serveur non disponible.'}}}
+async function start(){try{me=await api('/api/me');csrf=me.csrf;showApp();await refreshCompanies();const route=readRoute();if(!Number.isInteger(history.state?.aiaDepth))history.replaceState({aiaDepth:0},'',location.href);await openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,recordId:route.recordId,updateHistory:false});}catch(err){showAuth();try{const s=await api('/api/setup');if(!s.ready)$('#authMessage').textContent='Configuration requise : renseignez ADMIN_EMAIL et ADMIN_PASSWORD (12 caractères min.) sur le serveur, puis redémarrez.';}catch(e){$('#authMessage').textContent='Serveur non disponible.'}}}
 $('#loginForm').onsubmit=async e=>{e.preventDefault();try{const x=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('#loginEmail').value,password:$('#loginPassword').value})});csrf=x.csrf;await start();$('#loginPassword').value='';}catch(err){$('#authMessage').textContent=err.message}};
 $('#passwordBtn').onclick=()=>{
  openModal(`<h2>Changer mon mot de passe</h2><form id="passwordForm" class="stack"><div class="field"><label>Mot de passe actuel</label><input type="password" name="old_password" autocomplete="current-password" required></div><div class="field"><label>Nouveau mot de passe (12 caractères minimum)</label><input type="password" name="new_password" autocomplete="new-password" minlength="12" required></div><button class="btn primary">Modifier le mot de passe</button></form>`);
@@ -118,10 +130,10 @@ $('#passwordBtn').onclick=()=>{
 };
 $('#logout').onclick=async()=>{try{await api('/api/logout',{method:'POST'});}catch(e){}showAuth();};
 $('#companySelect').onchange=async e=>{company=companies.find(c=>c.id===Number(e.target.value));await openTab(tab);};
-[...$$('#sideNav'),...$$('#mobileNav')].forEach(el=>el.addEventListener('click',e=>{const x=e.target.closest('[data-tab]');if(x)openTab(x.dataset.tab)}));
-$('#content').addEventListener('click',e=>{let x=e.target.closest('[data-go]');if(x){e.preventDefault();return openTab(x.dataset.go,{companyId:x.dataset.companyId?Number(x.dataset.companyId):null});}x=e.target.closest('[data-lead]');if(x)return leadDetail(Number(x.dataset.lead));x=e.target.closest('[data-prospect]');if(x)return prospectDetail(Number(x.dataset.prospect));x=e.target.closest('[data-editcompany]');if(x)return companyForm(Number(x.dataset.editcompany));x=e.target.closest('[data-adduser]');if(x)return userForm(Number(x.dataset.adduser));});
+$$('#sideNav').forEach(el=>el.addEventListener('click',e=>{const x=e.target.closest('[data-tab]');if(x)openTab(x.dataset.tab)}));
+$('#content').addEventListener('click',e=>{let x=e.target.closest('[data-go]');if(x){e.preventDefault();return openTab(x.dataset.go,{companyId:x.dataset.companyId?Number(x.dataset.companyId):null,recordId:x.dataset.recordId?Number(x.dataset.recordId):null});}x=e.target.closest('[data-lead]');if(x)return leadDetail(Number(x.dataset.lead));x=e.target.closest('[data-prospect]');if(x)return prospectDetail(Number(x.dataset.prospect));x=e.target.closest('[data-editcompany]');if(x)return companyForm(Number(x.dataset.editcompany));x=e.target.closest('[data-adduser]');if(x)return userForm(Number(x.dataset.adduser));});
 $('#moduleBack').addEventListener('click',e=>{if(e.target.closest('[data-back]'))goBack();});
-window.addEventListener('popstate',()=>{if(me){const route=readRoute();openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,updateHistory:false});}});
-window.addEventListener('hashchange',()=>{const route=readRoute();if(me&&(route.tab!==tab||route.taskId||route.companyId))openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,updateHistory:false});});
+window.addEventListener('popstate',()=>{if(me){const route=readRoute();openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,recordId:route.recordId,updateHistory:false});}});
+window.addEventListener('hashchange',()=>{const route=readRoute();if(me&&(route.tab!==tab||route.taskId||route.companyId||route.recordId))openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,recordId:route.recordId,updateHistory:false});});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 start();
