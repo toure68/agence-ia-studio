@@ -154,6 +154,8 @@ def init_db():
     from document_routes import init_schema as init_document_schema
     init_workspace_schema(db)
     init_document_schema(db)
+    from assistant_routes import init_schema as init_assistant_schema
+    init_assistant_schema(db)
 
 
 init_db()
@@ -176,6 +178,8 @@ from workspace_routes import install as install_workspace
 install_workspace(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a))
 from document_routes import install as install_documents
 install_documents(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow,secret=SECRET)
+from assistant_routes import install as install_assistant
+install_assistant(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow,secret=SECRET,throttle=lambda *a:throttle(*a))
 
 
 @app.middleware('http')
@@ -184,7 +188,7 @@ async def headers(request: Request, call_next):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
     if APP_ENV == 'production':
         response.headers['Strict-Transport-Security'] = 'max-age=31536000'
     response.headers['Cache-Control'] = 'no-store' if request.url.path.startswith('/api/') else 'public, max-age=300'
