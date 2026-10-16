@@ -75,3 +75,15 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .priority-dismiss:hover{background:#eaf3e5}.priority-dismiss:focus-visible{outline:3px solid #1f6942;outline-offset:2px}
 #priorityBlock:empty{display:none}.home-heading h1{font-size:25px;line-height:1.3}
 @media(max-width:750px){.priority-stack{gap:11px}.priority-tile.module-tile{min-height:104px;padding:15px 48px 15px 12px}.priority-tier-1 .priority-tile{min-height:164px}.priority-tier-2 .priority-tile{min-height:144px}.priority-tier-3 .priority-tile{min-height:124px}.priority-copy>strong{font-size:16px}.priority-tier-1 .priority-copy>strong{font-size:20px}.priority-dismiss{top:12px;right:10px}.home-heading h1{font-size:23px}}
+
+/* Office tools and user-triggered voice controls. */
+.module-back{display:flex;align-items:center;justify-content:space-between}.module-back.hide{display:none}
+.voice-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;min-width:40px;min-height:40px;padding:8px;border:1px solid #d5e3d3;border-radius:50%;color:#376744;background:#ffffffc9;cursor:pointer;font-size:12px}
+.voice-button[aria-pressed="true"]{background:#286841;color:#fff}.voice-button:focus-visible{outline:3px solid #377a53;outline-offset:3px}
+.dictation-button{border-radius:12px;align-self:flex-start;min-height:34px;padding:5px 9px;margin-top:5px}
+.priority-card>.voice-button{position:absolute;right:14px;bottom:14px}.priority-tile.module-tile{padding-right:64px}
+.toast{display:flex;align-items:center;gap:14px}.toast.hide{display:none}.toast .voice-button{min-width:34px;min-height:34px}
+.quote-line{border:1px solid #d3e2d3;border-radius:16px;padding:16px;display:grid;gap:12px}.quote-line label{display:grid;gap:7px}.quote-total{font-size:18px;font-weight:800}.task-row .quote-amount{font-size:14px;white-space:nowrap}
+.quote-detail-lines{display:grid;gap:15px;margin:25px 0}.quote-detail-lines>div{display:grid;gap:6px;border-bottom:1px solid #dce6db;padding-bottom:15px}.quote-detail-lines span{font-size:13px;color:var(--mute)}
+.mail-settings{background:#ffffffbd;padding:18px;border:1px solid #d3e2d3;border-radius:18px;margin-bottom:20px}.mail-settings summary{font-weight:700;cursor:pointer;overflow-wrap:anywhere}.mail-settings form{margin:18px 0}.reply-heading{margin-top:25px}.reply-heading h2{font-size:20px}.reply-heading{flex-wrap:wrap;gap:10px}
+@media(max-width:750px){.priority-card>.voice-button{right:10px;bottom:10px}.quote-line{padding:13px}.quote-total{font-size:16px}.task-row .quote-amount{font-size:12px}.mail-settings{padding:15px}}

@@ -58,6 +58,9 @@ async function renderReports(){
  const r=await api(`/api/companies/${cid}/reports`);
  const total=Object.values(r.activities).reduce((a,b)=>a+b,0),open=['todo','doing','waiting'].reduce((sum,key)=>sum+(r.activities[key]||0),0);
  $('#content').innerHTML=`<div class="heading"><h1>Rapports</h1></div><div class="grid grid2">${[['Clients actifs',r.clients_active],['Activités à traiter',open],['Activités terminées',r.activities.done||0],['Activités en retard',r.overdue]].map(([label,value])=>`<article class="card"><p class="sub">${label}</p><strong class="stat-num">${value}</strong></article>`).join('')}</div><section class="report-section"><h2>Suivi des activités</h2><p class="sub">${total} activité(s) enregistrée(s)</p><dl class="report-lines">${Object.entries(workStates).map(([key,label])=>`<div><dt>${label}</dt><dd>${r.activities[key]||0}</dd></div>`).join('')}</dl></section><section class="report-section"><h2>Demandes clients</h2><dl class="report-lines">${Object.entries(r.leads).map(([label,n])=>`<div><dt>${clean(label)}</dt><dd>${n}</dd></div>`).join('')||'<div><dt>Demandes reçues</dt><dd>0</dd></div>'}<div><dt>Montants estimés des devis</dt><dd>${money(r.estimates_total)}</dd></div><div><dt>Devis marqués signés</dt><dd>${money(r.estimates_signed)}</dd></div></dl></section>`;
+ const quotes=r.quotations||{};
+ $('#content').insertAdjacentHTML('beforeend',`<section class="report-section"><h2>Devis créés</h2><dl class="report-lines">${Object.entries(quoteStates).map(([key,label])=>`<div><dt>${label}</dt><dd>${quotes[key]||0}</dd></div>`).join('')}${(r.quotation_totals||[]).map(t=>`<div><dt>Devis acceptés · ${clean(t.currency)}</dt><dd>${quoteMoney(t.total_minor,t.currency)}</dd></div>`).join('')}</dl></section>`);
+
 }
 
 async function renderDrafts(id=null){

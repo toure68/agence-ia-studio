@@ -9,21 +9,22 @@ async function api(path,opts={}){const method=opts.method||'GET';let headers={'A
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
 function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
 function showAuth(){me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
-async function refreshCompanies(){companies=await api('/api/companies');if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name+' · '+c.city;option.selected=company?.id===c.id;return option;}));}
+async function refreshCompanies(){companies=await api('/api/companies');const mailCompany=Number(new URLSearchParams(location.search).get('mail_company'));if(mailCompany&&companies.some(c=>c.id===mailCompany))company=companies.find(c=>c.id===mailCompany);if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name+' · '+c.city;option.selected=company?.id===c.id;return option;}));}
 function finishForm(parent){
  if(history.state?.aiaFrom===parent&&(history.state?.aiaDepth||0)>0){history.back();return;}
  return openTab(parent,{replaceHistory:true});
 }
 async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null,companyId=null,recordId=null}={}){
  if(!me)return;
- const labels={dashboard:'Accueil',leads:'Demandes',prospects:'Prospection',companies:'Entreprises',calendar:'Agenda','prospect-new':'Nouveau prospect','task-new':'Nouvelle échéance','company-new':'Nouvelle entreprise','company-edit':'Identité & tarifs',team:'Équipe',clients:'Clients','client-new':'Nouveau client','client-edit':'Client',activities:'Activités','activity-new':'Nouvelle activité','activity-edit':'Modifier l’activité',activity:'Activité',reports:'Rapports',drafts:'Brouillons',draft:'Brouillon','priority-example':'Exemple'};
+ const labels={dashboard:'Accueil',leads:'Devis',prospects:'Prospection',companies:'Entreprises',calendar:'Agenda','prospect-new':'Nouveau prospect','task-new':'Nouvelle échéance','company-new':'Nouvelle entreprise','company-edit':'Identité & tarifs',team:'Équipe',clients:'Clients','client-new':'Nouveau client','client-edit':'Client',activities:'Activités','activity-new':'Nouvelle activité','activity-edit':'Modifier l’activité',activity:'Activité',reports:'Rapports',drafts:'Brouillons',draft:'Brouillon','priority-example':'Exemple',incoming:'Demandes reçues','quote-new':'Nouveau devis','quote-edit':'Modifier le devis',quote:'Devis',emails:'E-mails',email:'E-mail'};
  const ownerTabs=new Set(['prospects','prospect-new','company-new','team','drafts','draft']);
- const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example']);
+ const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email']);
  if(!labels[next]||(ownerTabs.has(next)&&me.role!=='owner'))next='dashboard';
  if(['company-edit','team'].includes(next)){
    companyId=companyId||company?.id;
    if(!companies.some(c=>c.id===companyId))next='dashboard';
  }
+ stopReading();activeRecognition?.stop();
  closeModal();
  document.querySelector('.account-menu')?.removeAttribute('open');
  const previousTab=tab;
@@ -43,7 +44,13 @@ async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null
  $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
  try{
    if(next==='dashboard')await dashboard();
-   else if(next==='leads')await renderLeads();
+   else if(next==='leads')await renderQuotations();
+   else if(next==='incoming')await renderLeads();
+   else if(next==='quote-new')await renderQuotationForm();
+   else if(next==='quote-edit')await renderQuotationForm(recordId);
+   else if(next==='quote')await renderQuotation(recordId);
+   else if(next==='emails')await renderEmails();
+   else if(next==='email')await renderEmail(recordId);
    else if(next==='prospects')await renderProspects();
    else if(next==='companies')await renderCompanies();
    else if(next==='calendar')await calendarTasks(taskId);
@@ -69,7 +76,7 @@ async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null
 function readRoute(){
  const parts=location.hash.replace(/^#\/?/,'').split('/');
  const id=/^\d+$/.test(parts[1]||'')?Number(parts[1]):null;
- return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example'].includes(parts[0])?id:null};
+ return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email'].includes(parts[0])?id:null};
 }
 function backIcon(){return '<svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
 function renderFormPage(html){
@@ -77,14 +84,15 @@ function renderFormPage(html){
 }
 function goBack(){
  if((history.state?.aiaDepth||0)>0){history.back();return;}
- const parent=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies','team':'companies',clients:'dashboard','client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities',activities:'dashboard',draft:'drafts',drafts:'dashboard',reports:'dashboard','priority-example':'dashboard'})[tab]||'dashboard';
+ const parent=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies','team':'companies',clients:'dashboard','client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities',activities:'dashboard',draft:'drafts',drafts:'dashboard',reports:'dashboard','priority-example':'dashboard','quote-new':'leads','quote-edit':'leads',quote:'leads',email:'emails',emails:'dashboard',incoming:'leads'})[tab]||'dashboard';
  return openTab(parent,{replaceHistory:true});
 }
 async function dashboard(){
  const modules=[
   {tab:'clients',icon:'👤',name:'Clients'},
   {tab:'activities',icon:'✅',name:'Activités'},
-  {tab:'leads',icon:'📥',name:'Demandes'},
+  {tab:'leads',icon:'📄',name:'Devis'},
+  {tab:'emails',icon:'✉️',name:'E-mails'},
   ...(me.role==='owner'?[{tab:'prospects',icon:'🤝',name:'Prospection'}]:[]),
   {tab:'calendar',icon:'🗓️',name:'Agenda',tone:'blue'},
   {tab:'reports',icon:'📊',name:'Rapports'},

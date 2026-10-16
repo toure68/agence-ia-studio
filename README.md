@@ -79,3 +79,27 @@ Le tableau de bord affiche toutes les cartes utiles sans nombre fixe. Le carrous
 - **Marquer cette échéance comme traitée** enregistre la réalisation pour l’entreprise et passe à l’occurrence suivante si mensuelle. Cela ne réalise aucun envoi, paiement, déclaration ou traitement de paie.
 
 Les cartes sont actualisées à l’ouverture du tableau de bord et chaque minute quand il est visible et sans fenêtre ouverte. Les droits entreprise et la protection CSRF s’appliquent aux nouvelles routes. Les formulaires publics et les envois automatiques restent désactivés.
+
+
+## Devis, lecture vocale et boîte Gmail
+
+Le module Devis crée des devis internes indépendants des formulaires publics : lignes, prix HT, TVA choisie, devise, validité, conditions, historique, modification et PDF. Les mentions applicables à votre entreprise doivent être complétées dans les conditions. Aucun devis n’est envoyé automatiquement.
+
+La page d’accueil propose toujours une action utile, même sans urgence : activité ouverte, devis en brouillon, e-mail à examiner ou organisation du prochain travail. Les simulations ne sont plus affichées par défaut.
+
+Les boutons haut-parleur lisent une priorité, une page ou une notification après un appui. Les boutons Dicter utilisent la reconnaissance vocale disponible dans le navigateur ; si elle manque, utilisez le micro du clavier iPhone. Le microphone n’est jamais activé automatiquement. Le navigateur ou le système peut traiter la reconnaissance vocale sur son service vocal.
+
+### Activer Gmail dans l’application
+
+La connexion Gmail de ChatGPT n’autorise pas cette application Railway. L’intégration nécessite son propre client OAuth Google :
+
+1. Dans Google Cloud, créer ou choisir un projet, activer Gmail API, configurer le consentement OAuth et créer un client OAuth de type Application Web.
+2. Ajouter exactement l’URI de redirection `https://agence-ia-studio-production.up.railway.app/api/mail/gmail/callback`. Pour une application en test, ajouter les adresses autorisées comme utilisateurs de test. Les accès Gmail demandés sont `gmail.readonly` et `gmail.send` ; une diffusion à d’autres utilisateurs peut nécessiter la validation Google.
+3. Définir sur le service Railway `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` et `GMAIL_REDIRECT_URI`. Garder le secret hors de GitHub et des conversations.
+4. Ouvrir E-mails, saisir les mots-clés de l’activité, enregistrer puis Connecter Gmail et autoriser le compte. Le nom de la boîte connectée est affiché.
+
+Le tri applique les mots-clés enregistrés aux messages Gmail, hors spam, corbeille et messages envoyés. Chaque passage parcourt 20 messages et mémorise la pagination ; Actualiser poursuit la lecture. Le classement local regroupe Factures, Clients, Équipe, Fournisseurs et Activité. L’écran affiche les 1 000 dernières copies importées. Le tri est manuel par défaut ; cocher l’option automatique lance un passage toutes les 15 minutes tant que le service Railway fonctionne.
+
+Les jetons de renouvellement sont chiffrés sur le serveur avec une clé dérivée de SESSION_SECRET. Les copies des messages et les brouillons sont réservés à l’utilisateur et à l’entreprise qui ont connecté la boîte. Déconnecter révoque l’accès quand Google répond et retire les copies locales, sans supprimer les originaux Gmail.
+
+Préparer un brouillon fournit une trame locale à compléter ; aucun contenu e-mail n’est transmis à un modèle d’IA. Après modification, il faut enregistrer à nouveau le brouillon. L’envoi nécessite le clic explicite Valider et envoyer et la révision enregistrée. Une réponse envoyée ne peut pas être envoyée une seconde fois ; si Gmail ne confirme pas l’envoi, le renvoi est bloqué et il faut vérifier les messages envoyés dans Gmail. Le tri automatique ne déclenche jamais d’envoi, de prospection ni de formulaire public.

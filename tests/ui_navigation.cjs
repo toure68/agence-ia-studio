@@ -5,13 +5,19 @@ const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ await page.addInitScript(()=>{
+   window.__spoken=[];
+   Object.defineProperty(window,'speechSynthesis',{value:{speaking:false,cancel(){this.speaking=false;},getVoices(){return [];},speak(u){this.speaking=true;window.__spoken.push(u.text);setTimeout(()=>{this.speaking=false;u.onend?.();},5);}}});
+   window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
+   window.SpeechRecognition=class{start(){setTimeout(()=>{this.onresult?.({results:[[{transcript:'Consigne dictée de test.'}]]});this.onend?.();},5);}stop(){this.onend?.();}};
+ });
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  async function backHome(){
    await page.locator('#moduleBack [data-back]').click();
    await page.locator('.module-grid').waitFor();
  }
- async function layout(count=10){
+ async function layout(count=11){
    assert.equal(await page.locator('.module-grid .module-tile').count(),count);
    const g=await page.locator('.module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -28,7 +34,7 @@ const {chromium}=require('playwright');
    const geometry=await page.locator('.priority-stack').evaluate(el=>({cards:[...el.querySelectorAll('.priority-tile')].map(x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,width:r.width,height:r.height,radius:getComputedStyle(x).borderRadius,border:getComputedStyle(x).borderTopColor};}),module:(()=>{const e=document.querySelector('.module-tile:not(.priority-tile)');return {height:e.getBoundingClientRect().height,radius:getComputedStyle(e).borderRadius,border:getComputedStyle(e).borderTopColor};})(),overflow:document.documentElement.scrollWidth>innerWidth}));
    const cards=geometry.cards;assert(!geometry.overflow);
    for(let i=1;i<cards.length;i++){assert(cards[i].top>=cards[i-1].bottom,'Stack must remain vertical');assert(cards[i].height<=cards[i-1].height,'Priority heights must decrease');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}
-   assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
+   if(count>=3)assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
    for(const card of cards)assert.equal(card.radius,geometry.module.radius);
    if(count>=4)assert.equal(cards[3].height,geometry.module.height);
  }
@@ -37,9 +43,9 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
    const position=await page.locator('#'+id+' input').first().boundingBox();
    assert(position&&position.y<360,'First field must be visible without scrolling');
-   assert.equal(await page.locator('#moduleBack button svg').count(),1);
-   assert.equal((await page.locator('#moduleBack button').innerText()).trim(),'');
-   assert.equal(await page.locator('#moduleBack button').evaluate(el=>getComputedStyle(el).borderRadius),'50%');
+   assert.equal(await page.locator('#moduleBack [data-back] svg').count(),1);
+   assert.equal((await page.locator('#moduleBack [data-back]').innerText()).trim(),'');
+   assert.equal(await page.locator('#moduleBack [data-back]').evaluate(el=>getComputedStyle(el).borderRadius),'50%');
  }
  try{
    await page.goto('http://127.0.0.1:8123',{waitUntil:'networkidle'});
@@ -50,16 +56,19 @@ const {chromium}=require('playwright');
    await layout();
    assert.equal(await page.locator('#mobileNav').count(),0);
    assert.equal(await page.locator('.home-quick-actions').count(),0);
-   await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===3);
+   await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
    assert((await page.locator('.home-heading').innerText()).startsWith('Bonjour'));
-   await priorityLayout(3);
-   await page.locator('[data-priority-open]').first().click();
-   await page.locator('#finishPriorityExample').click();
-   await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===2);
+   await priorityLayout(1);
+   await page.locator('.priority-card>.voice-button').click();
+   assert((await page.evaluate(()=>window.__spoken.join(' '))).includes('Organiser'));
+   await page.locator('[data-priority-open]').click();
+   await formVisible('activityForm');
+   await page.locator('#moduleBack [data-back]').click();
+   await page.locator('.module-grid').waitFor();
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/activities')),[]);
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/tasks')),[]);
    assert.equal(await page.locator('#calendarTasks').count(),0);
-   for(const [module,title] of [['leads','Demandes de devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons']]){
+   for(const [module,title] of [['leads','Devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons'],['emails','E-mails']]){
      await page.locator('.module-tile[data-go="'+module+'"]').click();
      await page.locator('#content h1').filter({hasText:title}).waitFor();
      assert(page.url().includes('#/'+module));
@@ -77,6 +86,35 @@ const {chromium}=require('playwright');
      await page.locator(module==='prospects'?'#newProspect':module==='companies'?'#createCompany':module==='calendar'?'.task-list':module==='clients'?'#clientList':'#activityList').waitFor();
      await backHome();
    }
+   await page.locator('.module-tile[data-go="leads"]').click();
+   await page.locator('[data-go="quote-new"]').click();
+   await formVisible('quotationForm');
+   await page.locator('#quoteCustomer').fill('Client du devis');
+   await page.locator('#quoteTitle').fill('Intervention de test');
+   await page.locator('.quote-line [name="description"]').fill('Prestation test');
+   await page.locator('.quote-line [name="quantity"]').fill('2.5');
+   await page.locator('.quote-line [name="unit_price"]').fill('19.99');
+   await page.locator('#quoteVat').fill('20');
+   await page.locator('#quotationForm button[type="submit"]').click();
+   await page.locator('.quote-detail-lines').waitFor();
+   const quotes=await page.evaluate(()=>api('/api/companies/1/quotations'));
+   assert.equal(quotes.length,1);assert.equal(quotes[0].total_minor,5998);
+   const pdf=await page.request.get('/api/companies/1/quotations/'+quotes[0].id+'/pdf');
+   assert.equal(pdf.status(),200);assert((await pdf.body()).subarray(0,5).equals(Buffer.from('%PDF-')));
+   await page.locator('[data-go="quote-edit"]').click();
+   await page.locator('#quoteStatus').selectOption('accepted');
+   await page.locator('#quotationForm button[type="submit"]').click();
+   await page.locator('.quote-detail-lines').waitFor();
+   await page.locator('#moduleBack [data-back]').click();
+   await page.locator('#quoteList').waitFor();
+   assert((await page.locator('#quoteList').innerText()).includes('Accepté'));
+   await backHome();
+   await page.locator('.module-tile[data-go="emails"]').click();
+   await page.locator('#mailKeywords').fill('Clients, commandes');
+   await page.locator('#mailSettingsForm button[type="submit"]').click();
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/mail/status'))).keywords,'Clients, commandes');
+   assert.equal(await page.locator('#mailConnect').isDisabled(),true);
+   await backHome();
    await page.locator('.module-tile[data-go="clients"]').click();
    await page.locator('[data-go="client-new"]').click();
    await page.locator('#clientName').fill('Client interface');
@@ -87,13 +125,15 @@ const {chromium}=require('playwright');
    await page.locator('.module-tile[data-go="activities"]').click();
    await page.locator('[data-go="activity-new"]').click();
    await page.locator('#activityTitle').fill('Préparer intervention');
+   await page.locator('#activityDescription + .dictation-button').click();
+   await page.waitForFunction(()=>document.querySelector('#activityDescription').value.includes('Consigne dictée'));
    await page.locator('#activityPriority').selectOption('urgent');
    await page.locator('#activityAssignee').fill('Responsable test');
    await page.locator('#activityClient').selectOption({label:'Client interface'});
    await page.locator('#activityForm button').click();
    await page.locator('[data-activity-open]').waitFor();
    await backHome();
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.example-card)').length===1);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.routine-card)').length===1);
    assert.equal(await page.locator('.example-card').count(),0);
    await page.locator('[data-priority-open]').click();
    await page.locator('[data-work-status="doing"]').click();
@@ -101,7 +141,7 @@ const {chromium}=require('playwright');
    await page.locator('[data-work-status="done"]').click();
    await page.locator('[data-work-status="done"]').waitFor({state:'detached'});
    await backHome();
-   await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===2);
+   await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
    await page.locator('.module-tile[data-go="reports"]').click();
    await page.locator('.report-section').first().waitFor();
    assert((await page.locator('#content').innerText()).includes('Activités terminées'));
@@ -122,7 +162,7 @@ const {chromium}=require('playwright');
    await page.locator('#completeTask').click();
    await page.locator('.task-row').waitFor();
    await backHome();
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.example-card)').length===0);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.routine-card)').length===0);
    // The Add action in Agenda opens only the form; back returns to Agenda.
    await page.locator('[data-go="calendar"]').click();
    await page.locator('[data-go="task-new"]').click();
@@ -155,7 +195,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#closeModal.back-circle svg').count(),1);
    await page.locator('#closeModal').click();
    assert.deepEqual(errors,[]);
-   console.log('PASS: clean home, ten useful modules, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
+   console.log('PASS: clean home, eleven useful modules, quotation creation/edit/PDF, always-present useful priority, mail settings, speech and dictation controls, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
  }catch(error){
    console.error('UI details',JSON.stringify({errors,body:await page.locator('body').innerText()}));
    fs.mkdirSync('/tmp/ui-images',{recursive:true});

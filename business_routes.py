@@ -176,6 +176,8 @@ def install(app, db, require, own_company, utcnow):
             states = {r['status']: r['n'] for r in con.execute('SELECT status,COUNT(*) AS n FROM work_items WHERE company_id=? GROUP BY status', (cid,))}
             leads = {r['status']: r['n'] for r in con.execute('SELECT status,COUNT(*) AS n FROM leads WHERE company_id=? GROUP BY status', (cid,))}
             return {
+                'quotations': {r['status']:r['n'] for r in con.execute('SELECT status,COUNT(*) AS n FROM quotations WHERE company_id=? GROUP BY status',(cid,))},
+                'quotation_totals': [dict(r) for r in con.execute("SELECT json_extract(payload,'$.currency') AS currency,SUM(total_minor) AS total_minor FROM quotations WHERE company_id=? AND status='accepted' GROUP BY json_extract(payload,'$.currency')",(cid,))],
                 'clients_active': con.execute('SELECT COUNT(*) FROM clients WHERE company_id=? AND archived=0', (cid,)).fetchone()[0],
                 'activities': states,
                 'overdue': con.execute("SELECT COUNT(*) FROM work_items WHERE company_id=? AND status NOT IN ('done','cancelled') AND due<?", (cid, today)).fetchone()[0],
