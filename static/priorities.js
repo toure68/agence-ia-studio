@@ -17,7 +17,7 @@ async function renderPriorities() {
   if (!rail) return;
   const updatePosition = () => {
     const items = [...rail.children];
-    const index = items.reduce((best, el, i) => Math.abs(el.offsetLeft - rail.offsetLeft - rail.scrollLeft) < Math.abs(items[best].offsetLeft - rail.offsetLeft - rail.scrollLeft) ? i : best, 0);
+    const index = items.reduce((best, el, i) => Math.abs(el.getBoundingClientRect().left - rail.getBoundingClientRect().left) < Math.abs(items[best].getBoundingClientRect().left - rail.getBoundingClientRect().left) ? i : best, 0);
     host.querySelector('#priorityPosition').textContent = `${index+1} / ${cards.length} · Faites défiler les cartes`;
     host.querySelector('#priorityPrev').disabled = rail.scrollLeft < 2;
     host.querySelector('#priorityNext').disabled = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2;
