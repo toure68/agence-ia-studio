@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'Agence_IA_Studio_V2_1.zip'
+      - 'transfer/part07.b64'
   workflow_dispatch:
 permissions:
   contents: write
@@ -12,39 +12,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Safely unpack application into repository
+      - name: Verify, decode and unpack V2.1
         run: |
           python - <<'PY'
-          import pathlib, zipfile
-          archive = pathlib.Path('Agence_IA_Studio_V2_1.zip')
-          if not archive.exists():
-              raise SystemExit('Archive manquante')
-          root = pathlib.Path('.').resolve()
-          prefix = 'Agence_IA_Studio_V2_1/'
-          with zipfile.ZipFile(archive) as z:
+          import base64,hashlib,pathlib,zipfile,io
+          parts=[pathlib.Path(f'transfer/part{i:02d}.b64').read_text() for i in range(1,8)]
+          data=base64.b64decode(''.join(parts),validate=True)
+          expected='930ca82c959d833832f18d1e13b73fef6a99811ae116d956472cd3342b787e51'
+          if hashlib.sha256(data).hexdigest()!=expected:
+              raise SystemExit('Archive incorrecte; opération annulée')
+          root=pathlib.Path('.').resolve()
+          prefix='Agence_IA_Studio_V2_1/'
+          with zipfile.ZipFile(io.BytesIO(data)) as z:
               for item in z.infolist():
                   if not item.filename.startswith(prefix):
-                      raise SystemExit('Chemin inattendu: ' + item.filename)
-                  rel = pathlib.PurePosixPath(item.filename[len(prefix):])
-                  if not rel.parts or item.is_dir():
+                      raise SystemExit('Chemin inattendu: '+item.filename)
+                  rel=pathlib.PurePosixPath(item.filename[len(prefix):])
+                  if item.is_dir() or not rel.parts:
                       continue
                   if rel.is_absolute() or '..' in rel.parts:
-                      raise SystemExit('Chemin interdit: ' + str(rel))
-                  if rel.parts[0] in ('__pycache__', '.pytest_cache', 'data', '.venv') or rel.name == '.env':
+                      raise SystemExit('Chemin interdit')
+                  if rel.parts[0] in ('__pycache__','.pytest_cache','data','.venv') or rel.name=='.env':
                       continue
-                  dest = (root / str(rel)).resolve()
+                  dest=(root/str(rel)).resolve()
                   if not dest.is_relative_to(root):
                       raise SystemExit('Écriture hors du dépôt')
-                  dest.parent.mkdir(parents=True, exist_ok=True)
+                  dest.parent.mkdir(parents=True,exist_ok=True)
                   dest.write_bytes(z.read(item))
           PY
-          rm Agence_IA_Studio_V2_1.zip
-      - name: Commit imported source code
+          rm -rf transfer
+      - name: Commit application source
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "Import Agence IA Studio V2.1 source"
+            git commit -m "Import Agence IA Studio V2.1 application"
             git push
           fi
