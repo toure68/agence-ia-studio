@@ -9,6 +9,7 @@ def test_operations_priorities_reports_and_migration(env):
     assert c.post(base+'/clients', json={'name':'Client test'}).status_code == 403
     assert c.post(base+'/clients', headers=h, json={'name':'  '}).status_code == 422
     client = c.post(base+'/clients', headers=h, json={'name':'Client test', 'email':'client@example.test'}).json()
+    assert c.post(base+f"/clients/{client['id']}/validate",headers=h,json={'revision':client['review_revision']}).status_code==200
     payload = {'title':'Préparer intervention', 'priority':'urgent', 'assignee':'Responsable test', 'due':'2020-01-01', 'client_id':client['id']}
     w = c.post(base+'/activities', headers=h, json=payload)
     assert w.status_code == 201, w.text

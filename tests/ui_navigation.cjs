@@ -47,7 +47,7 @@ const {chromium}=require('playwright');
    for(let i=1;i<cards.length;i++){assert(cards[i].top>=cards[i-1].bottom,'Stack must remain vertical');assert(cards[i].height<=cards[i-1].height,'Priority heights must decrease');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}
    if(count>=3)assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
    for(const card of cards)assert.equal(card.radius,geometry.module.radius);
-   if(count>=4)assert.equal(cards[3].height,geometry.module.height);
+   if(count>=5){assert(cards[2].height>cards[3].height&&cards[3].height>cards[4].height);assert.equal(cards[4].height,geometry.module.height);}
  }
  async function formVisible(id){
    await page.locator('#'+id).waitFor();
@@ -139,7 +139,12 @@ const {chromium}=require('playwright');
    await page.locator('#clientEmail').fill('client@example.test');
    await page.locator('#clientForm button.btn.primary').click();
    await page.locator('[data-client-open]').waitFor();
-   await backHome();
+   await backHome();await page.waitForFunction(()=>document.querySelector('.priority-card')?.innerText.includes('Client interface'));
+   assert.equal(await page.locator('.priority-card').count(),1);await page.locator('[data-priority-open]').click();
+   await page.locator('#clientForm').waitFor();assert.equal(await page.locator('#clientName').inputValue(),'Client interface');
+   await page.locator('[data-validate-client]').click();await page.locator('.module-grid').waitFor();
+   await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/clients')))[0].needs_review,false);
    await goModule('activities');
    await page.evaluate(()=>openTab('activity-new'));
    await page.locator('#activityTitle').fill('Préparer intervention');
@@ -195,19 +200,19 @@ const {chromium}=require('playwright');
        title:'Contrôle '+(i+1),description:'Vérifier le dossier.',first_due:due})});
      await renderPriorities();
    });
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===6);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,6);
-   await priorityLayout(1);
+   await priorityLayout(6);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
    await page.screenshot({path:'/tmp/ui-images/home-iphone.png',fullPage:true});
-   await page.locator('[data-priority-dismiss]').click();
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
+   await page.locator('[data-priority-dismiss]').first().click();
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await page.reload({waitUntil:'networkidle'});
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    for(const [name,width,height] of [['landscape',844,390],['tablet',1024,768],['desktop',1440,1000]]){
-    await page.setViewportSize({width,height});await layout();await priorityLayout(1);
+    await page.setViewportSize({width,height});await layout();await priorityLayout(5);
     const left=await page.locator('.main').evaluate(el=>el.getBoundingClientRect().left);assert.equal(left,0);
     await page.screenshot({path:'/tmp/ui-images/home-'+name+'.png',fullPage:true});
    }
@@ -238,7 +243,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
-   await page.locator('[data-priority-complete]').click();await completed;
+   await page.locator('[data-priority-complete]').first().click();await completed;
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await layout();
    await goModule('equipment');await page.locator('#addAssetVoice').click();

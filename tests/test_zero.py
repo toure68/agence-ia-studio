@@ -66,6 +66,8 @@ def test_logistics_crosscheck_and_risks(env,monkeypatch):
     assert c.get(base+'/cockpit').json()['badges']['calendar']==2
     c.put(base+f'/equipment/{aid}',headers=h,json={'name':'Perceuse','quantity':2,'condition':'ready','maintenance_due':(today+timedelta(days=180)).isoformat()})
     assert c.get(base+f'/activities/{wid}/material').json()['ready'] is True
+    assert [p['action']['type'] for p in c.get(base+'/priorities').json()]==['activity']
+    c.patch(base+f'/activities/{wid}/status',headers=h,json={'status':'done'})
     assert not c.get(base+'/priorities').json()
     payload={'title':'Renouvellement RC Pro','kind':'insurance','due':(today+timedelta(days=7)).isoformat(),'responsible':'Responsable test'}
     risk=c.post(base+'/risks',headers=h,json=payload).json();rid=risk['id']

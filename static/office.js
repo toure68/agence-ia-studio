@@ -27,13 +27,6 @@ async function renderQuotation(id){
  $('#content').innerHTML=`<section class="form-page"><div class="heading"><h1>${clean(q.reference)}</h1><span class="badge">${clean(quoteStates[q.status])}</span></div><article class="task-detail"><h2>${clean(d.title)}</h2><p><strong>${clean(d.customer_name)}</strong>${d.customer_email?'<br>'+clean(d.customer_email):''}${d.customer_address?'<br>'+clean(d.customer_address):''}</p>${d.valid_until?`<p>Valable jusqu’au ${timestamp(d.valid_until+'T12:00:00')}</p>`:''}<div class="quote-detail-lines">${d.lines.map(l=>`<div><strong>${clean(l.description)}</strong><span>${clean(l.quantity)} × ${quoteMoney(Math.round(Number(l.unit_price)*100),d.currency)}</span><b>${quoteMoney(l.total_minor,d.currency)}</b></div>`).join('')}</div><dl class="report-lines"><div><dt>Total HT</dt><dd>${quoteMoney(q.subtotal_minor,d.currency)}</dd></div><div><dt>TVA (${clean(d.vat_rate)} %)</dt><dd>${quoteMoney(q.tax_minor,d.currency)}</dd></div><div><dt>Total TTC</dt><dd>${quoteMoney(q.total_minor,d.currency)}</dd></div></dl>${d.notes?`<p>${clean(d.notes)}</p>`:''}<div class="row"><a class="btn primary" href="/api/companies/${company.id}/quotations/${id}/pdf" target="_blank" rel="noopener">Télécharger PDF</a><a class="btn" data-go="quote-edit" data-record-id="${id}" href="#/quote-edit/${id}">Modifier</a></div></article></section>`;
 }
 async function routinePriorities(cid){
- const [work,quotes,mails]=await Promise.all([api(`/api/companies/${cid}/activities`),api(`/api/companies/${cid}/quotations`),api(`/api/companies/${cid}/mail/messages`)]);
- const next=work.filter(w=>!['done','cancelled'].includes(w.status)&&!['urgent','high'].includes(w.priority)&&(!w.due||w.due>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris'}).format(new Date()))).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'))[0];
- if(next)return [{key:'routine-work-'+next.id,title:next.title,kind:'routine',level:'normal',importance:'À avancer',fallback:true,action:{type:'activity',id:next.id}}];
- const quote=quotes.find(q=>q.status==='draft');
- if(quote)return [{key:'routine-quote-'+quote.id,title:'Finaliser '+quote.reference,kind:'routine',level:'normal',importance:'À préparer',fallback:true,action:{type:'quote',id:quote.id}}];
- const mail=mails.find(m=>m.send_status==='draft');
- if(mail)return [{key:'routine-mail-'+mail.id,title:'Examiner : '+mail.subject,kind:'routine',level:'normal',importance:'À lire',fallback:true,action:{type:'email',id:mail.id}}];
  return [{key:'routine-plan',title:'Organiser le prochain travail',kind:'routine',level:'normal',importance:'À préparer',fallback:true,action:{type:'activity-new'}}];
 }
 async function renderEmails(){

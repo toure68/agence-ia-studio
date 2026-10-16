@@ -2,29 +2,33 @@ function priorityMarkup(cards){
  if(!cards.length)return '';
  return `<div class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
   const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
-  const importance=c.importance||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
-  const icon=c.action.type==='activity'?'✅':c.kind==='calendar'?'🗓️':'📥';
-  return `<article class="priority-card priority-tier-${Math.min(i+1,4)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile ${c.kind==='calendar'?'blue':'green'}" data-priority-open="${i}" aria-label="${clean(c.title)} · ${clean(importance)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(importance)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${['task','activity'].includes(c.action.type)?`<button class="btn primary priority-validate" data-priority-complete="${i}">Marquer comme faite</button>`:''}${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+  const importance=c.importance||({client:'À valider',document:'À vérifier',quote:'À finaliser'})[c.action.type]||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
+  const icon=({activity:'✅',task:'🗓️',client:'👤',document:'📄',quote:'🧾',email:'✉️'})[c.action.type]||'📥';
+  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile ${c.kind==='calendar'?'blue':'green'}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(importance)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(importance)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${['task','activity'].includes(c.action.type)?`<button class="btn primary priority-validate" data-priority-complete="${i}">Marquer comme faite</button>`:''}${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>`;
 }
 'use strict';
 let priorityCards = [];
+let priorityRequest = 0;
 
 async function renderPriorities() {
   const host = document.querySelector('#priorityBlock');
   const cid = company?.id;
   if (!host || !cid) return;
+  const request=++priorityRequest;
   const [actualCards,cockpit] = await Promise.all([api(`/api/companies/${cid}/priorities`),api(`/api/companies/${cid}/cockpit`)]);
   refreshHomeBadges(cockpit.badges,cockpit.risk_cards);
   actualCards.sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
-  const cards = (actualCards.length ? actualCards : await routinePriorities(cid)).slice(0,1);
-  if (!host.isConnected || company?.id !== cid) return;
+  const cards = actualCards.length ? actualCards : await routinePriorities(cid);
+  if (!host.isConnected || company?.id !== cid || request!==priorityRequest) return;
   priorityCards = cards;
   host.innerHTML = priorityMarkup(cards);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const card = cards[Number(btn.dataset.priorityOpen)];
     try {
       if (card.action.type === 'example') return await openTab('priority-example',{recordId:card.action.id});
+      if (card.action.type === 'client') return await openTab('client-edit',{recordId:card.action.id});
+      if (card.action.type === 'document') return await openTab('document',{recordId:card.action.id});
       if (card.action.type === 'activity-new') return openVoiceCommand('activity',true);
       if (card.action.type === 'risk') return await openTab('risks',{recordId:card.action.id});
       if (card.action.type === 'equipment') return await openTab('equipment',{recordId:card.action.id});
@@ -114,3 +118,6 @@ setInterval(() => {
     renderPriorities().catch(()=>{});
   }
 }, 60000);
+document.addEventListener('visibilitychange',()=>{
+ if(me&&tab==='dashboard'&&!document.hidden&&document.querySelector('#modalLayer').classList.contains('hide'))renderPriorities().catch(()=>{});
+});

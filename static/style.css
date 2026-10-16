@@ -64,8 +64,10 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .priority-stack .priority-card{position:relative;display:block;min-width:0;border:0;border-radius:23px;padding:0;background:none;box-shadow:none;overflow-wrap:anywhere}
 .priority-tile.module-tile{box-sizing:border-box;width:100%;text-align:left;min-height:112px;padding:19px 52px 19px 18px;cursor:pointer;font:inherit}
 .priority-tier-1 .priority-tile{min-height:184px}
-.priority-tier-2 .priority-tile{min-height:160px}
-.priority-tier-3 .priority-tile{min-height:136px}
+.priority-tier-2 .priority-tile{min-height:164px}
+.priority-tier-3 .priority-tile{min-height:144px}
+.priority-tier-4 .priority-tile{min-height:124px}
+.priority-tier-5 .priority-tile{min-height:112px}
 .priority-copy{display:grid;gap:10px;min-width:0}
 .priority-copy>strong{font-size:19px;line-height:1.25;overflow-wrap:anywhere}
 .priority-tier-1 .priority-copy>strong{font-size:23px}
@@ -74,7 +76,7 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .priority-dismiss{position:absolute;top:15px;right:14px;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:#657966;font-size:23px;cursor:pointer}
 .priority-dismiss:hover{background:#eaf3e5}.priority-dismiss:focus-visible{outline:3px solid #1f6942;outline-offset:2px}
 #priorityBlock:empty{display:none}.home-heading h1{font-size:25px;line-height:1.3}
-@media(max-width:750px){.priority-stack{gap:11px}.priority-tile.module-tile{min-height:104px;padding:15px 48px 15px 12px}.priority-tier-1 .priority-tile{min-height:164px}.priority-tier-2 .priority-tile{min-height:144px}.priority-tier-3 .priority-tile{min-height:124px}.priority-copy>strong{font-size:16px}.priority-tier-1 .priority-copy>strong{font-size:20px}.priority-dismiss{top:12px;right:10px}.home-heading h1{font-size:23px}}
+@media(max-width:750px){.priority-stack{gap:11px}.priority-tile.module-tile{min-height:104px;padding:15px 48px 15px 12px}.priority-tier-1 .priority-tile{min-height:164px}.priority-tier-2 .priority-tile{min-height:148px}.priority-tier-3 .priority-tile{min-height:132px}.priority-tier-4 .priority-tile{min-height:116px}.priority-tier-5 .priority-tile{min-height:104px}.priority-copy>strong{font-size:16px}.priority-tier-1 .priority-copy>strong{font-size:20px}.priority-dismiss{top:12px;right:10px}.home-heading h1{font-size:23px}}
 
 /* Office tools and user-triggered voice controls. */
 .module-back{display:flex;align-items:center;justify-content:space-between}.module-back.hide{display:none}
