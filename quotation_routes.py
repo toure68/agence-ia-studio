@@ -65,7 +65,7 @@ def init_schema(db):
         con.execute('CREATE INDEX IF NOT EXISTS idx_quotations_company ON quotations(company_id,id)')
 
 
-def install(app, db, require, own_company, utcnow):
+def install(app, db, require, own_company, utcnow, secret=None):
     def unpack(row):
         r = dict(row)
         r['issuer'] = json.loads(r['issuer'])
@@ -99,6 +99,9 @@ def install(app, db, require, own_company, utcnow):
         with db() as con:
             issuer=dict(own_company(con,cid))
             issuer={k:issuer.get(k,'') for k in ('name','city','phone','email')}
+            if secret:
+                from document_routes import issuer_details
+                issuer.update(issuer_details(db,cid,secret))
             now=utcnow()
             cur=con.execute('INSERT INTO quotations(company_id,reference,issuer,payload,subtotal_minor,tax_minor,total_minor,status,created,updated) VALUES (?,?,?,?,?,?,?,?,?,?)',
               (cid,'pending-'+__import__('secrets').token_hex(16),json.dumps(issuer),json.dumps(payload),subtotal,tax,subtotal+tax,data.status,now,now))
@@ -144,7 +147,10 @@ def install(app, db, require, own_company, utcnow):
             return Paragraph(escape(str(text)).replace('\n','<br/>'),styles[style])
         def amount(value):
             return f'{value/100:,.2f} {d["currency"]}'.replace(',',' ')
-        story += [para(issuer['name'],'Title'),para(' · '.join(x for x in (issuer['city'],issuer['email'],issuer['phone']) if x)),Spacer(1,24),para(q['reference'],'Heading1'),para(d['title'],'Heading2'),para('Date : '+q['created'][:10])]
+        story += [para(issuer['name'],'Title'),para(' · '.join(x for x in (issuer['city'],issuer['email'],issuer['phone']) if x))]
+        for key in ('legal_name','address','siret'):
+            if issuer.get(key):story.append(para(('SIRET : ' if key=='siret' else '')+issuer[key]))
+        story += [Spacer(1,24),para(q['reference'],'Heading1'),para(d['title'],'Heading2'),para('Date : '+q['created'][:10])]
         if d['valid_until']:story.append(para('Valable jusqu’au : '+d['valid_until']))
         story += [Spacer(1,18),para(d['customer_name'],'Heading3'),para(d['customer_address']),para(d['customer_email']),Spacer(1,20)]
         rows=[[para('Désignation'),para('Quantité'),para('Prix unitaire'),para('Total HT')]]

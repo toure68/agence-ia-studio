@@ -150,6 +150,10 @@ def init_db():
     init_mailbox_schema(db)
     from zero_routes import init_schema as init_zero_schema
     init_zero_schema(db)
+    from workspace_routes import init_schema as init_workspace_schema
+    from document_routes import init_schema as init_document_schema
+    init_workspace_schema(db)
+    init_document_schema(db)
 
 
 init_db()
@@ -162,12 +166,16 @@ install_business(app, db, require=lambda *a, **kw: require(*a, **kw),
                  own_company=lambda *a: own_company(*a), utcnow=utcnow)
 
 from quotation_routes import install as install_quotations
-install_quotations(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow)
+install_quotations(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow, secret=SECRET)
 from mailbox_routes import install as install_mailbox
 install_mailbox(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow, secret=SECRET)
 
 from zero_routes import install as install_zero
 install_zero(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow)
+from workspace_routes import install as install_workspace
+install_workspace(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a))
+from document_routes import install as install_documents
+install_documents(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow,secret=SECRET)
 
 
 @app.middleware('http')

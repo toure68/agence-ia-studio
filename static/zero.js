@@ -14,19 +14,9 @@ function refreshHomeBadges(badges,riskCards=[]){
 }
 
 async function zeroDashboard(){
- const state=await api(`/api/companies/${company.id}/cockpit`);
- const cards=[
-  ['requests','Demandes','📥',state.badges.requests],
-  ['clients','Clients','👤'],['activities','Activités','✅'],['leads','Devis','📄'],['emails','E-mails','✉️'],
-  ...(me.role==='owner'?[['prospects','Prospection','🤝',state.badges.prospects]]:[]),
-  ['calendar','Agenda','🗓️',state.badges.calendar],['reports','Rapports','📊'],
-  ...(me.role==='owner'?[['drafts','Brouillons','✉️']]:[]),
-  ['companies','Entreprises','🏢'],['company-edit','Identité & tarifs','🎨',0,company.id],
-  ...(me.role==='owner'?[['team','Équipe','👥',0,company.id]]:[]),
-  ['treasury','Trésorerie','💶',state.badges.treasury],
-  ...(operationsEnabled?[['equipment','Matériel','🧰',state.risk_cards.filter(c=>c.action.type==='equipment'||c.action.type==='material').length],['risks','Prévention','🛡️',state.risk_cards.filter(c=>c.action.type==='risk').length]]:[])
- ];
- $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header><section id="priorityBlock" aria-label="Action prioritaire"></section><nav class="module-grid" aria-label="Fonctions de l’entreprise">${cards.map(([route,title,icon,n,id])=>`<a class="module-tile ${route==='calendar'?'blue':'green'}" data-go="${route}" href="#/${route}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${icon}</span><span class="module-copy"><strong>${title}</strong></span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a>`).join('')}</nav>`;
+ const cid=company.id;
+ const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
+ $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header><section id="priorityBlock" aria-label="Action prioritaire"></section>`+homeModulesMarkup(workspace,state);
  await renderPriorities();
 }
 
@@ -38,6 +28,8 @@ function renderTools(){
  const links=[['clients','Clients','👤'],['activities','Travaux & activités','✅'],['leads','Devis','📄'],['emails','E-mails','✉️'],['reports','Rapports','📊'],['companies','Entreprises','🏢'],['company-edit','Identité & tarifs','🎨',company.id]];
  if(operationsEnabled)links.push(['equipment','Matériel','🧰'],['risks','Prévention & échéances','🛡️'],['conformity','Contrôle du cahier des charges','📋']);
  if(me.role==='owner')links.push(['drafts','Brouillons','✉️'],['team','Équipe','👥',company.id]);
+ if(me.role==='owner')links.push(['scanner','Documents & profil','📷']);
+ links.push(['module-library','Plus de fonctions','＋']);
  $('#content').innerHTML='<div class="heading"><h1>Outils</h1></div>'+toolLinks(links);
 }
 async function renderConformity(){

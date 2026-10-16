@@ -27,7 +27,7 @@ const {chromium}=require('playwright');
    if(await tile.count())await tile.click();
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
  }
- async function layout(count=15){
+ async function layout(count=16){
    assert.equal(await page.locator('.module-grid .module-tile').count(),count);
    assert.equal(await page.locator('.sidebar,#sideNav,#mobileNav').count(),0);
    const g=await page.locator('.module-grid').evaluate(el=>{
@@ -65,7 +65,8 @@ const {chromium}=require('playwright');
    await page.getByRole('button',{name:'Se connecter'}).click();
    await page.locator('.module-grid').waitFor();
    await layout();
-   assert.deepEqual(await page.locator('.module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks']);
+   assert.deepEqual(await page.locator('.module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner']);
+   assert.equal(await page.locator('.more-functions').count(),1);
    assert.equal(await page.locator('.module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');
    assert.equal(await page.locator('.module-grid [data-go="team"]').getAttribute('data-company-id'),'1');
    assert.equal(await page.locator('#mobileNav').count(),0);
@@ -260,7 +261,31 @@ const {chromium}=require('playwright');
    await page.locator('#riskForm input[name="completed"]').check();await page.locator('#riskForm button.btn.primary').click();
    await page.locator('[data-risk]').waitFor();assert((await page.locator('[data-risk]').innerText()).includes('Vérifié'));
    assert.equal((await page.evaluate(()=>api('/api/companies/1/risks')))[0].completed,1);await backHome();
-   await goModule('conformity');await page.locator('.compliance-list').waitFor();assert.equal(await page.locator('.compliance-list article').count(),31);await backHome();
+   await goModule('conformity');await page.locator('.compliance-list').waitFor();assert.equal(await page.locator('.compliance-list article').count(),33);await backHome();
+   await page.locator('.more-functions').click();await page.locator('#activityDomain').selectOption('agriculture');
+   await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
+   await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
+   await page.waitForFunction(()=>document.querySelectorAll('.module-grid .module-tile').length===1);
+   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('.module-grid .module-tile').count(),1);
+   await page.locator('.more-functions').click();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
+   await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('.module-grid .module-tile').length===0);
+   assert.equal(await page.locator('.more-functions').isVisible(),true);
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
+   await page.locator('.more-functions').click();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
+   await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
+   await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();await page.locator('#saveModules').click();await page.locator('.module-grid').waitFor();await layout();
+   await goModule('scanner');await page.locator('#scanFile').setInputFiles({name:'photo-kbis-test.png',mimeType:'image/png',buffer:fs.readFileSync('/tmp/ui-kbis.png')});
+   await page.locator('#readDocument').click();await page.locator('#documentReview').waitFor({timeout:60000});
+   assert.equal(await page.locator('#import-iban').inputValue(),'FR1420041010050500013M02606');assert.deepEqual((await page.evaluate(()=>api('/api/companies/1/profile'))).fields,{});
+   await page.reload({waitUntil:'networkidle'});await page.locator('#documentReview').waitFor();
+   await page.locator('#documentConfirmed').check();await page.locator('#documentReview button[type="submit"]').click();await page.locator('#scanForm').waitFor();
+   await page.locator('.profile-details summary').click();assert.equal(await page.locator('#profile-siret').inputValue(),'73282932000074');
+   await page.locator('#scanKind').selectOption('quote');await page.locator('#scanFile').setInputFiles({name:'tarifs-test.pdf',mimeType:'application/pdf',buffer:fs.readFileSync('/tmp/ui-quote.pdf')});
+   await page.locator('#readDocument').click();await page.locator('.imported-rate').waitFor({timeout:60000});assert.equal(await page.locator('.imported-rate [data-rate="unit_price"]').inputValue(),'25.50');
+   await page.locator('#documentConfirmed').check();await page.locator('#documentReview button[type="submit"]').click();await page.locator('#scanForm').waitFor();await backHome();
+   await goModule('leads');await page.locator('[data-go="quote-new"]').click();await page.locator('#catalogTariff').waitFor();
+   const tariff=(await page.evaluate(()=>api('/api/companies/1/tariff-catalog')))[0];await page.locator('#catalogTariff').selectOption(String(tariff.id));
+   assert.equal(await page.locator('.quote-line [name="unit_price"]').inputValue(),'25.50');await backHome();await layout();
    // The same circular arrow closes account dialogs.
    await page.locator('.account-menu summary').click();
    await page.locator('#passwordBtn').click();
