@@ -13,3 +13,40 @@ jobs:
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest -q
       - run: node --check static/admin.js && node --check static/site.js && node --check static/priorities.js
+
+  ui:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: development
+      DATABASE_PATH: /tmp/agence-ui-smoke.db
+      ADMIN_EMAIL: ui-owner@example.test
+      ADMIN_PASSWORD: local-ui-smoke-test-only
+      SESSION_SECRET: local-ui-smoke-secret-for-automated-tests-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r requirements.txt
+      - run: npm install --no-save --no-package-lock playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated test application
+        run: |
+          python -m uvicorn app:app --host 127.0.0.1 --port 8123 > /tmp/agence-ui-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8123/health; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/agence-ui-server.log
+          exit 1
+      - run: node tests/ui_navigation.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: navigation-ui-checks
+          path: |
+            /tmp/ui-images
+            /tmp/agence-ui-server.log

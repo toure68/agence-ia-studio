@@ -13,3 +13,23 @@
 .priority-rail:focus-visible{outline:2px solid #14866e;outline-offset:3px}.priority-card button:focus-visible{outline:3px solid #155d99;outline-offset:3px}
 @media(max-width:600px){.priority-card{flex-basis:100%;padding:20px}.priority-actions{flex-direction:column}.priority-actions .btn{width:100%}.priority-card h3{font-size:21px}}
 @media(prefers-reduced-motion:reduce){.priority-rail{scroll-behavior:auto}}
+
+/* Direct module home: two columns on iPhone and desktop, matching the reference hierarchy. */
+:root{--ink:#193c2c;--mute:#687e70;--green:#307d51;--green2:#256641;--pale:#e7f1e5;--bg:#edf3e7}
+body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attachment:fixed}
+.top{background:rgba(255,255,255,.86)}.main-body{max-width:1080px}
+.home-heading{margin:0 0 24px}.home-heading h1{font-size:clamp(29px,4vw,40px);letter-spacing:-.04em;margin-bottom:8px}.home-heading .eyebrow{margin-bottom:8px}
+.module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:20px 0 26px}
+.module-tile{display:flex;align-items:center;gap:16px;min-width:0;min-height:150px;text-decoration:none;color:#204631;border:1px solid #cfdfcf;border-top:5px solid #3b8056;border-radius:25px;padding:23px;background:linear-gradient(130deg,#fff,#f1f8ef);box-shadow:0 8px 22px #28472908;transition:transform .15s,box-shadow .15s}
+.module-tile:hover{transform:translateY(-2px);box-shadow:0 12px 26px #28472916}.module-tile:active{transform:scale(.985)}
+.module-tile.blue{border-top-color:#65a2ad;background:linear-gradient(130deg,#fafdff,#edf7f4)}
+.module-icon{display:grid;place-items:center;flex:0 0 48px;width:48px;height:54px;border-radius:17px;background:#eaf3e5;font-size:30px}
+.module-tile.blue .module-icon{background:#e3f1f5}.module-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.module-copy strong{font-size:19px;line-height:1.2;overflow-wrap:anywhere}.module-copy>span{font-size:13px;line-height:1.4;color:#6c8171}.module-copy small{font-size:11px;color:#59725f}
+.module-chevron{font-size:32px;color:#3b8056;margin-left:auto;flex:0 0 auto}.module-back{margin-bottom:20px}.home-footnote{display:flex;gap:9px;align-items:flex-start;color:#657a6b;font-size:12px;margin-top:20px}
+.status-dot{flex:0 0 7px;width:7px;height:7px;background:#5b9763;border-radius:50%;margin-top:5px}
+.module-tile:focus-visible{outline:3px solid #1f6942;outline-offset:4px}.calendar-page{max-width:760px;margin:0 auto}.calendar-page h1{font-size:clamp(26px,4vw,36px);margin-bottom:18px}
+.calendar-page>div.stack{margin:22px 0}.calendar-page>form{background:rgba(255,255,255,.8);padding:22px;border-radius:22px;border:1px solid #d2e2d2}
+@media(max-width:750px){.main-body{padding-top:22px}.module-grid{gap:12px}.module-tile{min-height:145px;border-radius:22px;padding:18px 12px;gap:10px}.module-icon{flex-basis:36px;width:36px;height:44px;font-size:24px;border-radius:13px}.module-copy strong{font-size:14px;line-height:1.3}.module-copy>span{font-size:11px;line-height:1.4}.module-copy small{font-size:10px}.module-chevron{font-size:25px}.home-heading h1{font-size:29px}.top .row{gap:8px}.select-top{max-width:150px}.priority-heading h2{font-size:24px}.home-footnote{padding-bottom:10px}}
+@media(max-width:359px){.module-tile{padding:14px 10px;gap:7px}.module-icon{flex-basis:28px;width:28px;font-size:21px}.module-copy strong{font-size:13px}.module-chevron{font-size:20px}}
+@media(prefers-reduced-motion:reduce){.module-tile{transition:none}}
