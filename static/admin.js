@@ -14,7 +14,13 @@ function finishForm(parent){
  if(history.state?.aiaFrom===parent&&(history.state?.aiaDepth||0)>0){history.back();return;}
  return openTab(parent,{replaceHistory:true});
 }
-async function openTab(next,{updateHistory=true,replaceHistory=false,taskId=null,companyId=null,recordId=null}={}){
+let navigationQueue=Promise.resolve();
+function openTab(next,options={}){
+ const navigation=navigationQueue.catch(()=>{}).then(()=>renderTab(next,options));
+ navigationQueue=navigation;
+ return navigation;
+}
+async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=null,companyId=null,recordId=null}={}){
  if(!me)return;
  const labels={dashboard:'Accueil',leads:'Devis',prospects:'Prospection',companies:'Entreprises',calendar:'Agenda','prospect-new':'Nouveau prospect','task-new':'Nouvelle échéance','company-new':'Nouvelle entreprise','company-edit':'Identité & tarifs',team:'Équipe',clients:'Clients','client-new':'Nouveau client','client-edit':'Client',activities:'Activités','activity-new':'Nouvelle activité','activity-edit':'Modifier l’activité',activity:'Activité',reports:'Rapports',drafts:'Brouillons',draft:'Brouillon','priority-example':'Exemple',requests:'Demandes',tools:'Outils',treasury:'Trésorerie',equipment:'Matériel',risks:'Prévention',material:'Contrôle matériel',conformity:'Conformité',incoming:'Demandes reçues','quote-new':'Nouveau devis','quote-edit':'Modifier le devis',quote:'Devis',emails:'E-mails',email:'E-mail'};
  const ownerTabs=new Set(['prospects','prospect-new','company-new','team','drafts','draft']);
