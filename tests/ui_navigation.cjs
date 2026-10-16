@@ -57,12 +57,13 @@ const {chromium}=require('playwright');
    }
    for(const [module,route,form] of [['prospects','prospect-new','prospectForm'],['companies','company-new','companyForm'],['calendar','task-new','taskForm'],['clients','client-new','clientForm'],['activities','activity-new','activityForm']]){
      await page.locator('.module-tile[data-go="'+module+'"]').click();
-     await page.locator('#content [data-go="'+route+'"]').click();
+     await page.locator(route==='prospect-new'?'#newProspect':route==='company-new'?'#createCompany':'#content [data-go="'+route+'"]').click();
      await formVisible(form);
      await page.reload({waitUntil:'networkidle'});
      await formVisible(form);
      await page.locator('#moduleBack [data-back]').click();
-     await page.locator('#content h1').waitFor();
+     await page.waitForURL('**/#/'+module);
+     await page.locator(module==='prospects'?'#newProspect':module==='companies'?'#createCompany':module==='calendar'?'.task-list':module==='clients'?'#clientList':'#activityList').waitFor();
      await backHome();
    }
    await page.locator('.module-tile[data-go="clients"]').click();
@@ -91,6 +92,7 @@ const {chromium}=require('playwright');
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.example-card').length===2);
    await page.locator('.module-tile[data-go="reports"]').click();
+   await page.locator('.report-section').first().waitFor();
    assert((await page.locator('#content').innerText()).includes('Activités terminées'));
    const report=await page.evaluate(()=>api('/api/companies/1/reports'));
    assert.equal(report.clients_active,1);assert.equal(report.activities.done,1);
