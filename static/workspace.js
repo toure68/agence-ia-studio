@@ -11,7 +11,7 @@ function homeModulesMarkup(workspace,state){
  const counts={...state.badges,equipment:state.risk_cards.filter(c=>['equipment','material'].includes(c.action.type)).length,risks:state.risk_cards.filter(c=>c.action.type==='risk').length};
  return `<nav class="module-grid" aria-label="Fonctions de l’entreprise">${workspace.visible.map(key=>byKey[key]).filter(Boolean).map(m=>{
   const id=['company-edit','team'].includes(m.key)?company.id:null,n=counts[m.key]||0,p=modulePresentation(m.key,state);
-  return `<a class="module-tile state-${p.state}" data-state="${p.state}" data-go="${m.key}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${m.icon}</span><span class="module-copy"><strong>${clean(m.label)}</strong></span><span class="module-state">${clean(p.label)}</span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a>`;
+  return `<a class="module-tile ${m.key==='calendar'?'blue':'green'} state-${p.state}" data-state="${p.state}" data-go="${m.key}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${m.icon}</span><span class="module-copy"><strong>${clean(m.label)}</strong></span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a>`;
  }).join('')}</nav><a class="btn more-functions" data-go="module-library" href="#/module-library">＋ Plus de fonctions</a>`;
 }
 

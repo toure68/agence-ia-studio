@@ -14,7 +14,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
  document.querySelectorAll('.module-grid [data-go]').forEach(tile=>{
   const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});
   for(const state of tileStates)tile.classList.toggle('state-'+state,state===p.state);
-  tile.dataset.state=p.state;tile.querySelector('.module-state').textContent=p.label;
+  tile.dataset.state=p.state;
   tile.setAttribute('aria-label',tile.querySelector('strong').textContent+' · '+p.label);
  });
 }

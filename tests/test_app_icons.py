@@ -29,8 +29,11 @@ def test_app_installation_metadata_and_supplied_image_icons(env):
         r=c.get(path);assert r.status_code==200 and r.headers['content-type']=='image/png'
         img=Image.open(io.BytesIO(r.content));assert img.size==size and img.mode=='RGB'
         # Branding artwork stays opaque and contains the selected blue/purple
-        # background and light AI lettering, not a generic generated symbol.
+        # background and rainbow AI lettering supplied by the user.
         pixels=img.convert('RGB');w,h=img.size
-        center=pixels.getpixel((w//2,h//2));assert center[2]>center[0]
+        center=pixels.getpixel((w//2,int(h*.8)));assert center[2]>center[0]
+    large=Image.open(io.BytesIO(c.get('/static/icons/app-512-v2.png').content)).convert('RGB')
+    red=large.getpixel((200,160));green=large.getpixel((130,340))
+    assert red[0]>red[1]*1.5 and green[1]>green[0]*1.5
     assert head.links['apple-touch-icon']['sizes']=='180x180'
     assert c.get('/api/companies').status_code==401

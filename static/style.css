@@ -102,24 +102,11 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .treasury-list{margin-top:22px}.cash-amount{white-space:nowrap;font-size:14px!important}#commandPreview{margin-top:20px}#commandPreview dl{margin:20px 0}#commandPreview dd{overflow-wrap:anywhere;white-space:pre-wrap}#startCommandMic{display:inline-flex;align-items:center;gap:7px}.heading button svg{vertical-align:middle}.task-row{flex-wrap:wrap}
 @media(max-width:750px){.voice-fab{width:58px;height:58px}.main-body{padding-bottom:100px}.tool-list .task-row{min-height:65px}.task-row .cash-amount{font-size:12px!important}}
 
-/* The same state colours and raised surface apply to priorities and modules. */
-.module-tile.state-neutral{--state-edge:#596e80;--state-tint:#f0f4f7;--state-base:#c5cfd7;--state-ink:#354b5b}
-.module-tile.state-info{--state-edge:#286698;--state-tint:#eaf3ff;--state-base:#a3bdd6;--state-ink:#17486e}
-.module-tile.state-warning{--state-edge:#9b5c0d;--state-tint:#fff2d9;--state-base:#d9bd88;--state-ink:#754308}
-.module-tile.state-danger{--state-edge:#aa3532;--state-tint:#ffebe7;--state-base:#d6a29d;--state-ink:#842723}
-.module-tile.state-success{--state-edge:#2d744a;--state-tint:#e6f5e9;--state-base:#9dbda5;--state-ink:#215d39}
-.module-tile[data-state]{border-color:var(--state-base);border-top-color:var(--state-edge);color:var(--state-ink);background:linear-gradient(145deg,#fff 8%,var(--state-tint) 100%);box-shadow:inset 0 2px 0 #ffffffeb,0 4px 0 var(--state-base),0 10px 20px #20302b14;transition:transform .15s,box-shadow .15s}
-.module-tile[data-state]:hover{box-shadow:inset 0 2px 0 #ffffffeb,0 5px 0 var(--state-base),0 12px 24px #20302b1c}
-.module-tile[data-state]:active{transform:translateY(3px);box-shadow:inset 0 1px 0 #ffffffeb,0 1px 0 var(--state-base),0 5px 12px #20302b14}
-.module-tile[data-state]:focus-visible{outline:3px solid var(--state-edge);outline-offset:5px}
-.module-tile[data-state] .module-icon{background:var(--state-tint)}
-.module-tile[data-state] .module-chevron{color:var(--state-edge)}
-.module-tile[data-state] .importance,.module-tile[data-state] .module-state{color:var(--state-ink);background:var(--state-tint);border:1px solid var(--state-base);font-size:10px;font-weight:800;border-radius:7px;padding:2px 6px;line-height:1.3}
-.module-grid .module-copy{padding-bottom:12px}
-.module-state{position:absolute;bottom:8px;left:76px;max-width:calc(100% - 88px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.module-tile[data-state] .module-count{background:var(--state-edge);color:#fff}
-@media(max-width:750px){.module-state{left:55px;max-width:calc(100% - 64px);bottom:7px}}
-@media(prefers-reduced-motion:reduce){.module-tile[data-state]{transition:none}}
+/* Status changes only the existing top band; original card styling stays intact. */
+.module-tile.state-info{border-top-color:#286698}
+.module-tile.state-warning{border-top-color:#9b5c0d}
+.module-tile.state-danger{border-top-color:#aa3532}
+.module-tile.state-success{border-top-color:#3b8056}
 .signature-summary{padding:16px;background:#f1f7f0;border:1px solid #cddfcd;border-radius:16px;line-height:1.6}
 #signatureForm{margin-top:20px}.signature-canvas{display:block;width:100%;height:auto;aspect-ratio:3/1;background:#fff;border:2px dashed #6d9179;border-radius:14px;touch-action:none;cursor:crosshair}
 .signature-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.5;font-size:14px}.signature-consent input{width:22px;height:22px;flex:0 0 22px;accent-color:#2d744a}

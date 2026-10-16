@@ -38,6 +38,16 @@ const {chromium}=require('playwright');
        helperText:el.querySelectorAll('.module-copy small,.module-copy>span').length};
    });
    assert.equal(g.columns,2);assert(g.sameRow&&g.nextRow);assert(!g.overflow);assert.equal(g.helperText,0);
+   assert.equal(await page.locator('.module-state').count(),0);
+   const surfaces=await page.locator('.module-grid .module-tile').first().evaluate(el=>{
+    const probe=el.cloneNode(true);probe.removeAttribute('data-state');probe.className='module-tile green';probe.style.position='fixed';probe.style.left='-1000px';document.body.append(probe);
+    const read=()=>{const c=getComputedStyle(probe);return [c.backgroundImage,c.color,c.boxShadow,c.borderBottomColor,c.borderLeftColor,c.borderRightColor,getComputedStyle(probe.querySelector('.module-icon')).backgroundColor,getComputedStyle(probe.querySelector('strong')).fontSize];};
+    const original=read(),states={};for(const state of ['neutral','info','warning','danger','success']){probe.className='module-tile green state-'+state;probe.dataset.state=state;states[state]={surface:read(),top:getComputedStyle(probe).borderTopColor};}
+    probe.remove();return {original,states};
+   });
+   for(const state of Object.values(surfaces.states))assert.deepEqual(state.surface,surfaces.original,'Only the top band may change');
+   assert.equal(surfaces.states.neutral.top,'rgb(59, 128, 86)');assert.equal(surfaces.states.danger.top,'rgb(170, 53, 50)');
+
  }
  async function priorityLayout(count){
    assert.equal(await page.locator('.priority-card').count(),count);
