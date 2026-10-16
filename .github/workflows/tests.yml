@@ -12,7 +12,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest -q
-      - run: node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js
+      - run: node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js && node --check static/zero.js
 
   ui:
     runs-on: ubuntu-latest

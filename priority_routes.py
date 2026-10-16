@@ -124,6 +124,8 @@ def install(app, db, require, own_company, utcnow):
                         p['updated'] + p['stage'] + str(last['id'] if last else ''),
                         p['name'], text, {'type': 'prospect', 'id': p['id']},
                         'Ouvrir le suivi', 1 if p['stage'] in ('Réponse reçue', 'Accord de principe') else 2)
+        from zero_routes import risk_cards
+        cards.extend(risk_cards(con,cid))
         dismissed = {r['priority_key'] for r in con.execute(
             'SELECT priority_key FROM priority_dismissals WHERE user_id=?', (user['id'],))}
         return sorted((c for c in cards if c['key'] not in dismissed),

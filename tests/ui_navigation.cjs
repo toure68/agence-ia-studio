@@ -14,10 +14,20 @@ const {chromium}=require('playwright');
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  async function backHome(){
-   await page.locator('#moduleBack [data-back]').click();
+   for(let i=0;i<5;i++){
+    if(await page.locator('.module-grid').count())return;
+    const before=new URL(page.url()).hash;await page.locator('#moduleBack [data-back]').click();
+    await page.waitForFunction(hash=>location.hash!==hash,before);
+    await page.waitForFunction(()=>!document.querySelector('#content [role="status"]'));
+   }
    await page.locator('.module-grid').waitFor();
  }
- async function layout(count=11){
+ async function goModule(route){
+   const tile=page.locator('.module-grid [data-go="'+route+'"]');
+   if(await tile.count())await tile.click();
+   else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
+ }
+ async function layout(count=4){
    assert.equal(await page.locator('.module-grid .module-tile').count(),count);
    const g=await page.locator('.module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -62,14 +72,14 @@ const {chromium}=require('playwright');
    await page.locator('.priority-card>.voice-button').click();
    assert((await page.evaluate(()=>window.__spoken.join(' '))).includes('Organiser'));
    await page.locator('[data-priority-open]').click();
-   await formVisible('activityForm');
-   await page.locator('#moduleBack [data-back]').click();
+   await page.locator('#voiceCommand').waitFor();
+   await page.locator('#closeModal').click();
    await page.locator('.module-grid').waitFor();
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/activities')),[]);
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/tasks')),[]);
    assert.equal(await page.locator('#calendarTasks').count(),0);
    for(const [module,title] of [['leads','Devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons'],['emails','E-mails']]){
-     await page.locator('.module-tile[data-go="'+module+'"]').click();
+     await goModule(module);
      await page.locator('#content h1').filter({hasText:title}).waitFor();
      assert(page.url().includes('#/'+module));
      assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
@@ -77,7 +87,7 @@ const {chromium}=require('playwright');
    }
    for(const [module,route,form] of [['prospects','prospect-new','prospectForm'],['companies','company-new','companyForm'],['calendar','task-new','taskForm'],['clients','client-new','clientForm'],['activities','activity-new','activityForm']]){
      await page.locator('.module-tile[data-go="'+module+'"]').click();
-     await page.locator(route==='prospect-new'?'#newProspect':route==='company-new'?'#createCompany':'#content [data-go="'+route+'"]').click();
+     if(['prospect-new','task-new','activity-new'].includes(route))await page.evaluate(route=>openTab(route),route);else await page.locator(route==='company-new'?'#createCompany':'#content [data-go="'+route+'"]').click();
      await formVisible(form);
      await page.reload({waitUntil:'networkidle'});
      await formVisible(form);
@@ -86,7 +96,7 @@ const {chromium}=require('playwright');
      await page.locator(module==='prospects'?'#newProspect':module==='companies'?'#createCompany':module==='calendar'?'.task-list':module==='clients'?'#clientList':'#activityList').waitFor();
      await backHome();
    }
-   await page.locator('.module-tile[data-go="leads"]').click();
+   await goModule('leads');
    await page.locator('[data-go="quote-new"]').click();
    await formVisible('quotationForm');
    await page.locator('#quoteCustomer').fill('Client du devis');
@@ -109,21 +119,21 @@ const {chromium}=require('playwright');
    await page.locator('#quoteList').waitFor();
    assert((await page.locator('#quoteList').innerText()).includes('Accepté'));
    await backHome();
-   await page.locator('.module-tile[data-go="emails"]').click();
+   await goModule('emails');
    await page.locator('#mailKeywords').fill('Clients, commandes');
    await page.locator('#mailSettingsForm button[type="submit"]').click();
    assert.equal((await page.evaluate(()=>api('/api/companies/1/mail/status'))).keywords,'Clients, commandes');
    assert.equal(await page.locator('#mailConnect').isDisabled(),true);
    await backHome();
-   await page.locator('.module-tile[data-go="clients"]').click();
+   await goModule('clients');
    await page.locator('[data-go="client-new"]').click();
    await page.locator('#clientName').fill('Client interface');
    await page.locator('#clientEmail').fill('client@example.test');
    await page.locator('#clientForm button.btn.primary').click();
    await page.locator('[data-client-open]').waitFor();
    await backHome();
-   await page.locator('.module-tile[data-go="activities"]').click();
-   await page.locator('[data-go="activity-new"]').click();
+   await goModule('activities');
+   await page.evaluate(()=>openTab('activity-new'));
    await page.locator('#activityTitle').fill('Préparer intervention');
    await page.locator('#activityDescription + .dictation-button').click();
    await page.waitForFunction(()=>document.querySelector('#activityDescription').value.includes('Consigne dictée'));
@@ -142,14 +152,14 @@ const {chromium}=require('playwright');
    await page.locator('[data-work-status="done"]').waitFor({state:'detached'});
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
-   await page.locator('.module-tile[data-go="reports"]').click();
+   await goModule('reports');
    await page.locator('.report-section').first().waitFor();
    assert((await page.locator('#content').innerText()).includes('Activités terminées'));
    const report=await page.evaluate(()=>api('/api/companies/1/reports'));
    assert.equal(report.clients_active,1);assert.equal(report.activities.done,1);
    await backHome();
-   await page.locator('.module-tile[data-go="calendar"]').click();
-   await page.locator('[data-go="task-new"]').click();
+   await goModule('calendar');
+   await page.evaluate(()=>openTab('task-new'));
    await page.locator('#taskTitle').fill('Valider les éléments de paie');
    await page.locator('#taskDescription').fill('Contrôler les éléments variables.');
    await page.locator('#taskRepeat').selectOption('monthly');
@@ -163,11 +173,11 @@ const {chromium}=require('playwright');
    await page.locator('.task-row').waitFor();
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.routine-card)').length===0);
-   // The Add action in Agenda opens only the form; back returns to Agenda.
+   // The normal Add action opens the voice composer, not the legacy form.
    await page.locator('[data-go="calendar"]').click();
    await page.locator('[data-go="task-new"]').click();
-   await formVisible('taskForm');
-   await page.locator('#moduleBack [data-back]').click();
+   await page.locator('#voiceCommand').waitFor();
+   await page.locator('#closeModal').click();
    await page.locator('.task-list').waitFor();
    assert.equal(await page.locator('#taskForm').count(),0);
    await backHome();
@@ -177,25 +187,56 @@ const {chromium}=require('playwright');
        title:'Contrôle '+(i+1),description:'Vérifier le dossier.',first_due:due})});
      await renderPriorities();
    });
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===6);
-   await priorityLayout(6);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,6);
+   await priorityLayout(1);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
    await page.screenshot({path:'/tmp/ui-images/home-iphone.png',fullPage:true});
-   await page.locator('[data-priority-dismiss]').nth(1).click();
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
+   await page.locator('[data-priority-dismiss]').click();
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await page.reload({waitUntil:'networkidle'});
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await page.setViewportSize({width:1440,height:1000});
    await layout();
-   await priorityLayout(5);
+   await priorityLayout(1);
    await page.screenshot({path:'/tmp/ui-images/home-desktop.png',fullPage:true});
+   await page.setViewportSize({width:390,height:844});
+   await page.locator('#voiceFab').click();
+   await page.waitForFunction(()=>document.querySelector('#voiceCommand')?.value.includes('Consigne dictée'));
+   await page.locator('#voiceCommand').fill('entrée 120 euros règlement client');
+   await page.locator('#previewCommand').click();
+   assert.equal(await page.locator('#treasuryForm').count(),0);
+   await page.locator('#confirmVoiceCommand').click();
+   await page.locator('.treasury-list').waitFor();
+   const cash=await page.evaluate(()=>api('/api/companies/1/treasury'));
+   assert.equal(cash.balances_minor.EUR,12000);assert.equal(cash.movements.length,1);
+   await page.locator('[data-check-cash]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-check-cash]').length===0);
+   await backHome();
+   for(const [command,path,title] of [['ajoute un prospect Garage Vocal','/api/prospects','Prospection'],['ajoute une échéance contrôle demain','/api/companies/1/tasks','Agenda']]){
+    await page.locator('#voiceFab').click();await page.waitForFunction(()=>document.querySelector('#voiceCommand')?.value.includes('Consigne dictée'));
+    const before=(await page.evaluate(path=>api(path),path)).length;
+    await page.locator('#voiceCommand').fill(command);await page.locator('#previewCommand').click();await page.locator('#confirmVoiceCommand').click();
+    await page.locator('#content h1').filter({hasText:title}).waitFor();
+    assert.equal((await page.evaluate(path=>api(path),path)).length,before+1);await backHome();
+   }
+   assert.equal(await page.locator('#accountAudit:visible').count(),0);
+   await goModule('activities');
+   await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();
+   assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),0);
+   await backHome();
+   const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
+   await page.locator('[data-priority-complete]').click();await completed;
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
+   await layout();
    // The same circular arrow closes account dialogs.
    await page.locator('.account-menu summary').click();
    await page.locator('#passwordBtn').click();
    assert.equal(await page.locator('#closeModal.back-circle svg').count(),1);
    await page.locator('#closeModal').click();
    assert.deepEqual(errors,[]);
-   console.log('PASS: clean home, eleven useful modules, quotation creation/edit/PDF, always-present useful priority, mail settings, speech and dictation controls, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
+   console.log('PASS: clean home, four main modules, dynamic badges, voice FAB, cashbook, logistics and explicit compliance gaps, quotation creation/edit/PDF, always-present useful priority, mail settings, speech and dictation controls, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
  }catch(error){
    console.error('UI details',JSON.stringify({errors,body:await page.locator('body').innerText()}));
    fs.mkdirSync('/tmp/ui-images',{recursive:true});

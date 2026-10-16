@@ -29,6 +29,7 @@ function dictate(input,button){
  try{r.start();}catch(e){activeRecognition=null;button.setAttribute('aria-pressed','false');notify('Impossible de démarrer la dictée. Utilisez le micro du clavier.');}
 }
 function enhanceVoice(){
+ document.querySelectorAll('#newProspect,[data-go="task-new"],[data-go="activity-new"]').forEach(b=>{if(b.dataset.voiceLaunch)return;b.dataset.voiceLaunch='1';b.innerHTML=micIcon+'<span>'+ (b.id==='newProspect'?'Prospect':b.dataset.go==='task-new'?'Échéance':'Activité')+'</span>';});
  document.querySelectorAll('#content input:not([type]),#content input[type="text"],#content input[type="search"],#content input[type="email"],#content input[type="tel"],#content textarea').forEach(input=>{
   if(input.dataset.voiceReady||input.readOnly||input.disabled)return;input.dataset.voiceReady='1';const b=document.createElement('button');b.type='button';b.className='voice-button dictation-button';b.setAttribute('aria-label','Dicter');b.title='Dicter';b.setAttribute('aria-pressed','false');b.innerHTML=micIcon+'<span>Dicter</span>';b.onclick=()=>dictate(input,b);input.insertAdjacentElement('afterend',b);
  });

@@ -4,7 +4,7 @@ function priorityMarkup(cards){
   const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
   const importance=c.importance||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
   const icon=c.action.type==='activity'?'✅':c.kind==='calendar'?'🗓️':'📥';
-  return `<article class="priority-card priority-tier-${Math.min(i+1,4)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile ${c.kind==='calendar'?'blue':'green'}" data-priority-open="${i}" aria-label="${clean(c.title)} · ${clean(importance)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(importance)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+  return `<article class="priority-card priority-tier-${Math.min(i+1,4)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile ${c.kind==='calendar'?'blue':'green'}" data-priority-open="${i}" aria-label="${clean(c.title)} · ${clean(importance)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(importance)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${['task','activity'].includes(c.action.type)?`<button class="btn primary priority-validate" data-priority-complete="${i}">Marquer comme faite</button>`:''}${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>`;
 }
 'use strict';
@@ -14,8 +14,10 @@ async function renderPriorities() {
   const host = document.querySelector('#priorityBlock');
   const cid = company?.id;
   if (!host || !cid) return;
-  const actualCards = await api(`/api/companies/${cid}/priorities`);
-  const cards = actualCards.length ? actualCards : await routinePriorities(cid);
+  const [actualCards,cockpit] = await Promise.all([api(`/api/companies/${cid}/priorities`),api(`/api/companies/${cid}/cockpit`)]);
+  refreshHomeBadges(cockpit.badges);
+  actualCards.sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
+  const cards = (actualCards.length ? actualCards : await routinePriorities(cid)).slice(0,1);
   if (!host.isConnected || company?.id !== cid) return;
   priorityCards = cards;
   host.innerHTML = priorityMarkup(cards);
@@ -23,7 +25,10 @@ async function renderPriorities() {
     const card = cards[Number(btn.dataset.priorityOpen)];
     try {
       if (card.action.type === 'example') return await openTab('priority-example',{recordId:card.action.id});
-      if (card.action.type === 'activity-new') return await openTab('activity-new');
+      if (card.action.type === 'activity-new') return openVoiceCommand('activity',true);
+      if (card.action.type === 'risk') return await openTab('risks',{recordId:card.action.id});
+      if (card.action.type === 'equipment') return await openTab('equipment',{recordId:card.action.id});
+      if (card.action.type === 'material') return await openTab('material',{recordId:card.action.id});
       if (card.action.type === 'quote') return await openTab('quote',{recordId:card.action.id});
       if (card.action.type === 'email') return await openTab('email',{recordId:card.action.id});
       if (card.action.type === 'activity') return await openTab('activity',{recordId:card.action.id});
@@ -35,6 +40,10 @@ async function renderPriorities() {
       await openTab('incoming');
       leadDetail(card.action.id);
     } catch (e) { notify(e.message); }
+  });
+  host.querySelectorAll('[data-priority-complete]').forEach(btn=>btn.onclick=async()=>{
+    const card=cards[Number(btn.dataset.priorityComplete)];btn.disabled=true;
+    try{if(card.action.type==='task')await api(`/api/companies/${cid}/tasks/${card.action.id}/complete`,{method:'POST',body:JSON.stringify({occurrence:card.action.occurrence})});else await api(`/api/companies/${cid}/activities/${card.action.id}/status`,{method:'PATCH',body:JSON.stringify({status:'done'})});await renderPriorities();notify('Tâche traitée.');}catch(e){btn.disabled=false;notify(e.message);}
   });
   host.querySelectorAll('[data-priority-dismiss]').forEach(btn => btn.onclick = async () => {
     btn.disabled = true;

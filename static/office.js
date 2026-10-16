@@ -26,7 +26,7 @@ async function renderQuotation(id){
 }
 async function routinePriorities(cid){
  const [work,quotes,mails]=await Promise.all([api(`/api/companies/${cid}/activities`),api(`/api/companies/${cid}/quotations`),api(`/api/companies/${cid}/mail/messages`)]);
- const next=work.filter(w=>!['done','cancelled'].includes(w.status)).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'))[0];
+ const next=work.filter(w=>!['done','cancelled'].includes(w.status)&&!['urgent','high'].includes(w.priority)&&(!w.due||w.due>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris'}).format(new Date()))).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'))[0];
  if(next)return [{key:'routine-work-'+next.id,title:next.title,kind:'routine',level:'normal',importance:'À avancer',fallback:true,action:{type:'activity',id:next.id}}];
  const quote=quotes.find(q=>q.status==='draft');
  if(quote)return [{key:'routine-quote-'+quote.id,title:'Finaliser '+quote.reference,kind:'routine',level:'normal',importance:'À préparer',fallback:true,action:{type:'quote',id:quote.id}}];

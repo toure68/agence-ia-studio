@@ -148,6 +148,8 @@ def init_db():
     from mailbox_routes import init_schema as init_mailbox_schema
     init_quotation_schema(db)
     init_mailbox_schema(db)
+    from zero_routes import init_schema as init_zero_schema
+    init_zero_schema(db)
 
 
 init_db()
@@ -163,6 +165,9 @@ from quotation_routes import install as install_quotations
 install_quotations(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow)
 from mailbox_routes import install as install_mailbox
 install_mailbox(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow, secret=SECRET)
+
+from zero_routes import install as install_zero
+install_zero(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow)
 
 
 @app.middleware('http')
