@@ -275,6 +275,7 @@ const {chromium}=require('playwright');
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
    await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();await page.locator('#saveModules').click();await page.locator('.module-grid').waitFor();await layout();
    await goModule('scanner');
+   await page.locator('#scanKind').waitFor();
    assert.equal(await page.locator('#scanKind option').count(),10);
    await page.locator('#scanFile').setInputFiles({name:'kbis-colonnes.png',mimeType:'image/png',buffer:fs.readFileSync('/tmp/ui-kbis-columns.png')});
    await page.locator('#readDocument').click();await page.locator('#documentReview').waitFor({timeout:60000});

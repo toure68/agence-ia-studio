@@ -336,7 +336,8 @@ def install(app,db,require,own_company,utcnow,secret):
             for rate in data.rates:
                 con.execute('INSERT INTO imported_tariffs(company_id,document_id,description,unit_price_minor,currency,unit) VALUES (?,?,?,?,?,?)',
                   (cid,did,rate.description,int(rate.unit_price*100),rate.currency,rate.unit))
-            payload=decrypt(row['payload']);payload['review']={'fields':fields,'rates':[r.model_dump(mode='json') for r in data.rates],'confirmed_at':utcnow()}
+            payload=decrypt(row['payload']);payload['proposal']=extract_proposal(payload['text'],row['kind'])
+            payload['review']={'fields':fields,'rates':[r.model_dump(mode='json') for r in data.rates],'confirmed_at':utcnow()}
             con.execute('UPDATE source_documents SET reviewed=1,payload=? WHERE id=? AND company_id=?',(encrypt(payload),did,cid));con.execute('COMMIT')
         return {'ok':True,'rates_imported':len(data.rates)}
 
