@@ -170,7 +170,7 @@ install_business(app, db, require=lambda *a, **kw: require(*a, **kw),
 from quotation_routes import install as install_quotations
 install_quotations(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow, secret=SECRET)
 from mailbox_routes import install as install_mailbox
-install_mailbox(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow, secret=SECRET)
+install_mailbox(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow, secret=SECRET, throttle=lambda *a:throttle(*a))
 
 from zero_routes import install as install_zero
 install_zero(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow)

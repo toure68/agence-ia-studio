@@ -42,6 +42,21 @@ async function renderEmails(){
 async function renderEmail(id){
  const cid=company.id,m=await api(`/api/companies/${cid}/mail/messages/${id}`);const locked=m.send_status!=='draft';
  $('#content').innerHTML=`<section class="form-page"><h1>${clean(m.subject)}</h1><article class="task-detail"><p class="sub">${clean(m.sender)}</p><p class="draft-body">${clean(m.body)}</p></article>${locked?`<p class="msg">${m.send_status==='sent'?'Réponse envoyée.':'Envoi à vérifier dans les messages envoyés de Gmail.'}</p>`:`<div class="heading reply-heading"><h2>Votre réponse</h2><button class="btn" id="prepareMailReply">Préparer un brouillon</button></div><p class="sub">À : ${clean(m.reply_to||'Destinataire indisponible')}</p><form id="mailReplyForm" class="stack"><div class="field"><label for="mailReplySubject">Objet</label><input id="mailReplySubject" required maxlength="300" value="${clean(m.reply_subject||('Re: '+m.subject).slice(0,300))}"></div><div class="field"><label for="mailReplyBody">Réponse à vérifier</label><textarea id="mailReplyBody" required minlength="10" maxlength="20000" rows="10">${clean(m.reply_body)}</textarea></div><button class="btn" type="submit">Enregistrer le brouillon</button><button class="btn primary" type="button" id="sendMailReply" ${!m.revision||!m.reply_to?'disabled':''}>Valider et envoyer cette réponse</button></form>`}</section>`;
+ const aiBox=document.createElement('section');aiBox.className='task-detail';aiBox.setAttribute('aria-label','Aide IA pour cet e-mail');
+ aiBox.innerHTML=`<h2>Aide IA</h2><p class="sub">Analyse à votre demande, facturée sur le crédit IA. Le résumé est réutilisé si le message est inchangé. Les pièces jointes ne sont pas analysées ici.</p><div class="heading"><button type="button" class="btn" data-mail-ai="summary">Résumer cet e-mail</button>${locked?'':'<button type="button" class="btn" data-mail-ai="reply">Proposer une réponse IA</button>'}</div><p class="sub" data-ai-status role="status"></p><div class="draft-body" data-ai-result></div><div data-ai-actions></div>`;
+ $('#content .task-detail').after(aiBox);
+ aiBox.querySelectorAll('[data-mail-ai]').forEach(button=>button.onclick=async()=>{
+  const buttons=aiBox.querySelectorAll('[data-mail-ai]'),status=aiBox.querySelector('[data-ai-status]'),output=aiBox.querySelector('[data-ai-result]'),actions=aiBox.querySelector('[data-ai-actions]');
+  buttons.forEach(b=>b.disabled=true);status.textContent='Analyse en cours…';actions.replaceChildren();output.textContent='';
+  try{
+   const result=await api(`/api/companies/${cid}/mail/messages/${id}/analyse`,{method:'POST',body:JSON.stringify({kind:button.dataset.mailAi})});
+   if(!aiBox.isConnected)return;
+   output.textContent=result.text;status.textContent=(result.cached?'Analyse déjà enregistrée, sans nouvel appel IA. ':'Proposition IA à vérifier. ')+(result.kind==='reply'?`${result.history_count} échange(s) précédent(s) pris en compte. `:'')+(result.truncated?'Certains textes ont été raccourcis pour limiter le coût. ':'');
+   if(typeof speechButton==='function')actions.append(speechButton(()=>result.text,'Écouter cette analyse'));
+   if(result.kind==='reply'&&!locked){const use=document.createElement('button');use.type='button';use.className='btn';use.textContent='Utiliser cette proposition dans le brouillon';use.onclick=()=>{const field=$('#mailReplyBody');if(!field)return;if(field.value.trim()&&!confirm('Remplacer le texte actuel du brouillon par cette proposition ?'))return;field.value=result.text;field.dispatchEvent(new Event('input',{bubbles:true}));field.focus();notify('Proposition reprise. Vérifiez-la puis enregistrez le brouillon avant envoi.');};actions.append(use);}
+  }catch(err){if(aiBox.isConnected)status.textContent=err.message;}
+  finally{buttons.forEach(b=>b.disabled=false);}
+ });
  if(locked)return;let savedRevision=m.revision;
  $('#prepareMailReply').onclick=()=>{if($('#mailReplyBody').value.trim()&&!confirm('Remplacer le texte du brouillon ?'))return;$('#mailReplyBody').value='Bonjour,\n\nMerci pour votre message concernant « '+m.subject+' ».\n\n[Complétez ici votre réponse après vérification.]\n\nCordialement,\n'+company.name;$('#mailReplyBody').dispatchEvent(new Event('input',{bubbles:true}));};
  $('#mailReplyForm').oninput=()=>{$('#sendMailReply').disabled=true;savedRevision=0;};
