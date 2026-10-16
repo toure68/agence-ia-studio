@@ -1,0 +1,49 @@
+name: Import Agence IA Studio source bundle
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.bundle/ready.txt'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and unpack source bundle
+        run: |
+          python - <<'PY'
+          import base64, io, lzma, pathlib, tarfile
+          parts = sorted(pathlib.Path('.bundle').glob('part-*.txt'))
+          if len(parts) != 5:
+              raise SystemExit(f'Expected 5 parts, got {len(parts)}')
+          encoded = ''.join(x.read_text().strip() for x in parts)
+          payload = lzma.decompress(base64.b64decode(encoded, validate=True))
+          root = pathlib.Path('.').resolve()
+          paths = []
+          with tarfile.open(fileobj=io.BytesIO(payload)) as tf:
+              for member in tf:
+                  if not member.isfile():
+                      raise SystemExit('Non-file entry in bundle')
+                  path = pathlib.PurePosixPath(member.name)
+                  if not path.parts or path.is_absolute() or '..' in path.parts:
+                      raise SystemExit('Unsafe path: ' + member.name)
+                  dest = (root / str(path)).resolve()
+                  if not dest.is_relative_to(root) or dest.parts[0] == '.git':
+                      raise SystemExit('Unsafe destination')
+                  dest.parent.mkdir(parents=True, exist_ok=True)
+                  dest.write_bytes(tf.extractfile(member).read())
+                  paths.append(member.name)
+          print('Imported', len(paths), 'source files')
+          if 'app.py' not in paths or 'Dockerfile' not in paths:
+              raise SystemExit('Missing required files')
+          PY
+          rm -rf .bundle
+      - name: Commit deployed sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit -m "Import verified Agence IA Studio V2.1 source" && git push)
