@@ -102,11 +102,20 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .treasury-list{margin-top:22px}.cash-amount{white-space:nowrap;font-size:14px!important}#commandPreview{margin-top:20px}#commandPreview dl{margin:20px 0}#commandPreview dd{overflow-wrap:anywhere;white-space:pre-wrap}#startCommandMic{display:inline-flex;align-items:center;gap:7px}.heading button svg{vertical-align:middle}.task-row{flex-wrap:wrap}
 @media(max-width:750px){.voice-fab{width:58px;height:58px}.main-body{padding-bottom:100px}.tool-list .task-row{min-height:65px}.task-row .cash-amount{font-size:12px!important}}
 
-/* Status changes only the existing top band; original card styling stays intact. */
-.module-tile.state-info{border-top-color:#286698}
-.module-tile.state-warning{border-top-color:#9b5c0d}
+/* Reference palette: soft card surfaces, state bands and a distinct pressed tile. */
+.module-tile.tone-green{--module-band:#3b8056;background:linear-gradient(130deg,#fff,#f1f8ef);border-top-color:var(--module-band)}
+.module-tile.tone-blue{--module-band:#70a8b2;background:linear-gradient(130deg,#f0f9fb,#fff);border-top-color:var(--module-band)}
+.module-tile.tone-gold{--module-band:#d1ac51;background:linear-gradient(130deg,#fff8e9,#fff);border-top-color:var(--module-band)}
+.module-tile.tone-purple{--module-band:#a18bbd;background:linear-gradient(130deg,#f7f2fc,#fff);border-top-color:var(--module-band)}
+.module-tile[class*="tone-"] .module-icon{background:#ffffffb3}
+.module-tile.state-info{border-top-color:#70a8b2}
+.module-tile.state-warning{border-top-color:#d1ac51}
 .module-tile.state-danger{border-top-color:#aa3532}
 .module-tile.state-success{border-top-color:#3b8056}
+.module-tile:is(:active,:focus-visible,[aria-current="page"]){color:#fff;background:linear-gradient(125deg,#174a37,#2d7453);border-color:#c9a955;border-top-color:#d7b95f;box-shadow:0 8px 22px #28472916;outline:2px solid #d7b95f;outline-offset:1px}
+.module-tile:is(:active,:focus-visible,[aria-current="page"]) .module-chevron{color:#f0d58c}
+.module-tile:is(:active,:focus-visible,[aria-current="page"]) .module-icon{background:#ffffff24}
+.module-tile:is(:active,:focus-visible,[aria-current="page"]) .importance{color:#fff;background:#ffffff24}
 .signature-summary{padding:16px;background:#f1f7f0;border:1px solid #cddfcd;border-radius:16px;line-height:1.6}
 #signatureForm{margin-top:20px}.signature-canvas{display:block;width:100%;height:auto;aspect-ratio:3/1;background:#fff;border:2px dashed #6d9179;border-radius:14px;touch-action:none;cursor:crosshair}
 .signature-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.5;font-size:14px}.signature-consent input{width:22px;height:22px;flex:0 0 22px;accent-color:#2d744a}

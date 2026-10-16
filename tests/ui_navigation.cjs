@@ -40,13 +40,16 @@ const {chromium}=require('playwright');
    assert.equal(g.columns,2);assert(g.sameRow&&g.nextRow);assert(!g.overflow);assert.equal(g.helperText,0);
    assert.equal(await page.locator('.module-state').count(),0);
    const surfaces=await page.locator('.module-grid .module-tile').first().evaluate(el=>{
-    const probe=el.cloneNode(true);probe.removeAttribute('data-state');probe.className='module-tile green';probe.style.position='fixed';probe.style.left='-1000px';document.body.append(probe);
+    const probe=el.cloneNode(true);probe.removeAttribute('data-state');probe.style.position='fixed';probe.style.left='-1000px';document.body.append(probe);
     const read=()=>{const c=getComputedStyle(probe);return [c.backgroundImage,c.color,c.boxShadow,c.borderBottomColor,c.borderLeftColor,c.borderRightColor,getComputedStyle(probe.querySelector('.module-icon')).backgroundColor,getComputedStyle(probe.querySelector('strong')).fontSize];};
-    const original=read(),states={};for(const state of ['neutral','info','warning','danger','success']){probe.className='module-tile green state-'+state;probe.dataset.state=state;states[state]={surface:read(),top:getComputedStyle(probe).borderTopColor};}
-    probe.remove();return {original,states};
+    const tones={};for(const tone of ['green','blue','gold','purple']){probe.className='module-tile tone-'+tone;const original=read(),states={};for(const state of ['neutral','info','warning','danger','success']){probe.className='module-tile tone-'+tone+' state-'+state;probe.dataset.state=state;states[state]={surface:read(),top:getComputedStyle(probe).borderTopColor};}tones[tone]={original,states};}
+    probe.setAttribute('aria-current','page');const active={color:getComputedStyle(probe).color,background:getComputedStyle(probe).backgroundImage,band:getComputedStyle(probe).borderTopColor};
+    probe.remove();return {tones,active};
    });
-   for(const state of Object.values(surfaces.states))assert.deepEqual(state.surface,surfaces.original,'Only the top band may change');
-   assert.equal(surfaces.states.neutral.top,'rgb(59, 128, 86)');assert.equal(surfaces.states.danger.top,'rgb(170, 53, 50)');
+   for(const tone of Object.values(surfaces.tones))for(const state of Object.values(tone.states))assert.deepEqual(state.surface,tone.original,'State changes preserve the pastel card surface');
+   assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,4);
+   assert.equal(surfaces.tones.green.states.neutral.top,'rgb(59, 128, 86)');assert.equal(surfaces.tones.green.states.danger.top,'rgb(170, 53, 50)');
+   assert.equal(surfaces.active.color,'rgb(255, 255, 255)');assert.equal(surfaces.active.band,'rgb(215, 185, 95)');assert(surfaces.active.background.includes('rgb(23, 74, 55)'));
 
  }
  async function priorityLayout(count){
@@ -80,6 +83,12 @@ const {chromium}=require('playwright');
    await page.getByRole('button',{name:'Se connecter'}).click();
    await page.locator('.module-grid').waitFor();
    await layout();
+   const pressedTile=page.locator('.module-grid .module-tile').first();await pressedTile.scrollIntoViewIfNeeded();
+   const pressedBox=await pressedTile.boundingBox();await page.mouse.move(pressedBox.x+20,pressedBox.y+20);await page.mouse.down();
+   assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).color),'rgb(255, 255, 255)');
+   assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopColor),'rgb(215, 185, 95)');
+   await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
+   assert.equal(await page.locator('.module-grid').count(),1);
    assert.deepEqual(await page.locator('.module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner']);
    assert.equal(await page.locator('.more-functions').count(),1);
    assert.equal(await page.locator('.module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');

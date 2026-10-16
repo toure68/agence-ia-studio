@@ -27,13 +27,15 @@ def test_app_installation_metadata_and_supplied_image_icons(env):
     paths.update({i['src']:tuple(map(int,i['sizes'].split('x'))) for i in manifest['icons']})
     for path,size in paths.items():
         r=c.get(path);assert r.status_code==200 and r.headers['content-type']=='image/png'
-        img=Image.open(io.BytesIO(r.content));assert img.size==size and img.mode=='RGB'
-        # Branding artwork stays opaque and contains the selected blue/purple
-        # background and rainbow AI lettering supplied by the user.
-        pixels=img.convert('RGB');w,h=img.size
-        center=pixels.getpixel((w//2,int(h*.8)));assert center[2]>center[0]
-    large=Image.open(io.BytesIO(c.get('/static/icons/app-512-v2.png').content)).convert('RGB')
-    red=large.getpixel((200,160));green=large.getpixel((130,340))
+        img=Image.open(io.BytesIO(r.content));assert img.size==size and img.mode=='RGBA'
+        # Real alpha, including the exterior, the A counter and the letter gap.
+        alpha=img.getchannel('A');assert alpha.getextrema()==(0,255)
+        w,h=img.size
+        for x,y in [(0,0),(.98,.98),(.38,.5),(.74,.5)]:assert alpha.getpixel((int(x*(w-1)),int(y*(h-1))))<10
+        bbox=alpha.point(lambda a:255 if a>200 else 0).getbbox()
+        assert (bbox[2]-bbox[0])/w>.85
+    large=Image.open(io.BytesIO(c.get('/static/icons/app-512-v3.png').content)).convert('RGBA')
+    red=large.getpixel((180,120));green=large.getpixel((80,380))
     assert red[0]>red[1]*1.5 and green[1]>green[0]*1.5
     assert head.links['apple-touch-icon']['sizes']=='180x180'
     assert c.get('/api/companies').status_code==401
