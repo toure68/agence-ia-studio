@@ -78,5 +78,10 @@ const base='http://127.0.0.1:8123';
    await page.screenshot({path:'/tmp/ui-images/home-desktop.png',fullPage:true});
    assert.deepEqual(errors,[]);
    console.log('PASS: direct module navigation, calendar deep links, two-column iPhone/desktop layout, no horizontal overflow, priority actions, completion and persistent dismissal.');
+ }catch(error){
+   console.error('UI details',JSON.stringify({errors,body:await page.locator('body').innerText()}));
+   fs.mkdirSync('/tmp/ui-images',{recursive:true});
+   await page.screenshot({path:'/tmp/ui-images/failure.png',fullPage:true});
+   throw error;
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
