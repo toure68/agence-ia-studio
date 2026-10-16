@@ -80,14 +80,14 @@ def read_mrz(text):
     return {},{},['Les lignes codées sont incomplètes ou leur contrôle de lecture échoue. Vérifiez la photo ; les données incertaines ne sont pas reprises.'] if seen else []
 
 PERSON_LABELS={
- 'last_name':[r'nom de famille',r'nom de naissance',r'surname',r'last name',r'nom'],
+ 'last_name':[r'nom de famille',r'nom de naissance',r'surname',r'last name',r'nom(?:s|\(s\))?'],
  'first_name':[r'prenoms?\(?s?\)?',r'given names?',r'first names?'],
  'document_holder':[r'nom et prenoms?',r'full name'],
- 'birth_date':[r'date de naissance',r'date of birth',r'birth date',r'ne\(e\) le'],
+ 'birth_date':[r'date et lieu de naissance',r'date de naissance',r'date of birth',r'birth date',r'ne(?:\(e\)|e)? le'],
  'birth_place':[r'lieu de naissance',r'place of birth'],
  'nationality':[r'nationalite',r'nationality'],
  'sex':[r'sexe',r'sex',r'gender'],
- 'document_number':[r'numero (?:du (?:document|titre)|de (?:carte|passeport))',r'(?:passeport|passport|document|carte|card)\s*(?:no\.?|n[°ºo]|number)',r'document number',r'passport number',r'n[°º]\s*(?:du )?(?:document|passeport|titre|carte)'],
+ 'document_number':[r'numero (?:du (?:document|titre)|de (?:carte|passeport))',r'(?:passeport|passport|document|carte|card)\s*(?:no\.?|n[°ºo]|number)',r'document number',r'passport number',r'n[°º]\s*(?:(?:du|de|de la) )?(?:document|passeport|titre|carte)'],
  'expiry_date':[r'date d.expiration',r'date de fin de validite',r'date de validite',r'valable jusqu.au',r'date of expiry',r'expiry date',r'date of expiration'],
  'issue_date':[r'date de delivrance',r'delivre le',r'date of issue',r'issue date'],
  'issuing_authority':[r'autorite de delivrance',r'autorite',r'authority',r'issued by'],
@@ -110,7 +110,7 @@ def read_labeled(text,kind):
         value=re.sub(r'^[\s/:;|.\-–]+|[\s/:;|]+$','',value).strip()
         if not value or '<<' in value:return None
         if key.endswith('_date'):return normalized_date(value)
-        if key=='sex':return value.upper() if value.upper() in ('M','F','X') else None
+        if key=='sex':return {'m':'M','f':'F','x':'X','masculin':'M','feminin':'F','male':'M','female':'F'}.get(fold(value))
         if key in ('document_number','policy_number'):
             value=re.sub(r'^(?:n[°ºo]\.?|no\.?|number)\s*[:.]?\s*','',value,flags=re.I)
             return value if re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9 /.-]{3,39}',value) and re.search(r'\d',value) else None
@@ -122,6 +122,10 @@ def read_labeled(text,kind):
             if re.search(r'carte|identit|passeport|passport|republique|document|nationality|surname|given name',fold(value)):return None
         return value[:600]
     def add(key,value,source):
+        if key=='birth_date':
+            combined=re.fullmatch(r'(.+?)\s+(?:à|a|at)\s+(.+)',value.strip(' :'),re.I)
+            if combined and normalized_date(combined[1]):
+                value=combined[1];add('birth_place',combined[2],source)
         if key=='document_number' and re.search(r'country code|code du pays',fold(source)):
             group=re.fullmatch(r'\s*(?:P[A-Z<]?|I[A-Z<]?|A[A-Z<]?)\s+[A-Z]{3}\s+([A-Z0-9]{5,15})\s*',value)
             if group:value=group[1]
@@ -185,7 +189,7 @@ def interpret_document(text,kind):
                     a=fields[key].split('/');b=value.split('/');same=a[:2]==b[:2] and a[2][-2:]==b[2][-2:]
                 elif key=='nationality':
                     # Printed nationality names differ from three-letter MRZ codes.
-                    same=True
+                    same=left==right if len(left)==len(right)==3 else True
                 else:
                     canonical=lambda s:re.sub(r'[^A-Z0-9]','',fold(s).upper())
                     transliterated=fields[key].upper().translate(str.maketrans({'Ä':'AE','Ö':'OE','Ü':'UE','ß':'SS','Æ':'AE','Œ':'OE','Ø':'OE','Ł':'L','Đ':'D'}))

@@ -32,6 +32,7 @@ def test_bilingual_multiple_fields_and_dates_without_guessing():
     assert normalized_date('12 JAN/FEB 1974') is None
     assert extract_proposal('Type / Type Country code / Code du pays Passport No. / N° de passeport\nPP UTO L898902C3','passport')['fields']['document_number']=='L898902C3'
     assert 'birth_date' not in extract_proposal('Date de naissance 31/02/2001','identity')['fields']
+    assert extract_proposal('Né(e) le 12/05/1990 à BAMAKO\nSexe Féminin','identity')['fields']=={'birth_date':'12/05/1990','birth_place':'BAMAKO','sex':'F'}
 
 def test_visual_and_coded_conflicts_do_not_silently_overwrite():
     f,e,notes=interpret_document('Nom / Surname MARTIN\nDate de naissance 12/08/1974\n'+PASSPORT_MRZ,'passport')
