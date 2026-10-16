@@ -68,3 +68,14 @@ Dans **Prospection IA > Suivi**, la plateforme propose la prochaine action selon
 ## Résultats des vérifications fournies
 
 `python -m pytest -q` : 5 tests réussis. `node --check static/admin.js` et `node --check static/site.js` : syntaxe valide. Les captures d'écran du dossier `screenshots` viennent de la V2 précédente ; elles donnent un aperçu général mais ne représentent pas nécessairement les derniers ajustements de la V2.1.
+
+## Bloc de priorités dynamique
+
+Le tableau de bord affiche toutes les cartes utiles sans nombre fixe. Le carrousel fonctionne au toucher, au clavier et avec les flèches. Chaque carte ouvre directement le dossier ou la tâche concernés.
+
+- Suivi assisté (règles sur les données enregistrées, sans analyse IA externe) : demandes à rappeler, nouvelles demandes sans suivi depuis deux jours, devis envoyés depuis sept jours, réponses reçues, prospects intéressés, accords de principe et contacts sans suivi depuis sept jours. Aucun rappel pour un refus ou un dossier signé.
+- Calendrier : échéances ponctuelles ou mensuelles explicitement configurées par entreprise via **Échéances**, visibles à J−7 et conservées en cas de retard. Dates calculées en Europe/Paris. Le jour de départ est conservé pour chaque mois ; un jour absent est remplacé par le dernier jour du mois. Aucune date fiscale ou salariale n’est imposée.
+- **Ouvrir** ne supprime pas la carte. **Retirer de mes priorités** masque la version actuelle pour cet utilisateur et conserve le dossier. Une nouvelle interaction ou mise à jour peut faire réapparaître une alerte. Le calendrier complet reste accessible.
+- **Marquer cette échéance comme traitée** enregistre la réalisation pour l’entreprise et passe à l’occurrence suivante si mensuelle. Cela ne réalise aucun envoi, paiement, déclaration ou traitement de paie.
+
+Les cartes sont actualisées à l’ouverture du tableau de bord et chaque minute quand il est visible et sans fenêtre ouverte. Les droits entreprise et la protection CSRF s’appliquent aux nouvelles routes. Les formulaires publics et les envois automatiques restent désactivés.

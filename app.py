@@ -115,6 +115,19 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_leads_company ON leads(company_id, created);
         CREATE INDEX IF NOT EXISTS idx_prospect_stage ON prospects(stage);
         CREATE INDEX IF NOT EXISTS idx_interactions_prospect ON interactions(prospect_id, created);
+        CREATE TABLE IF NOT EXISTS calendar_tasks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          company_id INTEGER NOT NULL REFERENCES companies(id),
+          title TEXT NOT NULL, description TEXT NOT NULL,
+          first_due TEXT NOT NULL, monthly INTEGER NOT NULL DEFAULT 0,
+          created TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS task_completions (
+          task_id INTEGER NOT NULL REFERENCES calendar_tasks(id),
+          occurrence TEXT NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id),
+          completed TEXT NOT NULL, PRIMARY KEY(task_id, occurrence));
+        CREATE TABLE IF NOT EXISTS priority_dismissals (
+          user_id INTEGER NOT NULL REFERENCES users(id),
+          priority_key TEXT NOT NULL, PRIMARY KEY(user_id, priority_key));
         ''')
         # Migration for databases created by V2, without discarding customer data.
         fields={r['name'] for r in con.execute('PRAGMA table_info(users)').fetchall()}
@@ -131,6 +144,10 @@ def init_db():
 
 
 init_db()
+
+from priority_routes import install as install_priorities
+install_priorities(app, db, require=lambda *a, **kw: require(*a, **kw),
+                   own_company=lambda *a: own_company(*a), utcnow=utcnow)
 
 
 @app.middleware('http')
