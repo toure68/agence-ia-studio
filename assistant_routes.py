@@ -137,12 +137,12 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
                 if audio:
                     transcription=await transcribe(key,audio)
                     blocks.append({'type':'input_text','text':f'Transcription de {name} :\n{transcription}'});meta['transcript']=transcription
-            estimated=len(encode({'blocks':blocks},secret))+50000
+            estimated=len(encode({'blocks':blocks},secret))+200000
             with db() as con:
                 company=dict(own_company(con,cid))
                 used=con.execute('SELECT COALESCE(SUM(LENGTH(payload)),0) FROM assistant_turns WHERE company_id=? AND user_id=?',(cid,uid)).fetchone()[0]
                 total=con.execute('SELECT COALESCE(SUM(LENGTH(payload)),0) FROM assistant_turns').fetchone()[0]
-                if used+estimated>24*1024*1024 or total+estimated>128*1024*1024:raise HTTPException(413,'Historique trop volumineux. Effacez cet échange avant d’ajouter de nouveaux fichiers.')
+                if used+estimated>32*1024*1024 or total+estimated>128*1024*1024:raise HTTPException(413,'Historique trop volumineux. Effacez cet échange avant d’ajouter de nouveaux fichiers.')
                 previous=con.execute('SELECT payload FROM assistant_turns WHERE company_id=? AND user_id=? ORDER BY id DESC LIMIT 4',(cid,uid)).fetchall()
             messages=[]
             for row in reversed(previous):
@@ -154,6 +154,8 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
             with db() as con:
                 con.execute('BEGIN IMMEDIATE');thread=con.execute('SELECT * FROM assistant_threads WHERE company_id=? AND user_id=?',(cid,uid)).fetchone()
                 if not thread or thread['busy_token']!=token or thread['revision']!=data.revision:raise HTTPException(409,'L’échange a changé pendant la réponse. Rechargez la discussion.')
+                user_stored=con.execute('SELECT COALESCE(SUM(LENGTH(payload)),0) FROM assistant_turns WHERE company_id=? AND user_id=?',(cid,uid)).fetchone()[0]
+                if user_stored+len(payload)>32*1024*1024:raise HTTPException(413,'Historique trop volumineux. Effacez cet échange avant de réessayer.')
                 stored=con.execute('SELECT COALESCE(SUM(LENGTH(payload)),0) FROM assistant_turns').fetchone()[0]
                 if stored+len(payload)>128*1024*1024:raise HTTPException(413,'La capacité de l’historique IA est atteinte. Effacez un échange avant de réessayer.')
                 cur=con.execute('INSERT INTO assistant_turns(company_id,user_id,request_id,payload,created) VALUES (?,?,?,?,?)',(cid,uid,token,payload,utcnow()))
