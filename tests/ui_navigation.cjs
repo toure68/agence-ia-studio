@@ -18,7 +18,7 @@ const {chromium}=require('playwright');
     if(await page.locator('.module-grid').count())return;
     const before=new URL(page.url()).hash;await page.locator('#moduleBack [data-back]').click();
     await page.waitForFunction(hash=>location.hash!==hash,before);
-    await page.waitForFunction(()=>!document.querySelector('#content [role="status"]'));
+    await page.waitForFunction(()=>!document.querySelector('#content > [role="status"]'));
    }
    await page.locator('.module-grid').waitFor();
  }
