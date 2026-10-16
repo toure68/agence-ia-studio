@@ -86,7 +86,7 @@ const {chromium}=require('playwright');
      await backHome();
    }
    for(const [module,route,form] of [['prospects','prospect-new','prospectForm'],['companies','company-new','companyForm'],['calendar','task-new','taskForm'],['clients','client-new','clientForm'],['activities','activity-new','activityForm']]){
-     await page.locator('.module-tile[data-go="'+module+'"]').click();
+     await goModule(module);
      if(['prospect-new','task-new','activity-new'].includes(route))await page.evaluate(route=>openTab(route),route);else await page.locator(route==='company-new'?'#createCompany':'#content [data-go="'+route+'"]').click();
      await formVisible(form);
      await page.reload({waitUntil:'networkidle'});
