@@ -124,7 +124,10 @@ const {chromium}=require('playwright');
    await backHome();
    await goModule('emails');
    await page.locator('#mailKeywords').fill('Clients, commandes');
-   await page.locator('#mailSettingsForm button[type="submit"]').click();
+   await Promise.all([
+     page.waitForResponse(r=>r.url().includes('/mail/settings')&&r.request().method()==='PUT'&&r.status()===200),
+     page.locator('#mailSettingsForm button[type="submit"]').click()
+   ]);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/mail/status'))).keywords,'Clients, commandes');
    assert.equal(await page.locator('#mailConnect').isDisabled(),true);
    await backHome();
