@@ -126,7 +126,20 @@ def install(app, db, require, own_company, utcnow):
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from pathlib import Path
+        import reportlab
+        fonts=Path(reportlab.__file__).parent/'fonts'
+        for name,file in [('Studio','Vera.ttf'),('StudioBold','VeraBd.ttf'),('StudioItalic','VeraIt.ttf')]:
+            if name not in pdfmetrics.getRegisteredFontNames():pdfmetrics.registerFont(TTFont(name,str(fonts/file)))
+        pdfmetrics.registerFontFamily('Studio',normal='Studio',bold='StudioBold',italic='StudioItalic',boldItalic='StudioBold')
         output=io.BytesIO();styles=getSampleStyleSheet();story=[];d=q['data'];issuer=q['issuer']
+        for name in styles.byName:
+            style=styles[name]
+            style.fontName='StudioBold' if name in ('Title','Heading1','Heading2') else 'StudioItalic' if name=='Heading3' else 'Studio'
+        styles['Normal'].fontSize=9
+        styles['Normal'].leading=13
         def para(text,style='Normal'):
             return Paragraph(escape(str(text)).replace('\n','<br/>'),styles[style])
         def amount(value):

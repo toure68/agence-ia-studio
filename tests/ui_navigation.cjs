@@ -99,7 +99,7 @@ const {chromium}=require('playwright');
    await page.locator('.quote-detail-lines').waitFor();
    const quotes=await page.evaluate(()=>api('/api/companies/1/quotations'));
    assert.equal(quotes.length,1);assert.equal(quotes[0].total_minor,5998);
-   const pdf=await page.request.get('/api/companies/1/quotations/'+quotes[0].id+'/pdf');
+   const pdf=await page.request.get('http://127.0.0.1:8123/api/companies/1/quotations/'+quotes[0].id+'/pdf');
    assert.equal(pdf.status(),200);assert((await pdf.body()).subarray(0,5).equals(Buffer.from('%PDF-')));
    await page.locator('[data-go="quote-edit"]').click();
    await page.locator('#quoteStatus').selectOption('accepted');
