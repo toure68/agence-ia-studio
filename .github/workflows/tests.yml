@@ -16,8 +16,9 @@ jobs:
       - run: node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js && node --check static/zero.js && node --check static/workspace.js
 
   ui:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
+      PLAYWRIGHT_BROWSER_CHANNEL: chrome
       APP_ENV: development
       DATABASE_PATH: /tmp/agence-ui-smoke.db
       ADMIN_EMAIL: ui-owner@example.test
@@ -34,7 +35,6 @@ jobs:
       - run: pip install -r requirements.txt
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng poppler-utils
       - run: npm install --no-save --no-package-lock playwright
-      - run: npx playwright install --with-deps chromium
       - name: Start isolated test application
         run: |
           python -m uvicorn app:app --host 127.0.0.1 --port 8123 > /tmp/agence-ui-server.log 2>&1 &
