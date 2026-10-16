@@ -108,7 +108,7 @@ const {chromium}=require('playwright');
    await page.evaluate(()=>{window.__voices=[{name:'Français compact',voiceURI:'test-fr-compact',lang:'fr-FR',localService:true},{name:'Français qualité améliorée',voiceURI:'test-fr-enhanced',lang:'fr-FR',localService:true},{name:'English',voiceURI:'test-en',lang:'en-US',localService:true}];speechSynthesis.dispatchEvent(new Event('voiceschanged'));});
    assert.equal(await page.locator('#speechVoice option').count(),3);
    await page.locator('#speechTest').click();assert.equal((await page.evaluate(()=>window.__spokenDetails.at(-1))).voice,'test-fr-enhanced');
-   await page.locator('#speechVoice').selectOption('test-fr-compact');await page.locator('#speechRate').fill('0.90');await page.locator('#speechTest').click();
+   await page.locator('#speechVoice').selectOption('test-fr-compact');await page.locator('#speechRate').focus();await page.keyboard.press('Home');for(let i=0;i<10;i++)await page.keyboard.press('ArrowRight');await page.locator('#speechTest').click();
    const speechPreview=await page.evaluate(()=>window.__spokenDetails.at(-1));assert.equal(speechPreview.voice,'test-fr-compact');assert.equal(speechPreview.rate,.9);
    await page.locator('#speechVoice').selectOption('test-fr-enhanced');await page.locator('#speechSettingsForm button[type="submit"]').click();
    await page.reload();await page.locator('.module-grid').waitFor();
