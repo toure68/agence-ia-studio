@@ -116,7 +116,7 @@ function openModal(html){
  $('#closeModal').onclick=closeModal;
  $('#modalBackdrop').onclick=e=>{if(e.target.id==='modalBackdrop')closeModal();};
 }
-function closeModal(){$('#modalLayer').classList.add('hide');$('#modalLayer').replaceChildren();}
+function closeModal(){stopReading();$('#modalLayer').classList.add('hide');$('#modalLayer').replaceChildren();}
 function leadDetail(id){const l=leads.find(x=>x.id===id);if(!l)return;openModal(`<h2>Demande de ${clean(l.name)}</h2><form id="leadEdit" class="stack" style="margin-top:20px"><div class="field"><label>Statut</label><select name="status">${options(['Nouveau','À rappeler','Devis envoyé','Signé','Perdu'],l.status)}</select></div><div class="field"><label>Notes internes</label><textarea name="notes" maxlength="4000">${clean(l.notes)}</textarea></div><button class="btn primary">Enregistrer le suivi</button></form><details class="record-details"><summary>Coordonnées & devis</summary><div class="grid grid2"><div class="card-flat"><b>Contact</b><p class="small">${clean(l.phone)}<br>${clean(l.email)||'Pas d’email'}</p></div><div class="card-flat"><b>Devis indicatif</b><div class="stat-num">${money(l.amount)}</div><span class="tiny sub">${clean(l.service)} · ${l.area} m²</span></div></div></details>`);$('#leadEdit').onsubmit=async e=>{e.preventDefault();try{await api('/api/companies/'+company.id+'/leads/'+id,{method:'PATCH',body:JSON.stringify({status:e.target.status.value,notes:e.target.notes.value})});closeModal();notify('Demande mise à jour.');await renderLeads();}catch(err){notify(err.message)}};}
 async function renderProspects(){prospects=await api('/api/prospects');const statuses=['À contacter','Contacté','Réponse reçue','Intéressé','Démo prévue','Accord de principe','Signé','Refus'];$('#content').innerHTML=`<div class="heading"><div><h1>Prospection</h1></div><div class="row"><a class="btn" href="/api/prospects-export">Exporter CSV</a><button class="btn primary" id="newProspect">+ Prospect</button></div></div>${prospects.length?`<div class="tablewrap"><table><thead><tr><th>Entreprise</th><th>Secteur / ville</th><th>Email</th><th>Étape</th><th></th></tr></thead><tbody>${prospects.map(p=>`<tr><td><b>${clean(p.name)}</b><div class="tiny sub">${clean(p.contact)}</div></td><td>${clean(p.sector)}<div class="tiny sub">${clean(p.city)}</div></td><td>${clean(p.email)||'—'}</td><td><span class="badge">${clean(p.stage)}</span></td><td><button class="linklike" data-prospect="${p.id}">Suivi →</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Aucun prospect.</div>'}`;$('#newProspect').onclick=newProspect;}
 function newProspect(){return openCommand('prospect');}
@@ -150,6 +150,7 @@ window.addEventListener('popstate',()=>{if(me){const route=readRoute();openTab(r
 window.addEventListener('hashchange',()=>{const route=readRoute();if(me&&(route.tab!==tab||route.taskId||route.companyId||route.recordId))openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,recordId:route.recordId,updateHistory:false});});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 $('#accountTools').onclick=()=>openTab('tools');
+$('#accountSpeech').onclick=openSpeechSettings;
 $('#accountAudit').classList.toggle('hide',!operationsEnabled);
 $('#accountAudit').onclick=()=>openTab('conformity');
 start();
