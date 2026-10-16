@@ -5,8 +5,8 @@ integration. Blocked/missing rows intentionally prevent a 100% result.
 """
 REQUIREMENTS = [
  ('UI-01','Carte prioritaire dynamique et action en un clic','partial','Priorités réelles et traitement des tâches ; les marchés et la paie ne sont pas intégrés.','test_zero_dashboard_and_ledger'),
- ('UI-02','Quatre modules et pastilles dynamiques','implemented','Demandes, Prospection, Agenda, Trésorerie ; données filtrées par entreprise et utilisateur.','test_zero_dashboard_and_ledger'),
- ('UI-03','Accueil sans sous-titres ni navigation du bas en double','implemented','Grille de quatre cartes et accès secondaire Outils.','tests/ui_navigation.cjs'),
+ ('UI-02','Modules existants conservés et pastilles dynamiques','implemented','Selon la correction validée : accès directs conservés, Trésorerie, Matériel et Prévention ajoutés ; données filtrées par entreprise et utilisateur.','test_zero_dashboard_and_ledger'),
+ ('UI-03','Une seule navigation sans sous-titres verbeux','implemented','Grille de cartes conservée ; aucun menu latéral ou inférieur en double, y compris en paysage et sur tablette.','tests/ui_navigation.cjs'),
  ('UI-04','Micro flottant et ajout vocal','partial','Micro central et commandes structurées ; compréhension libre IA non configurée.','tests/ui_navigation.cjs'),
  ('ONB-01','Inscription avec identifiant et mot de passe uniquement','missing','Les comptes sont encore créés par la direction ; une inscription publique nécessite une isolation renforcée des propriétaires.','tests/test_app.py'),
  ('OCR-01','Photographier Kbis et remplir SIRET et profil','missing','Capture, extraction et vérification du profil non implémentées.',''),

@@ -27,8 +27,9 @@ const {chromium}=require('playwright');
    if(await tile.count())await tile.click();
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
  }
- async function layout(count=13){
+ async function layout(count=15){
    assert.equal(await page.locator('.module-grid .module-tile').count(),count);
+   assert.equal(await page.locator('.sidebar,#sideNav,#mobileNav').count(),0);
    const g=await page.locator('.module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
      return {columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,
@@ -64,7 +65,7 @@ const {chromium}=require('playwright');
    await page.getByRole('button',{name:'Se connecter'}).click();
    await page.locator('.module-grid').waitFor();
    await layout();
-   assert.deepEqual(await page.locator('.module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury']);
+   assert.deepEqual(await page.locator('.module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks']);
    assert.equal(await page.locator('.module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');
    assert.equal(await page.locator('.module-grid [data-go="team"]').getAttribute('data-company-id'),'1');
    assert.equal(await page.locator('#mobileNav').count(),0);
@@ -204,10 +205,11 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle'});
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
-   await page.setViewportSize({width:1440,height:1000});
-   await layout();
-   await priorityLayout(1);
-   await page.screenshot({path:'/tmp/ui-images/home-desktop.png',fullPage:true});
+   for(const [name,width,height] of [['landscape',844,390],['tablet',1024,768],['desktop',1440,1000]]){
+    await page.setViewportSize({width,height});await layout();await priorityLayout(1);
+    const left=await page.locator('.main').evaluate(el=>el.getBoundingClientRect().left);assert.equal(left,0);
+    await page.screenshot({path:'/tmp/ui-images/home-'+name+'.png',fullPage:true});
+   }
    await page.setViewportSize({width:390,height:844});
    await page.locator('#voiceFab').click();
    await page.waitForFunction(()=>document.querySelector('#voiceCommand')?.value.includes('Consigne dictée'));
@@ -227,15 +229,38 @@ const {chromium}=require('playwright');
     await page.locator('#content h1').filter({hasText:title}).waitFor();
     assert.equal((await page.evaluate(path=>api(path),path)).length,before+1);await backHome();
    }
-   assert.equal(await page.locator('#accountAudit:visible').count(),0);
+   await page.locator('.account-menu summary').click();
+   assert.equal(await page.locator('#accountAudit:visible').count(),1);
+   await page.locator('.account-menu summary').click();
    await goModule('activities');
    await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();
-   assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),0);
+   assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
    await page.locator('[data-priority-complete]').click();await completed;
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await layout();
+   await goModule('equipment');await page.locator('#addAssetVoice').click();
+   await page.locator('#voiceCommand').fill('matériel Perceuse quantité 2 en panne');
+   await page.locator('#previewCommand').click();await page.locator('#confirmVoiceCommand').click();
+   await page.locator('[data-asset]').waitFor();
+   assert((await page.locator('#content').innerText()).includes('En panne'));
+   await page.locator('[data-asset]').click();await page.locator('#assetForm select[name="condition"]').selectOption('ready');
+   await page.locator('#assetForm button.btn.primary').click();await page.locator('[data-asset]').waitFor();
+   assert((await page.locator('#content').innerText()).includes('Disponible'));await backHome();
+   const wid=await page.evaluate(async()=>{const w=await api('/api/companies/1/activities',{method:'POST',body:JSON.stringify({title:'Chantier matériel test'})});return w.id;});
+   await page.evaluate(id=>openTab('material',{recordId:id}),wid);await page.locator('#materialNeeds').fill('Perceuse : 3');
+   await Promise.all([page.waitForResponse(r=>r.url().includes('/material')&&r.request().method()==='PUT'&&r.status()===200),page.locator('#materialForm button').click()]);
+   await page.waitForFunction(()=>document.querySelector('#content .msg.err')?.textContent.includes('1 manquant'));
+   await page.evaluate(id=>openTab('activity',{recordId:id}),wid);
+   assert((await page.locator('#activityMaterialStatus').innerText()).includes('1 manquant'));
+   await backHome();await goModule('risks');await page.locator('#addRiskVoice').click();
+   await page.locator('#voiceCommand').fill('assurance RC Pro demain');await page.locator('#previewCommand').click();await page.locator('#confirmVoiceCommand').click();
+   await page.locator('[data-risk]').waitFor();await page.locator('[data-risk]').click();
+   await page.locator('#riskForm input[name="completed"]').check();await page.locator('#riskForm button.btn.primary').click();
+   await page.locator('[data-risk]').waitFor();assert((await page.locator('[data-risk]').innerText()).includes('Vérifié'));
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/risks')))[0].completed,1);await backHome();
+   await goModule('conformity');await page.locator('.compliance-list').waitFor();assert.equal(await page.locator('.compliance-list article').count(),31);await backHome();
    // The same circular arrow closes account dialogs.
    await page.locator('.account-menu summary').click();
    await page.locator('#passwordBtn').click();

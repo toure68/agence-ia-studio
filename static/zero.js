@@ -1,10 +1,11 @@
 'use strict';
-const operationsEnabled=false;
+const operationsEnabled=true;
 const riskKinds={vehicle:'Véhicule / révision',epi:'EPI',consumable:'Consommables',insurance:'Assurance',qualification:'Habilitation',other:'Autre échéance'};
 const assetStates={ready:'Disponible',worn:'À remplacer',broken:'En panne'};
 
-function refreshHomeBadges(badges){
+function refreshHomeBadges(badges,riskCards=[]){
  if(tab!=='dashboard')return;
+ badges={...badges,equipment:riskCards.filter(c=>c.action.type==='equipment'||c.action.type==='material').length,risks:riskCards.filter(c=>c.action.type==='risk').length};
  for(const [key,count] of Object.entries(badges)){
   const tile=document.querySelector(`.module-grid [data-go="${key}"]`);if(!tile)continue;
   tile.querySelector('.module-count')?.remove();
@@ -22,7 +23,8 @@ async function zeroDashboard(){
   ...(me.role==='owner'?[['drafts','Brouillons','✉️']]:[]),
   ['companies','Entreprises','🏢'],['company-edit','Identité & tarifs','🎨',0,company.id],
   ...(me.role==='owner'?[['team','Équipe','👥',0,company.id]]:[]),
-  ['treasury','Trésorerie','💶',state.badges.treasury]
+  ['treasury','Trésorerie','💶',state.badges.treasury],
+  ...(operationsEnabled?[['equipment','Matériel','🧰',state.risk_cards.filter(c=>c.action.type==='equipment'||c.action.type==='material').length],['risks','Prévention','🛡️',state.risk_cards.filter(c=>c.action.type==='risk').length]]:[])
  ];
  $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header><section id="priorityBlock" aria-label="Action prioritaire"></section><nav class="module-grid" aria-label="Fonctions de l’entreprise">${cards.map(([route,title,icon,n,id])=>`<a class="module-tile ${route==='calendar'?'blue':'green'}" data-go="${route}" href="#/${route}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${icon}</span><span class="module-copy"><strong>${title}</strong></span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a>`).join('')}</nav>`;
  await renderPriorities();

@@ -15,7 +15,7 @@ async function renderPriorities() {
   const cid = company?.id;
   if (!host || !cid) return;
   const [actualCards,cockpit] = await Promise.all([api(`/api/companies/${cid}/priorities`),api(`/api/companies/${cid}/cockpit`)]);
-  refreshHomeBadges(cockpit.badges);
+  refreshHomeBadges(cockpit.badges,cockpit.risk_cards);
   actualCards.sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
   const cards = (actualCards.length ? actualCards : await routinePriorities(cid)).slice(0,1);
   if (!host.isConnected || company?.id !== cid) return;

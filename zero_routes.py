@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field, field_validator
 from conformity import matrix
 from priority_routes import next_occurrence
 
-# The next delivery remains unavailable until the user validates step 2.
-OPERATIONS_ENABLED = False
+# Step 3 was explicitly authorized after the home layout was validated.
+OPERATIONS_ENABLED = True
 
 
 class Movement(BaseModel):
@@ -38,6 +38,13 @@ class Asset(BaseModel):
     condition:Literal['ready','worn','broken']='ready'
     maintenance_due:Optional[date]=None
 
+    @field_validator('name')
+    @classmethod
+    def meaningful_name(cls,value):
+        value=value.strip()
+        if len(value)<2:raise ValueError('Précisez le nom du matériel.')
+        return value
+
 
 class Obligation(BaseModel):
     title:str=Field(min_length=2,max_length=200)
@@ -46,10 +53,22 @@ class Obligation(BaseModel):
     responsible:str=Field(default='',max_length=120)
     completed:bool=False
 
+    @field_validator('title')
+    @classmethod
+    def meaningful_title(cls,value):
+        value=value.strip()
+        if len(value)<2:raise ValueError('Précisez le rappel à effectuer.')
+        return value
+
 
 class Need(BaseModel):
     name:str=Field(min_length=2,max_length=150)
     quantity:int=Field(gt=0,le=100000)
+
+    @field_validator('name')
+    @classmethod
+    def meaningful_name(cls,value):
+        return Asset.meaningful_name(value)
 
 
 class Needs(BaseModel):
@@ -93,7 +112,7 @@ def material_check(con,cid,wid):
     alerts=[]
     for need in needs:
         matching=[a for a in assets if a['name'].strip().casefold()==need['name'].strip().casefold()]
-        available=sum(a['quantity'] for a in matching if a['condition']=='ready' and (not a['maintenance_due'] or a['maintenance_due']>=today().isoformat()))
+        available=sum(a['quantity'] for a in matching if a['condition']=='ready' and (not a['maintenance_due'] or a['maintenance_due']>today().isoformat()))
         if available<need['quantity']:
             alerts.append({'name':need['name'],'required':need['quantity'],'available':available,'missing':need['quantity']-available})
     return {'requirements_configured':bool(row),'items':needs,'alerts':alerts,'ready':bool(row) and not alerts}
@@ -110,6 +129,11 @@ def risk_cards(con,cid):
         result.append({'key':f"equipment-{r['id']}-{r['updated']}",'kind':'calendar','title':'Réviser : '+r['name'],
           'description':'Révision prévue : '+r['maintenance_due'],'action':{'type':'equipment','id':r['id']},'action_label':'Vérifier le matériel',
           'rank':0 if r['maintenance_due']<=today().isoformat() else 3,'due':r['maintenance_due']})
+    for r in con.execute("SELECT * FROM equipment WHERE company_id=? AND condition IN ('worn','broken') AND quantity>0 ORDER BY id",(cid,)):
+        result.append({'key':f"condition-{r['id']}-{r['updated']}",'kind':'urgent',
+          'title':('Réparer : ' if r['condition']=='broken' else 'Remplacer : ')+r['name'],
+          'description':f"{r['quantity']} unité(s) : "+('en panne' if r['condition']=='broken' else 'à remplacer'),
+          'action':{'type':'equipment','id':r['id']},'action_label':'Contrôler le matériel','rank':1,'due':None})
     for r in con.execute("SELECT id,title FROM work_items WHERE company_id=? AND status IN ('todo','doing','waiting')",(cid,)):
         check=material_check(con,cid,r['id'])
         if check['alerts']:

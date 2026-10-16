@@ -48,9 +48,16 @@ async function renderActivityForm(id=null){
 async function renderActivity(id){
  const cid=company?.id;if(!cid||!id)throw Error('Activité introuvable.');
  const w=await api(`/api/companies/${cid}/activities/${id}`);
+ const material=operationsEnabled?await api(`/api/companies/${cid}/activities/${id}/material`):null;
  const closed=['done','cancelled'].includes(w.status);
  $('#content').innerHTML=`<section class="form-page"><h1>${clean(w.title)}</h1><article class="task-detail"><div class="task-meta"><span class="importance ${clean(w.priority)}">${clean(workPriorities[w.priority])}</span><span class="badge">${clean(workStates[w.status])}</span></div>${w.description?`<p>${clean(w.description)}</p>`:''}<dl class="activity-facts"><div><dt>Domaine</dt><dd>${clean(workCategories[w.category])}</dd></div>${w.assignee?`<div><dt>Responsable</dt><dd>${clean(w.assignee)}</dd></div>`:''}${w.due?`<div><dt>Échéance</dt><dd>${timestamp(w.due+'T12:00:00')}</dd></div>`:''}${w.client_name?`<div><dt>Client</dt><dd>${clean(w.client_name)}</dd></div>`:''}</dl><div class="row">${!closed&&w.status!=='doing'?'<button class="btn" data-work-status="doing">Démarrer</button>':''}${!closed?'<button class="btn primary" data-work-status="done">Terminer</button>':''}<a class="btn" href="#/material/${w.id}" data-go="material" data-record-id="${w.id}">Matériel</a><a class="btn" href="#/activity-edit/${w.id}" data-go="activity-edit" data-record-id="${w.id}">Modifier</a></div></article></section>`;
  if(!operationsEnabled)document.querySelectorAll('[data-go="material"]').forEach(link=>link.remove());
+ if(operationsEnabled){
+  const check=material;
+  const info=document.createElement('p');info.id='activityMaterialStatus';info.className='msg'+(check.alerts.length?' err':'');
+  info.textContent=!check.requirements_configured?'Matériel : besoins à préciser.':check.alerts.length?'Matériel à vérifier : '+check.alerts.map(a=>`${a.name} (${a.missing} manquant(s))`).join(', '):'Matériel disponible selon l’inventaire enregistré.';
+  document.querySelector('.activity-facts').insertAdjacentElement('afterend',info);
+ }
  document.querySelectorAll('[data-work-status]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api(`/api/companies/${cid}/activities/${id}/status`,{method:'PATCH',body:JSON.stringify({status:b.dataset.workStatus})});await renderActivity(id);notify('État enregistré.');}catch(e){b.disabled=false;notify(e.message);}});
 }
 

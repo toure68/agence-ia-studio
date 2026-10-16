@@ -30,10 +30,10 @@ def test_zero_dashboard_and_ledger(env):
     env.init_db();assert c.get(base+'/treasury').json()['balances_minor']['EUR']==10000
 
 
-def test_step2_release_boundaries_and_cash_privacy(env):
+def test_step3_available_and_cash_privacy(env):
     c,h=owner(env);base='/api/companies/1'
-    for route in ['equipment','risks','conformity','activities/1/material']:
-        assert c.get(base+'/'+route).status_code==404
+    for route in ['equipment','risks','conformity']:
+        assert c.get(base+'/'+route).status_code==200
     payload={'label':'  ','direction':'in','amount':'10','currency':'EUR','date':'2026-10-16'}
     assert c.post(base+'/treasury',headers=h,json=payload).status_code==422
     payload['label']='Paiement'
@@ -99,3 +99,25 @@ def test_zero_permissions_and_no_false_compliance(env,monkeypatch):
     assert next(r for r in rows if r['id']=='SOC-04')['status']=='blocked'
     assert all(r['evidence'] for r in rows if r['status']=='implemented')
     assert matrix['connections']['social'] is False and matrix['connections']['qualified_signature'] is False
+
+
+def test_operational_reminders_and_due_today_availability(env):
+    c,h=owner(env);base='/api/companies/1';today=datetime.now(ZoneInfo('Europe/Paris')).date()
+    for kind in ['vehicle','epi','consumable','insurance','qualification']:
+        r=c.post(base+'/risks',headers=h,json={'title':'Contrôle '+kind,'kind':kind,'due':(today+timedelta(days=5)).isoformat()})
+        assert r.status_code==201
+    assert len(c.get(base+'/priorities').json())==5
+    asset={'name':'Perceuse','quantity':1,'condition':'worn'}
+    a=c.post(base+'/equipment',headers=h,json=asset).json();aid=a['id']
+    assert any(p['title']=='Remplacer : Perceuse' for p in c.get(base+'/priorities').json())
+    wid=c.post(base+'/activities',headers=h,json={'title':'Chantier test'}).json()['id']
+    c.put(base+f'/activities/{wid}/material',headers=h,json={'items':[{'name':'Perceuse','quantity':1}]})
+    assert c.get(base+f'/activities/{wid}/material').json()['ready'] is False
+    c.put(base+f'/equipment/{aid}',headers=h,json={**asset,'condition':'ready','maintenance_due':today.isoformat()})
+    assert c.get(base+f'/activities/{wid}/material').json()['ready'] is False
+    c.put(base+f'/equipment/{aid}',headers=h,json={**asset,'condition':'ready','maintenance_due':(today+timedelta(days=60)).isoformat()})
+    assert c.get(base+f'/activities/{wid}/material').json()['ready'] is True
+    for path,data in [('/equipment',{'name':'  ','quantity':1}),('/risks',{'title':'  ','kind':'epi','due':today.isoformat()}), (f'/activities/{wid}/material',{'items':[{'name':'  ','quantity':1}]})]:
+        request=c.put if 'material' in path else c.post
+        assert request(base+path,headers=h,json=data).status_code==422
+    env.init_db();assert len(c.get(base+'/risks').json())==5
