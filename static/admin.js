@@ -27,7 +27,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  Object.assign(labels,{'module-library':'Mes fonctions',scanner:'Documents & profil',document:'Vérifier le document'});
  ownerTabs.add('scanner');ownerTabs.add('document');
  const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material']);
- recordRoutes.add('document');
+ recordRoutes.add('document');recordRoutes.add('quote-sign');labels['quote-sign']='Signer le devis';
  if(!labels[next]||(ownerTabs.has(next)&&me.role!=='owner'))next='dashboard';
  if(!operationsEnabled&&['equipment','risks','material','conformity'].includes(next))next='dashboard';
  if(['company-edit','team'].includes(next)){
@@ -69,6 +69,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    else if(next==='quote-new')await renderQuotationForm();
    else if(next==='quote-edit')await renderQuotationForm(recordId);
    else if(next==='quote')await renderQuotation(recordId);
+   else if(next==='quote-sign')await renderSignaturePage(recordId);
    else if(next==='emails')await renderEmails();
    else if(next==='email')await renderEmail(recordId);
    else if(next==='prospects')await renderProspects();
@@ -96,7 +97,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
 function readRoute(){
  const parts=location.hash.replace(/^#\/?/,'').split('/');
  const id=/^\d+$/.test(parts[1]||'')?Number(parts[1]):null;
- return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material','document'].includes(parts[0])?id:null};
+ return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material','document','quote-sign'].includes(parts[0])?id:null};
 }
 function backIcon(){return '<svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
 function renderFormPage(html){
@@ -104,7 +105,7 @@ function renderFormPage(html){
 }
 function goBack(){
  if((history.state?.aiaDepth||0)>0){history.back();return;}
- const parent=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies','team':'companies',clients:'dashboard','client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities',activities:'dashboard',draft:'drafts',drafts:'dashboard',reports:'dashboard','priority-example':'dashboard','quote-new':'leads','quote-edit':'leads',quote:'leads',email:'emails',emails:'dashboard',incoming:'requests',material:'activities',equipment:'tools',risks:'tools',conformity:'tools',treasury:'dashboard',requests:'dashboard',tools:'dashboard'})[tab]||'dashboard';
+ const parent=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies','team':'companies',clients:'dashboard','client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities',activities:'dashboard',draft:'drafts',drafts:'dashboard',reports:'dashboard','priority-example':'dashboard','quote-new':'leads','quote-edit':'leads','quote-sign':'leads',quote:'leads',email:'emails',emails:'dashboard',incoming:'requests',material:'activities',equipment:'tools',risks:'tools',conformity:'tools',treasury:'dashboard',requests:'dashboard',tools:'dashboard'})[tab]||'dashboard';
  return openTab(parent,{replaceHistory:true});
 }
 async function dashboard(){return zeroDashboard();}

@@ -14,7 +14,7 @@ REQUIREMENTS = [
  ('OCR-01','Photographier Kbis et remplir SIRET et profil','partial','Kbis en colonnes ; identité avec libellés français/anglais et lignes codées TD1, TD2, TD3 contrôlées ; domicile, RIB et assurance préremplis selon leur type. Vérification avant enregistrement ; formats inconnus ou champs ambigus à compléter.','test_two_column_kbis_ocr_saved_fields_and_legacy_document / test_identity_photo_to_form_to_saved_profile'),
  ('OCR-02','Photographier RIB et remplir IBAN','implemented','Lecture locale, contrôle de cohérence IBAN, sélection et validation explicite ; données chiffrées et accès réservé à la direction.','test_real_photo_ocr_and_iban_review'),
  ('OCR-03','Importer les tarifs depuis les anciens devis','partial','Tarifs unitaires clairement libellés proposés puis validés, réutilisables dans les devis. Les tableaux complexes ne sont pas interprétés automatiquement.','test_document_review_no_automatic_changes_and_tariffs'),
- ('SIG-01','Signature au doigt et apposition au devis après validation','missing','Capture du consentement, empreinte du document et signature au doigt non implémentées.',''),
+ ('SIG-01','Signature au doigt et apposition au devis après validation','implemented','Tracé manuscrit, consentement explicite, empreinte du devis, conservation chiffrée et PDF signé ; version signée figée.','test_signature_explicit_acceptance_pdf_encryption_and_immutable_version'),
  ('SIG-02','Signature certifiée pour marchés publics','blocked','Prestataire, certificat et parcours de consentement à choisir ; aucun certificat configuré.',''),
  ('HIS-01','Numériser l’historique et enrichir les propositions','partial','Archives chiffrées des documents et tarifs validés réutilisables dans les devis ; apprentissage IA sur l’historique non implémenté.','test_document_review_no_automatic_changes_and_tariffs'),
  ('MAIL-01','Centraliser et détecter les e-mails prioritaires','blocked','Connecteur Gmail par utilisateur testé avec un service simulé ; identifiants OAuth et autorisation réelle manquants.','test_mail_oauth_private_import_review_send_and_deduplication'),
@@ -35,7 +35,7 @@ REQUIREMENTS = [
  ('TENDER-01','Détecter et préparer un marché public','missing','Veille BOAMP, qualification et dossier de candidature non implémentés.',''),
  ('PAY-01','Paie des salariés et validation','missing','Pas de calcul de paie, de génération de bulletin ni de transmission ; les tâches de calendrier ne constituent pas un module paie.',''),
  ('FIN-01','Trésorerie','partial','Livre des mouvements internes avec soldes par devise ; pas de synchronisation bancaire ni de comptabilité certifiée.','test_zero_dashboard_and_ledger'),
- ('QUOTE-01','Créer, retrouver, modifier et télécharger les devis','implemented','Devis internes, calculs serveur, historique et PDF ; signature encore absente.','test_quotation_money_pdf_and_tenant_isolation'),
+ ('QUOTE-01','Créer, retrouver, modifier et télécharger les devis','implemented','Devis internes, calculs serveur, historique, PDF et signature manuscrite après validation.','test_quotation_money_pdf_and_tenant_isolation'),
  ('SEC-01','Validation humaine, cloisonnement et absence d’envoi caché','implemented','Sessions, CSRF, droits par entreprise et utilisateur, protection contre le double envoi.','tests/test_office.py'),
 ]
 

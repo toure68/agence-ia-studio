@@ -10,6 +10,7 @@ from xml.sax.saxutils import escape
 from fastapi import HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
+from signature_routes import content_hash,signature_for,init_schema as init_signature_schema,install as install_signatures
 
 
 class QuoteLine(BaseModel):
@@ -63,6 +64,7 @@ def init_schema(db):
           subtotal_minor INTEGER NOT NULL, tax_minor INTEGER NOT NULL, total_minor INTEGER NOT NULL,
           status TEXT NOT NULL, created TEXT NOT NULL, updated TEXT NOT NULL)''')
         con.execute('CREATE INDEX IF NOT EXISTS idx_quotations_company ON quotations(company_id,id)')
+        init_signature_schema(con)
 
 
 def install(app, db, require, own_company, utcnow, secret=None):
@@ -76,7 +78,9 @@ def install(app, db, require, own_company, utcnow, secret=None):
         row = con.execute('SELECT * FROM quotations WHERE company_id=? AND id=?', (cid,qid)).fetchone()
         if not row:
             raise HTTPException(404, 'Devis introuvable')
-        return unpack(row)
+        q=unpack(row);q['content_hash']=content_hash(q);q['signature']=signature_for(con,cid,qid,secret)
+        if q['signature'] and q['signature']['content_hash']!=q['content_hash']:raise HTTPException(409,'Le contenu du devis signé ne correspond plus à sa version enregistrée.')
+        return q
 
     @app.get('/api/companies/{cid}/quotations')
     def quotations(cid:int, req:Request):
@@ -115,17 +119,20 @@ def install(app, db, require, own_company, utcnow, secret=None):
         lines,subtotal,tax=calculate(data)
         payload=data.model_dump(mode='json');payload['lines']=lines
         with db() as con:
-            get(con,cid,qid)
+            con.execute('BEGIN IMMEDIATE')
+            if get(con,cid,qid)['signature']:raise HTTPException(409,'Ce devis signé est conservé sans modification. Créez un nouveau devis pour le corriger.')
             con.execute('UPDATE quotations SET payload=?,subtotal_minor=?,tax_minor=?,total_minor=?,status=?,updated=? WHERE company_id=? AND id=?',
               (json.dumps(payload),subtotal,tax,subtotal+tax,data.status,utcnow(),cid,qid))
+            con.execute('COMMIT')
             return get(con,cid,qid)
 
     @app.get('/api/companies/{cid}/quotations/{qid}/pdf')
-    def pdf(cid:int,qid:int,req:Request):
+    def pdf(cid:int,qid:int,req:Request,preview:bool=False):
         require(req,tenant_id=cid)
         with db() as con:
             q=get(con,cid,qid)
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+            signature=signature_for(con,cid,qid,secret,paths=True)
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,KeepTogether
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4
@@ -160,5 +167,17 @@ def install(app, db, require, own_company, utcnow, secret=None):
         table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#eaf3e5')),('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),10),('TOPPADDING',(0,0),(-1,-1),10),('LINEBELOW',(0,0),(-1,-1),.4,colors.HexColor('#d3e2d3'))]))
         story += [table,Spacer(1,20),para('Total HT : '+amount(q['subtotal_minor'])),para('TVA ('+str(d['vat_rate'])+' %) : '+amount(q['tax_minor'])),para('Total TTC : '+amount(q['total_minor']),'Heading2')]
         if d['notes']:story += [Spacer(1,18),para(d['notes'])]
+        if signature:
+            from reportlab.graphics.shapes import Drawing,PolyLine
+            from zoneinfo import ZoneInfo
+            drawing=Drawing(240,80)
+            for stroke in signature['strokes']:
+                points=[coordinate for p in stroke for coordinate in (p['x']*240,(1-p['y'])*80)]
+                drawing.add(PolyLine(points,strokeColor=colors.HexColor('#183d31'),strokeWidth=1.5,fillColor=None))
+            signed=datetime.fromisoformat(signature['signed_at']).astimezone(ZoneInfo('Europe/Paris')).strftime('%d/%m/%Y à %H:%M')
+            story.append(KeepTogether([Spacer(1,20),para('Bon pour accord — signature recueillie','Heading3'),drawing,para(signature['signer_name']+' · '+signed),para(signature['consent'])]))
         SimpleDocTemplate(output,pagesize=A4,leftMargin=42,rightMargin=42,topMargin=42,bottomMargin=42,title=q['reference']).build(story)
-        return Response(output.getvalue(),media_type='application/pdf',headers={'Content-Disposition':f'attachment; filename="{q["reference"]}.pdf"','Cache-Control':'no-store'})
+        disposition='inline' if preview else 'attachment'
+        return Response(output.getvalue(),media_type='application/pdf',headers={'Content-Disposition':f'{disposition}; filename="{q["reference"]}.pdf"','Cache-Control':'no-store'})
+
+    install_signatures(app,db,require,get,utcnow,secret)

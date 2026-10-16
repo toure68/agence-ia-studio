@@ -120,3 +120,6 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .module-tile[data-state] .module-count{background:var(--state-edge);color:#fff}
 @media(max-width:750px){.module-state{left:55px;max-width:calc(100% - 64px);bottom:7px}}
 @media(prefers-reduced-motion:reduce){.module-tile[data-state]{transition:none}}
+.signature-summary{padding:16px;background:#f1f7f0;border:1px solid #cddfcd;border-radius:16px;line-height:1.6}
+#signatureForm{margin-top:20px}.signature-canvas{display:block;width:100%;height:auto;aspect-ratio:3/1;background:#fff;border:2px dashed #6d9179;border-radius:14px;touch-action:none;cursor:crosshair}
+.signature-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.5;font-size:14px}.signature-consent input{width:22px;height:22px;flex:0 0 22px;accent-color:#2d744a}
