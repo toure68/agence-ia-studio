@@ -169,9 +169,8 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .context-footer .btn{min-height:44px;width:100%;max-width:360px}
 @media(max-width:750px){.context-layer{padding:0 8px max(8px,env(safe-area-inset-bottom))}.context-panel{max-height:84dvh;border-radius:24px;width:100%}.context-footer{padding:8px 14px}.context-header #closeContext{border-color:#bed4c4}}
 
-/* A small bottom bar opens the existing assistant in the same contextual panel. */
-.assistant-dock{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(300px,calc(100% - 32px));min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 18px;border:1px solid #bdd3c3;border-radius:24px;background:#fff;color:#245a3c;box-shadow:0 4px 16px #183a2914;z-index:18;font-size:13px}
-.assistant-dock strong{font-size:13px}.assistant-dock:focus-visible{outline:3px solid #377a53;outline-offset:3px}
+/* A compact home pill opens the retained conversation in the contextual panel. */
+.assistant-dock{position:relative;max-width:100%;width:fit-content;min-height:40px;display:flex;align-items:center;gap:6px;margin:0 0 20px;padding:8px 12px;border:1px solid #bdd3c3;border-radius:24px;background:#fff;color:#245a3c;box-shadow:0 2px 8px #183a290a;font-size:12px;white-space:nowrap}
+.assistant-dock strong{font-size:12px;flex-shrink:0}.assistant-dock .assistant-dock-hint{font-size:12px;color:#657d6d;min-width:0;overflow:hidden;text-overflow:ellipsis}.assistant-dock:focus-visible{outline:3px solid #377a53;outline-offset:3px}
 #contextPanel[data-module="assistant"] .assistant-chat{margin:0;padding:0;border:0;background:transparent}
 #contextPanel[data-module="assistant"] .chat-turns{max-height:min(34dvh,360px)}
-body:has(#assistantDock):not(.has-floating-layer) .toast{bottom:calc(72px + env(safe-area-inset-bottom))}

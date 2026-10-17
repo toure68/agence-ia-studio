@@ -48,7 +48,8 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#assistantChat').count(),1);
    assert.equal(await page.locator('#assistantParking').evaluate(el=>el.hidden),true);
    assert.equal(await page.locator('#assistantMessage').isVisible(),false);
-   const dock=await page.locator('#assistantDock').boundingBox();assert(dock.height<=48&&dock.y+dock.height<=page.viewportSize().height&&dock.y>=page.viewportSize().height-100);
+   const pill=await page.locator('#assistantDock').evaluate(el=>{const r=el.getBoundingClientRect(),heading=document.querySelector('.home-heading').getBoundingClientRect(),priorities=document.querySelector('#priorityBlock').getBoundingClientRect();return {height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right,headingBottom:heading.bottom,priorityTop:priorities.top,position:getComputedStyle(el).position,width:innerWidth};});
+   assert(pill.height<=44&&pill.top>=pill.headingBottom&&pill.bottom<=pill.priorityTop&&pill.left>=0&&pill.right<=pill.width,'Assistant stays compact between greeting and priorities');assert.equal(pill.position,'relative');
    assert.equal(await page.locator('#assistantMessage').getAttribute('placeholder'),'Posez une question ou ajoutez un document…');
 
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
