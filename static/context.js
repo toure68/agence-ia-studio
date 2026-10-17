@@ -1,6 +1,7 @@
 'use strict';
 // The cockpit DOM stays mounted: drafts, attachments and scroll survive a panel.
 let contextState=null;
+history.scrollRestoration='manual';
 function syncContextLayers(){
  const modal=!$('#modalLayer').classList.contains('hide'),panel=$('#contextPanel');
  $('#shell').inert=Boolean(panel)||modal;
