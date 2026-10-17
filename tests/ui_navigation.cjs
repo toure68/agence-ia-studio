@@ -433,7 +433,7 @@ const {chromium}=require('playwright');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
    await page.locator('.more-functions').click();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
-   await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();await page.locator('#saveModules').click();await page.locator('.module-grid').waitFor();await layout();
+   await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();assert.equal(await page.locator('[data-module-key="social"]').isChecked(),true);await page.locator('[data-module-key="social"]').uncheck();await page.locator('#saveModules').click();await page.locator('.module-grid').waitFor();await layout();
    await goModule('scanner');
    await page.locator('#scanKind').waitFor();
    assert.equal(await page.locator('#scanKind option').count(),10);
