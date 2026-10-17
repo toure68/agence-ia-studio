@@ -16,9 +16,11 @@ const {chromium}=require('playwright');
  page.on('pageerror',e=>errors.push(e.message));
  async function backHome(){
    for(let i=0;i<5;i++){
+    await page.evaluate(async()=>{await navigationQueue;});
     if(await page.locator('#content .module-grid').count())return;
     const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
     await page.waitForFunction(route=>JSON.stringify(readRoute())!==route||Boolean(document.querySelector('#content .module-grid')),before);
+    await page.evaluate(async()=>{await navigationQueue;});
     await page.waitForFunction(()=>!document.querySelector('#content > [role="status"]'));
    }
    await page.locator('#content .module-grid').waitFor();
@@ -563,7 +565,7 @@ const {chromium}=require('playwright');
        assert(metrics,'Dense widgets retain SVG and visible data within equal cards');
        if(width===390){
          await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
-         const frames=await page.evaluate(()=>new Promise(resolve=>{const samples=[],saved=scrollY;let previous;function step(now){if(previous!==undefined)samples.push(now-previous);previous=now;window.scrollBy(0,8);if(samples.length<30)requestAnimationFrame(step);else{window.scrollTo(0,saved);samples.sort((a,b)=>a-b);resolve({medianMs:samples[15],p95Ms:samples[28]});}}requestAnimationFrame(step);}));
+         const frames=await page.evaluate(()=>new Promise(resolve=>{const samples=[],saved=scrollY;window.scrollTo(0,Math.max(0,Math.min(document.querySelector('.module-grid').offsetTop,document.documentElement.scrollHeight-innerHeight)-240));let previous;function step(now){if(previous!==undefined)samples.push(now-previous);previous=now;window.scrollBy(0,8);if(samples.length<30)requestAnimationFrame(step);else{window.scrollTo(0,saved);samples.sort((a,b)=>a-b);resolve({medianMs:samples[15],p95Ms:samples[28]});}}requestAnimationFrame(step);}));
          console.log('Scroll frame sample (CI browser)',JSON.stringify({columns,...frames}));
        }
 
