@@ -66,22 +66,23 @@ const {chromium}=require('playwright');
    });
    for(const tone of Object.values(surfaces.tones))for(const state of Object.values(tone.states))assert.deepEqual(state.surface,tone.original,'State changes preserve the neutral glass surface');
    assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,1);assert(surfaces.glass.filter.includes('blur'));assert(surfaces.iconColors>=6,'App badges are colorful and identifiable');
-   assert.equal(surfaces.tones.green.states.neutral.top,'rgba(0, 0, 0, 0)');assert(surfaces.tones.green.states.danger.shadow.includes('227, 99, 101'),'Danger remains visible through a fine upper indicator');
+   assert.equal(surfaces.tones.green.states.neutral.top,'rgba(0, 0, 0, 0)');assert.equal(surfaces.tones.green.states.danger.shadow,'none','Urgency glow lives on the outer frame');
    assert.equal(surfaces.active.color,'rgb(237, 242, 250)');assert.equal(surfaces.active.band,'rgb(117, 165, 237)');
 
  }
  async function priorityLayout(count){
    assert.equal(await page.locator('.priority-card').count(),count);
-   assert.equal(await page.locator('.priority-controls,.priority-rail,#priorityNext,#priorityPrev,#priorityPosition,.priority-heading').count(),0);
-   const geometry=await page.locator('.priority-stack').evaluate(el=>({cards:[...el.querySelectorAll('.priority-tile')].map(x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,width:r.width,height:r.height,radius:getComputedStyle(x).borderRadius,border:getComputedStyle(x).borderTopColor};}),module:(()=>{const e=document.querySelector('.module-tile:not(.priority-tile)');return {height:e.getBoundingClientRect().height,radius:getComputedStyle(e).borderRadius,border:getComputedStyle(e).borderTopColor};})(),overflow:document.documentElement.scrollWidth>innerWidth}));
-   const cards=geometry.cards;assert(!geometry.overflow);
-   for(let i=1;i<cards.length;i++){assert(cards[i].top>=cards[i-1].bottom,'Stack must remain vertical');assert(cards[i].height<=cards[i-1].height,'Priority heights must decrease');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}
-   if(count>=3)assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
-   for(const card of cards)assert(parseFloat(card.radius)>=16,'Priority banners retain rounded corners independently of compact widgets');
-   if(count>=5){assert(cards[2].height>cards[3].height&&cards[3].height>cards[4].height);assert(cards[4].height>=44,'Priority banners retain a usable touch target at every viewport');}
+   assert.equal(await page.locator('#priorityBlock > .priority-panel').count(),1,'All priorities share one frame');
+   const group=await page.locator('.priority-panel').evaluate(el=>{const list=el.querySelector('ol'),r=el.getBoundingClientRect();return {numbers:[...list.querySelectorAll('.priority-number')].map(n=>n.textContent),height:list.getBoundingClientRect().height,items:[...list.querySelectorAll('.priority-tile')].map(n=>{const b=n.getBoundingClientRect();return {left:b.left,right:b.right,height:b.height};}),overflow:document.documentElement.scrollWidth>innerWidth,width:r.width};});
+   assert.deepEqual(group.numbers,Array.from({length:count},(_,i)=>`${i+1}.`));assert(!group.overflow);assert(group.height<=Math.min(page.viewportSize().height*.38,320)+1);
+   for(const row of group.items){assert(row.height>=44);assert(Math.abs(row.left-group.items[0].left)<2);assert(Math.abs(row.right-group.items[0].right)<2);}
+ }
+ async function dialogContained(){
+   const boxes=await page.locator('#contextPanel,#modalLayer:not(.hide) .modal').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect(),v=visualViewport;return {inside:r.left>=(v?.offsetLeft||0)-1&&r.right<=(v?.offsetLeft||0)+(v?.width||innerWidth)+1&&r.top>=(v?.offsetTop||0)-1&&r.bottom<=(v?.offsetTop||0)+(v?.height||innerHeight)+1,overflow:el.scrollWidth>el.clientWidth+1};}));
+   assert(boxes.length);assert(boxes.every(b=>b.inside&&!b.overflow),'First-level and nested dialogs stay inside the visible viewport without horizontal overflow');
  }
  async function formVisible(id){
-   await page.locator('#'+id).waitFor();
+   await page.locator('#'+id).waitFor();await dialogContained();
    assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
    const position=await page.locator('#'+id+' input').first().boundingBox();
    assert(position&&position.y>=0&&position.y+position.height<page.viewportSize().height,'First field must be visible inside the sheet without scrolling');
@@ -104,7 +105,16 @@ const {chromium}=require('playwright');
    const initialWidgets=await page.locator('#content .module-grid').evaluate(el=>({cards:el.querySelectorAll('.module-tile').length,icons:el.querySelectorAll('.module-icon svg').length,metrics:el.querySelectorAll('.widget-metric').length,images:el.querySelectorAll('img,image,use').length,cockpitRequests:performance.getEntriesByType('resource').filter(r=>new URL(r.name).pathname==='/api/companies/1/cockpit').length}));
    assert.equal(initialWidgets.icons,initialWidgets.cards);assert.equal(initialWidgets.metrics,initialWidgets.cards);assert.equal(initialWidgets.images,0);assert.equal(initialWidgets.cockpitRequests,1,'Initial widgets reuse one cockpit snapshot');
    const darkHome=await page.locator('#content .module-grid').evaluate(grid=>{const tile=grid.querySelector('.module-tile'),r=tile.getBoundingClientRect(),icon=tile.querySelector('.module-icon').getBoundingClientRect(),copy=tile.querySelector('.widget-copy').getBoundingClientRect(),card=getComputedStyle(tile.parentElement);return {body:getComputedStyle(document.body).backgroundColor,color:getComputedStyle(tile).color,background:card.backgroundImage,horizontal:r.width>r.height&&icon.right<=copy.left&&copy.top>=r.top&&copy.bottom<=r.bottom,sizes:[...grid.querySelectorAll('.module-tile')].map(c=>c.getBoundingClientRect().height)};});
-   assert.equal(darkHome.body,'rgb(0, 0, 0)');assert.equal(darkHome.color,'rgb(237, 242, 250)');assert(darkHome.background.includes('255, 255, 255'));assert(darkHome.horizontal);const reference=await page.locator('#content .module-grid .module-tile').first().evaluate(el=>{const r=el.getBoundingClientRect(),i=el.querySelector('.module-icon').getBoundingClientRect();return {ratio:r.width/r.height,icon:i.width/r.width,radius:getComputedStyle(el.parentElement).borderRadius,gap:getComputedStyle(el.closest('.module-grid')).gap};});assert(reference.ratio>1.8&&reference.ratio<2.1);assert(reference.icon>.34&&reference.icon<.42);assert.equal(reference.radius,'10px');assert.equal(reference.gap,'12px');assert(darkHome.sizes.every(h=>Math.abs(h-darkHome.sizes[0])<2),'Wide widgets keep the same height');
+   assert.equal(darkHome.body,'rgb(0, 0, 0)');assert.equal(darkHome.color,'rgb(237, 242, 250)');assert(darkHome.background.includes('255, 255, 255'));assert(darkHome.horizontal);const reference=await page.locator('#content .module-grid .module-tile').first().evaluate(el=>{const r=el.getBoundingClientRect(),i=el.querySelector('.module-icon').getBoundingClientRect();return {ratio:r.width/r.height,icon:i.width/r.width,radius:getComputedStyle(el.parentElement).borderRadius,gap:getComputedStyle(el.closest('.module-grid')).gap};});assert(reference.ratio>1.8&&reference.ratio<2.1);assert(reference.icon>.27&&reference.icon<.36);assert.equal(reference.radius,'10px');assert.equal(reference.gap,'12px');assert(darkHome.sizes.every(h=>Math.abs(h-darkHome.sizes[0])<2),'Wide widgets keep the same height');
+   for(const [width,height] of [[320,568],[390,320],[844,390],[1280,900]]){
+     await page.setViewportSize({width,height});
+     await page.evaluate(()=>openModal('<h2>Premier panneau</h2><p>'+ 'RéférenceTrèsLongue'.repeat(60)+'</p><div class="tablewrap"><table style="min-width:1800px"><tr><td>Document large</td></tr></table></div><form class="fields"><label class="field">Nom<input value="Test"></label><label class="field">Date<input type="date"></label></form>'));
+     await dialogContained();await page.keyboard.press('Escape');
+     await page.locator('#assistantDock').click();await page.locator('#contextPanel').waitFor();await dialogContained();
+     await page.evaluate(()=>openCommand('task'));await dialogContained();await page.keyboard.press('Escape');await dialogContained();
+     await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
+   }
+   await page.setViewportSize({width:390,height:844});
    // Every module opens above the same live cockpit; closing preserves its draft and scroll.
    const assistantAddress=page.url();await openAssistant();assert.equal(page.url(),assistantAddress);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/assistant-panel-mobile.png',animations:'disabled'});
@@ -115,7 +125,7 @@ const {chromium}=require('playwright');
    await openAssistant();assert.equal(await page.locator('#assistantMessage').inputValue(),'Brouillon à conserver');assert.equal(await page.locator('.chat-file').count(),1);
    await page.locator('.chat-file button').click();await backHome();
    await page.evaluate(()=>{document.querySelector('#assistantChat').dataset.identity='same-cockpit';});
-   await page.locator('#content [data-go="clients"]').click();await page.locator('#contextPanel #content h1').waitFor();
+   await page.locator('#content [data-go="clients"]').click();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
    assert.equal(await page.locator('#cockpitContent .module-grid .module-card').count(),16);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/panel-mobile.png',animations:'disabled'});
    await page.setViewportSize({width:1280,height:900});assert.equal(await page.locator('#contextPanel').count(),1);await page.screenshot({path:'/tmp/ui-images/panel-desktop.png',animations:'disabled'});await page.setViewportSize({width:390,height:844});
@@ -144,10 +154,10 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#assistantChat').getAttribute('data-identity'),'same-cockpit');
    assert.equal(await page.locator('#content .module-grid').count(),1);
    // Back/forward and bottom close change only the floating panel, never the page URL.
-   const cockpitAddress=page.url();await goModule('clients');await page.locator('#contextPanel #content h1').waitFor();
+   const cockpitAddress=page.url();await goModule('clients');await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
    assert.equal(page.url(),cockpitAddress);await page.goBack();await page.locator('#contextPanel').waitFor({state:'detached'});
    assert.equal(await page.locator('#assistantChat').getAttribute('data-identity'),'same-cockpit');
-   await page.goForward();await page.locator('#contextPanel #content h1').waitFor();assert.equal(page.url(),cockpitAddress);
+   await page.goForward();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();assert.equal(page.url(),cockpitAddress);
    await page.locator('#closeContextBottom').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.waitForFunction(()=>readRoute().tab==='dashboard');
    assert.equal(page.url(),cockpitAddress);
    await openAssistant();await page.locator('#assistantMessage').fill('');await backHome();
@@ -528,6 +538,9 @@ const {chromium}=require('playwright');
    await page.locator('.more-functions').click();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
    await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();assert.equal(await page.locator('[data-module-key="social"]').isChecked(),true);await page.locator('[data-module-key="social"]').uncheck();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();await layout();
+   const glow=await page.locator('#content .module-card').first().evaluate(el=>{const a=el.querySelector('.module-tile'),original=a.className,before=el.getBoundingClientRect();const result={};for(const state of ['danger','warning']){a.className='module-tile state-'+state;const c=getComputedStyle(el,'::after'),r=el.getBoundingClientRect();result[state]={color:c.borderTopColor,animation:c.animationName,stable:r.height===before.height&&r.width===before.width,pointer:c.pointerEvents};}a.className=original;return result;});
+   assert.equal(glow.danger.color,'rgb(240, 101, 105)');assert.equal(glow.warning.color,'rgb(239, 165, 68)');for(const state of Object.values(glow)){assert.equal(state.animation,'alert-glimmer');assert(state.stable);assert.equal(state.pointer,'none');}
+   await page.emulateMedia({reducedMotion:'reduce'});const staticGlow=await page.locator('#content .module-card').first().evaluate(el=>{const a=el.querySelector('.module-tile'),original=a.className;a.className='module-tile state-danger';const animation=getComputedStyle(el,'::after').animationName;a.className=original;return animation;});assert.equal(staticGlow,'none');await page.emulateMedia({reducedMotion:'no-preference'});
    // Filling is derived from the authorized catalog and never alters saved preferences.
    const fillCases=await page.evaluate(async()=>{
      const source=await api('/api/companies/1/workspace');
@@ -556,15 +569,15 @@ const {chromium}=require('playwright');
    });
    assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,3);assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
    // Column choice survives closing the panel and reload without changing modules.
-   for(const columns of [3,4]){
+   for(const columns of [2,3,4]){
      await page.locator('.more-functions').click();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();
      await page.waitForFunction(n=>document.querySelector('#content .module-grid')?.dataset.columns===String(n),columns);
      await page.reload({waitUntil:'networkidle'});
      for(const width of [320,390,844,1280]){
        await page.setViewportSize({width,height:844});
-       const geometry=await page.locator('#content .module-grid').evaluate(el=>{const rectangle=el.dataset.columns==='3';return {columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect(),face=rectangle?c.getBoundingClientRect():c.querySelector('.module-face').getBoundingClientRect(),label=c.querySelector('.module-copy').getBoundingClientRect();return r.width>=44&&c.scrollWidth<=c.clientWidth&&(rectangle?r.width/r.height>1.8&&r.width/r.height<2.1&&label.top>=face.top&&label.bottom<=face.bottom:Math.abs(face.height-face.width)<2&&label.top>=face.bottom);}),sizes:[...el.querySelectorAll(rectangle?'.module-tile':'.module-face')].map(c=>({width:c.getBoundingClientRect().width,height:c.getBoundingClientRect().height})),count:el.children.length,closedRow:Math.abs(el.lastElementChild.getBoundingClientRect().right-el.getBoundingClientRect().right)<2,prioritiesAbove:document.querySelector('#priorityBlock').getBoundingClientRect().bottom<=el.getBoundingClientRect().top};});
-       assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert.equal(geometry.count%columns,0);for(const size of geometry.sizes){assert(Math.abs(size.width-geometry.sizes[0].width)<2&&Math.abs(size.height-geometry.sizes[0].height)<2,'Every module card has the same dimensions');}assert(geometry.cards.every(Boolean),'Three-column rectangles and four-column squares remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
-       const metrics=await page.locator('#content .module-grid').evaluate(el=>[...el.querySelectorAll('.module-tile')].every(c=>{const rectangle=el.dataset.columns==='3',f=(rectangle?c:c.querySelector('.module-face')).getBoundingClientRect(),m=c.querySelector('.widget-metric').getBoundingClientRect(),icon=c.querySelector('.module-icon').getBoundingClientRect();return c.querySelector('.module-icon svg')&&Math.abs(icon.width-icon.height)<2&&getComputedStyle(c.querySelector('.module-icon')).borderRadius==='25%'&&m.top>=f.top&&m.bottom<=f.bottom&&m.width>0&&icon.width>=(rectangle?Math.min(f.width*.26,76):f.width*.4)&&icon.width<=(rectangle?Math.min(f.width*.34,80):f.width*.51);}));
+       const geometry=await page.locator('#content .module-grid').evaluate(el=>{const rectangle=el.dataset.columns!=='4';return {columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect(),face=rectangle?c.getBoundingClientRect():c.querySelector('.module-face').getBoundingClientRect(),label=c.querySelector('.module-copy').getBoundingClientRect();return r.width>=44&&c.scrollWidth<=c.clientWidth&&(rectangle?label.top>=face.top&&label.bottom<=face.bottom:label.top>=face.bottom);}),sizes:[...el.querySelectorAll('.module-tile')].map(c=>({width:c.getBoundingClientRect().width,height:c.getBoundingClientRect().height})),count:el.children.length,closedRow:Math.abs(el.lastElementChild.getBoundingClientRect().right-el.getBoundingClientRect().right)<2,prioritiesAbove:document.querySelector('#priorityBlock').getBoundingClientRect().bottom<=el.getBoundingClientRect().top};});
+       assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert.equal(geometry.count%columns,0);for(const size of geometry.sizes){assert(Math.abs(size.width-geometry.sizes[0].width)<2&&Math.abs(size.height-(width<=750?88:112))<2,'All column modes use the same stable row height');}assert(geometry.cards.every(Boolean),'Three-column rectangles and four-column squares remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
+       const metrics=await page.locator('#content .module-grid').evaluate(el=>[...el.querySelectorAll('.module-tile')].every(c=>{const rectangle=el.dataset.columns!=='4',f=(rectangle?c:c.querySelector('.module-face')).getBoundingClientRect(),m=c.querySelector('.widget-metric').getBoundingClientRect(),icon=c.querySelector('.module-icon').getBoundingClientRect();return c.querySelector('.module-icon svg')&&Math.abs(icon.width-icon.height)<2&&getComputedStyle(c.querySelector('.module-icon')).borderRadius==='25%'&&m.top>=f.top&&m.bottom<=f.bottom&&m.width>0&&icon.width>=20&&icon.width<=64&&icon.left>=f.left&&icon.right<=f.right;}));
        assert(metrics,'Widgets retain SVG and visible data within equal cards');
        if(width===390){
          await page.locator("#content .module-grid").screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,animations:"disabled"});

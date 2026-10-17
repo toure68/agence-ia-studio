@@ -18,3 +18,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Two-column visual reference uses equal 1.95:1 graphite glass cards, fine bright rims, large glass-backed colored SVG glyphs, uppercase names and wrapped factual metrics. Keep greeting, assistant, urgency banners and all workflows. Home search opens the existing searchable module reserve.
 
 - Outer grid card corners are lightly rounded (10px). Three columns now retain the 1.95:1 horizontal rectangle with smaller icons and inline labels/data; four-column layout remains unchanged except outer corner radius. Preserve colors.
+
+- Current ergonomics: one priority panel contains numbered actionable rows (not separate oversized banners). Rows keep open, dismiss and speech actions. All grid tiles share a stable 88px mobile /112px desktop height across 2/3/4 columns. Priority glow is red for danger and orange for warning, opacity-only, static under reduced motion. Every first-level/nested dialog must stay within the visual viewport including the keyboard; table scrolling stays local.

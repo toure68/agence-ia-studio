@@ -76,3 +76,16 @@ document.addEventListener('keydown',e=>{
   else if(!e.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){e.preventDefault();first.focus();}
  }
 });
+
+// Both first-level and nested dialogs follow the visible viewport, including the keyboard.
+function syncDialogViewport(){
+ const viewport=window.visualViewport,style=document.documentElement.style;
+ style.setProperty('--dialog-width',`${viewport?.width||innerWidth}px`);
+ style.setProperty('--dialog-height',`${viewport?.height||innerHeight}px`);
+ style.setProperty('--dialog-left',`${viewport?.offsetLeft||0}px`);
+ style.setProperty('--dialog-top',`${viewport?.offsetTop||0}px`);
+}
+syncDialogViewport();
+window.addEventListener('resize',syncDialogViewport,{passive:true});
+window.visualViewport?.addEventListener('resize',syncDialogViewport,{passive:true});
+window.visualViewport?.addEventListener('scroll',syncDialogViewport,{passive:true});

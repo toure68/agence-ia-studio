@@ -336,3 +336,68 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-grid[data-columns="3"] .widget-caption{font-size:inherit}
 .module-grid[data-columns="3"] .module-count{top:2px;right:2px;min-width:14px;height:14px;padding:0 3px;font-size:8px}
 @media(max-width:359px){.module-grid[data-columns="3"] .widget-caption{display:none}}
+
+/* Every dialog is contained from its first frame, including the visual keyboard viewport. */
+.context-layer,.modal-wrap{inset:auto;top:var(--dialog-top,0px);left:var(--dialog-left,0px);width:var(--dialog-width,100%);height:var(--dialog-height,100dvh);max-width:100%;min-width:0;min-height:0;padding:12px;overflow:hidden}
+.modal-wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);justify-items:center;align-items:center}
+.context-panel,.modal{min-width:0;min-height:0;max-width:100%;max-height:calc(var(--dialog-height,100dvh) - 24px);overflow-x:hidden;overflow-wrap:anywhere}
+.context-panel{width:min(1000px,100%)}
+.modal{width:min(690px,100%);overscroll-behavior:contain}
+.context-header,.context-footer,.context-scroll,.context-scroll #content{min-width:0;max-width:100%}
+.context-header #contextTitle{min-width:0;overflow-wrap:anywhere}
+.context-header #moduleBack{flex:0 1 auto;min-width:0}.context-header #closeContext{flex-shrink:0}
+.context-scroll{flex:1 1 auto;min-height:0;overflow:auto}
+.context-scroll :is(form,section,article,.fields,.field,.row,.stack,.grid,.tablewrap,.form-page,.calendar-page),.modal :is(form,section,article,.fields,.field,.row,.stack,.grid,.tablewrap){min-width:0;max-width:100%}
+.context-scroll :is(input,select,textarea),.modal :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+.context-scroll :is(img,video,canvas,iframe,audio),.modal :is(img,video,canvas,iframe,audio){max-width:100%}
+.context-scroll pre,.modal pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.context-scroll :is(.row,.heading,.between),.modal :is(.row,.heading,.between){flex-wrap:wrap}
+.context-scroll :is(.row,.heading,.between)>*,.modal :is(.row,.heading,.between)>*{min-width:0;max-width:100%}
+.context-scroll .tablewrap,.modal .tablewrap{overflow:auto;width:100%}
+.context-scroll .btn,.modal .btn{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:750px){.context-layer,.modal-wrap{padding:8px;align-items:end}.context-panel,.modal{max-height:calc(var(--dialog-height,100dvh) - 16px);border-radius:18px}.context-panel{width:100%}.modal{padding:16px}.context-header{gap:8px}.context-header #moduleBack .voice-button{min-width:34px;padding:6px}.context-scroll{padding:16px 12px}.context-scroll .fields,.modal .fields{grid-template-columns:minmax(0,1fr)}}
+/* One frame, one ordered list; rows retain individual actions, dismissal and read-aloud. */
+.priority-panel{min-width:0;border:1px solid #ffffff30;border-radius:12px;background:linear-gradient(130deg,#22252bd9,#121418d9);overflow:hidden}
+.priority-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;color:#edf2fa;border-bottom:1px solid #ffffff15;font-size:14px}
+.priority-panel-header>span{font-size:12px;color:#b8c2d2}
+.priority-panel .priority-stack{list-style:none;display:block;padding:0;margin:0;max-height:min(38dvh,320px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.priority-panel .priority-card{margin:0;border:0;border-radius:0;padding:0;background:none;box-shadow:none}
+.priority-panel .priority-card+.priority-card{border-top:1px solid #ffffff12}
+.priority-panel .priority-tile.module-tile{display:flex;gap:8px;width:100%;min-height:68px;height:auto;padding:10px 88px 10px 12px;border:0;border-radius:0;background:transparent!important;box-shadow:none!important;outline:none;filter:none;transform:none}
+.priority-number{flex:0 0 18px;align-self:center;color:#acb7c8;font-size:12px;font-variant-numeric:tabular-nums}
+.priority-panel .module-icon{width:28px;flex:0 0 28px}
+.priority-panel .priority-copy{gap:4px}.priority-panel .priority-copy>strong{font-size:14px;line-height:1.3;color:#edf2fa}
+.priority-panel .importance{font-size:10px;padding:2px 6px}
+.priority-panel .priority-dismiss{top:50%;right:4px;transform:translateY(-50%);width:32px;height:36px;font-size:21px}
+.priority-panel .priority-card>.voice-button{right:40px;bottom:auto;top:50%;transform:translateY(-50%);min-width:34px;width:34px;height:34px;min-height:34px;padding:7px}
+.priority-panel .priority-tile.state-danger{border-left:2px solid #f06569}
+.priority-panel .priority-tile.state-warning{border-left:2px solid #efa544}
+.priority-panel .priority-tile:focus-visible{outline:2px solid #75a5ed;outline-offset:-3px}
+/* Fixed row height: counts, labels and urgency never stretch one module. */
+.module-grid{--module-height:112px}
+.module-grid .module-card{height:var(--module-height);align-self:stretch}
+.module-grid:is([data-columns="2"],[data-columns="3"],[data-columns="4"]) .module-tile{height:var(--module-height);min-height:0;max-height:var(--module-height);aspect-ratio:auto;overflow:hidden;transform:none}
+.module-grid:is([data-columns="2"],[data-columns="3"]) .module-icon{height:auto;width:min(32cqw,64px);flex-basis:min(32cqw,64px);max-height:64px}
+.module-grid[data-columns="3"] .module-icon{width:min(28cqw,44px);flex-basis:min(28cqw,44px)}
+.module-grid:is([data-columns="2"],[data-columns="3"]) .widget-copy{max-height:100%;overflow:hidden}
+.module-grid[data-columns="4"] .module-tile{gap:4px}
+.module-grid[data-columns="4"] .module-face{flex:1 1 auto;min-height:0;aspect-ratio:auto;gap:2px}
+.module-grid[data-columns="4"] .module-copy{height:26px;flex:0 0 26px;line-height:13px;font-size:10px}
+.module-grid[data-columns="4"] .module-icon{width:min(38cqw,36px);height:min(38cqw,36px);flex:0 0 auto}
+.module-grid[data-columns="4"] .widget-value{font-size:12px;line-height:14px}
+.module-grid[data-columns="4"] .widget-caption{display:none}
+@media(max-width:750px){.module-grid{--module-height:88px}}
+/* Fine compositor-only glow: urgency color, no layout change or moving content. */
+.module-grid>.module-card{position:relative;isolation:isolate}
+.module-grid>.module-card:has(>.state-danger){--alert-color:#f06569}
+.module-grid>.module-card:has(>.state-warning){--alert-color:#efa544}
+.module-grid>.module-card:has(>.state-danger,>.state-warning):after{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;border:1px solid var(--alert-color);box-shadow:inset 0 0 4px color-mix(in srgb,var(--alert-color) 25%,transparent),0 0 5px color-mix(in srgb,var(--alert-color) 22%,transparent);pointer-events:none;animation:alert-glimmer 3s ease-in-out infinite}
+.module-grid .module-tile:is(.state-danger,.state-warning){box-shadow:none}
+.module-grid .module-face:before{display:none}
+@keyframes alert-glimmer{0%,100%{opacity:.35}50%{opacity:.9}}
+@media(prefers-reduced-motion:reduce){.module-grid>.module-card:after{animation:none!important;opacity:.8}}
+
+.context-panel,.modal{animation:dialog-appear .16s ease-out}
+@keyframes dialog-appear{from{opacity:.65}to{opacity:1}}
+.module-grid:is([data-columns="2"],[data-columns="3"],[data-columns="4"]) .module-tile:is(.state-danger,.state-warning){box-shadow:none;border-top-color:transparent}
+@media(prefers-reduced-motion:reduce){.context-panel,.modal{animation:none}}
