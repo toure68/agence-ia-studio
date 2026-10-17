@@ -218,3 +218,43 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .module-grid[data-columns="2"] .widget-metric{flex-direction:row;align-items:baseline;gap:4px}
 .module-grid[data-columns="2"] .widget-value{font-size:16px;flex-shrink:0}
 .module-grid[data-columns="2"] .widget-caption{font-size:10px;min-width:0}
+
+/* iOS-inspired neutral glass: colorful app badges, no bitmap assets. */
+body:has(#assistantDock){background:radial-gradient(ellipse at 12% 6%,#e0e8f3 0%,transparent 52%),radial-gradient(ellipse at 90% 72%,#e7eaf0 0%,transparent 55%),#f1f3f7;background-attachment:fixed}
+.module-grid[data-columns="2"]>.module-card,.priority-tile.module-tile,.module-grid .module-face{background:linear-gradient(145deg,#ffffffb8,#ffffff65)!important;border:1px solid #ffffffcf;box-shadow:inset 0 1px 0 #ffffffa6,0 6px 20px #2632470c;backdrop-filter:blur(8px) saturate(120%);-webkit-backdrop-filter:blur(8px) saturate(120%)}
+.module-grid .module-tile{background:transparent!important;color:#263247!important;border-top-width:1px;border-top-color:transparent;outline-offset:2px}
+.module-grid .module-tile:is(:active,:focus-visible,[aria-current="page"]){border-color:transparent;border-top-color:#75a5ed;outline:2px solid #75a5ed;box-shadow:none}
+.module-grid .module-tile:is(:active,:focus-visible,[aria-current="page"]) .module-chevron{color:#3b78ca}
+.module-grid .module-copy,.module-grid .widget-value{color:#263247!important}
+.module-grid .widget-caption{color:#596579;opacity:1}
+.module-grid .module-chevron{color:#71829a}
+.module-grid .module-face{color:#263247;border-top-color:#ffffffcf}
+.module-grid .module-tile:is(:active,:focus-visible,[aria-current="page"]) .module-face{color:#263247!important;border-color:#91b4ed}
+.module-grid .module-tile.state-warning,.priority-tile.state-warning{--glass-alert:#e5a13b}
+.module-grid .module-tile.state-danger,.priority-tile.state-danger{--glass-alert:#e36365}
+.module-grid .module-face:before{content:"";position:absolute;top:0;left:34%;width:32%;height:2px;border-radius:0 0 4px 4px;background:var(--glass-alert,transparent);box-shadow:0 1px 5px var(--glass-alert,transparent);pointer-events:none}
+.module-grid[data-columns="2"] .module-tile:is(.state-warning,.state-danger){box-shadow:inset 0 2px 0 var(--glass-alert)}
+.priority-tile.module-tile{color:#263247;border-top-width:1px;filter:none;outline:none}
+.priority-tile:is(.state-warning,.state-danger){border-top-color:var(--glass-alert);box-shadow:inset 0 1px 0 var(--glass-alert),0 6px 20px #26324710}
+.priority-tile:is(:active,:focus-visible){outline:2px solid #75a5ed;outline-offset:2px}
+.module-grid .module-icon,.priority-tile .module-icon{--icon-from:#65b3ff;--icon-to:#3479e7;aspect-ratio:1;height:auto;border-radius:25%;background:linear-gradient(145deg,var(--icon-from),var(--icon-to))!important;color:#fff!important;box-shadow:inset 0 1px 0 #ffffff66,0 3px 7px #2632471c}
+.module-grid .module-icon svg,.priority-tile .module-icon svg{padding:17%;stroke-width:1.9}
+.module-icon:has(>[data-icon="requests"]){--icon-from:#52b9ff;--icon-to:#227ae5}
+.module-icon:has(>[data-icon="clients"]){--icon-from:#72b9ff;--icon-to:#4a83df}
+.module-icon:has(>[data-icon="activities"]){--icon-from:#54d892;--icon-to:#20a66f}
+.module-icon:has(>[data-icon="leads"]){--icon-from:#ffc261;--icon-to:#ef9239}
+.module-icon:has(>[data-icon="emails"]){--icon-from:#5dc8fa;--icon-to:#2782e7}
+.module-icon:has(>[data-icon="prospects"]){--icon-from:#b18af6;--icon-to:#8060d6}
+.module-icon:has(>[data-icon="calendar"]){--icon-from:#ff9297;--icon-to:#e95b73}
+.module-icon:has(>[data-icon="reports"]){--icon-from:#5ad7c8;--icon-to:#29a99f}
+.module-icon:has(>[data-icon="drafts"]){--icon-from:#87addf;--icon-to:#5d7dbb}
+.module-icon:has(>[data-icon="companies"]){--icon-from:#96a8fa;--icon-to:#6578d3}
+.module-icon:has(>[data-icon="company-edit"]){--icon-from:#ed9bc1;--icon-to:#cf6d9e}
+.module-icon:has(>[data-icon="team"]){--icon-from:#ffbe63;--icon-to:#ec903e}
+.module-icon:has(>[data-icon="treasury"]){--icon-from:#62d6b5;--icon-to:#2ea78b}
+.module-icon:has(>[data-icon="equipment"]){--icon-from:#7db8df;--icon-to:#4a89bb}
+.module-icon:has(>[data-icon="risks"]){--icon-from:#ffb385;--icon-to:#e77f58}
+.module-icon:has(>[data-icon="scanner"]){--icon-from:#9cadd2;--icon-to:#6c80ae}
+.module-icon:has(>[data-icon="social"]){--icon-from:#73d5e8;--icon-to:#777cdd}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.module-grid[data-columns="2"]>.module-card,.priority-tile.module-tile,.module-grid .module-face{background:#f6f8fbeF!important}}
+@media(prefers-reduced-transparency:reduce){.module-grid[data-columns="2"]>.module-card,.priority-tile.module-tile,.module-grid .module-face{background:#f6f8fb!important;backdrop-filter:none;-webkit-backdrop-filter:none}}

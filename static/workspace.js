@@ -27,7 +27,7 @@ const widgetIconPaths={
  scanner:'<path d="M8 2H3v5m13-5h5v5M3 17v5h5m13-5v5h-5M7 6h10v12H7zM5 12h14"/>',
  social:'<path d="m4 10 13-6v16L4 14zM4 10H2v4h2m3 1 2 7h4l-3-6M20 9l3-2m-3 8 3 2"/>'
 };
-function moduleIcon(key){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${widgetIconPaths[key]||widgetIconPaths.requests}</svg>`;}
+function moduleIcon(key){return `<svg data-icon="${Object.hasOwn(widgetIconPaths,key)?key:'requests'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${widgetIconPaths[key]||widgetIconPaths.requests}</svg>`;}
 function moduleWidget(key,state){
  const data=state.widgets?.[key];
  if(!data)return {value:'—',label:'À actualiser',detail:'Données à actualiser'};
