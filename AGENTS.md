@@ -14,3 +14,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Home widgets use inline SVG and CSS with a factual metric from the shared cockpit snapshot; no bitmap assets, per-card requests, invented figures or mixed-currency totals. Preserve equal cards, dynamic priorities and contextual navigation.
 
 - All grid modes, including manual two-column homes, must have complete rows. Two-column widgets are horizontal with name and metric inside; compact squares keep their labels below. Do not invent new alert-color rules or detailed backgrounds during visual refinements.
+
+- Two-column visual reference uses equal 1.95:1 graphite glass cards, fine bright rims, large glass-backed colored SVG glyphs, uppercase names and wrapped factual metrics. Keep greeting, assistant, urgency banners and all workflows. Home search opens the existing searchable module reserve.

@@ -27,7 +27,18 @@ const widgetIconPaths={
  scanner:'<path d="M8 2H3v5m13-5h5v5M3 17v5h5m13-5v5h-5M7 6h10v12H7zM5 12h14"/>',
  social:'<path d="m4 10 13-6v16L4 14zM4 10H2v4h2m3 1 2 7h4l-3-6M20 9l3-2m-3 8 3 2"/>'
 };
-function moduleIcon(key){return `<svg data-icon="${Object.hasOwn(widgetIconPaths,key)?key:'requests'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${widgetIconPaths[key]||widgetIconPaths.requests}</svg>`;}
+const filledWidgetIcons={
+ clients:'<circle cx="12" cy="7" r="4.5"/><path d="M3 22v-3a9 9 0 0 1 18 0v3z"/>',
+ equipment:'<path fill-rule="evenodd" d="M8 3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3h4a2 2 0 0 1 2 2v4H2V8a2 2 0 0 1 2-2h4zm2 3h4V3h-4zM2 14h8v2h4v-2h8v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/>',
+ leads:'<path d="M5 1h9v6h6v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2m11 0 4 4h-4z"/><path d="m7 14 3 3 6-7" fill="none" stroke="#164a30" stroke-width="2.2"/>',
+ calendar:'<rect x="2" y="4" width="20" height="19" rx="2"/><path d="M2 9h20M7 1v5m10-5v5" fill="none" stroke="#352443" stroke-width="2"/><path d="M6 12h3v3H6zm5 0h3v3h-3zm5 0h3v3h-3zM6 17h3v3H6zm5 0h3v3h-3zm5 0h3v3h-3z" fill="#352443"/>',
+ team:'<circle cx="12" cy="7" r="4"/><circle cx="3.5" cy="9" r="2.5"/><circle cx="20.5" cy="9" r="2.5"/><path d="M5 22v-4a7 7 0 0 1 14 0v4zM0 19v-3a4 4 0 0 1 5-4l2 1a9 9 0 0 0-4 6zm24 0h-3a9 9 0 0 0-4-6l2-1a4 4 0 0 1 5 4z"/>',
+ scanner:'<path d="M2 5a2 2 0 0 1 2-2h5l3 3h8a2 2 0 0 1 2 2v2H5l-3 10zm3 7h18l-4 10H1z"/>',
+ reports:'<rect x="2" y="15" width="4" height="8" rx="1" fill="#ed6265"/><rect x="7.5" y="11" width="4" height="12" rx="1" fill="#edbe54"/><rect x="13" y="6" width="4" height="17" rx="1" fill="#58c57e"/><rect x="18.5" y="1" width="4" height="22" rx="1" fill="#58a9dd"/>',
+ treasury:'<path d="m1 7 11-6 11 6-11 6zm1 4 10 5 10-5v4l-10 5-10-5zm0 7 10 5 10-5v3l-10 5-10-5z"/>'
+};
+function moduleIcon(key){const name=Object.hasOwn(widgetIconPaths,key)?key:'requests',filled=filledWidgetIcons[name];return `<svg data-icon="${name}" viewBox="0 0 24 26" fill="${filled?'currentColor':'none'}" stroke="${filled?'none':'currentColor'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${filled||widgetIconPaths[name]}</svg>`;}
+
 function moduleWidget(key,state){
  const data=state.widgets?.[key];
  if(!data)return {value:'—',label:'À actualiser',detail:'Données à actualiser'};
@@ -78,7 +89,7 @@ function homeModulesMarkup(workspace,state){
   const icon=`<span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>`,widget=widgetMarkup(moduleWidget(m.key,state)),count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
   const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
   return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns>2?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
- }).join('')}</nav><a class="btn more-functions" data-go="module-library" href="#/module-library">＋ Plus de fonctions</a>`;
+ }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Réserve de modules →</a>`;
 }
 function updateHomeGrid(workspace,state){
  const current=$('#content .module-grid');if(!current)return;
