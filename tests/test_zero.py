@@ -93,9 +93,11 @@ def test_zero_permissions_and_no_false_compliance(env,monkeypatch):
     work=c.post('/api/companies/1/activities',headers=h,json={'title':'Travail privé'}).json()
     assert m.put(f"/api/companies/{cid}/activities/{work['id']}/material",headers=mh,json={'items':[]}).status_code==404
     matrix=c.get('/api/companies/1/conformity').json();rows=matrix['requirements']
-    assert matrix['complete'] is False and len(rows)==33
-    assert len({r['id'] for r in rows})==33
-    assert sum(matrix['counts'].values())==33
+    assert matrix['complete'] is False and len(rows)==35
+    assert next(r for r in rows if r['id']=='COST-01')['status']=='missing'
+    assert next(r for r in rows if r['id']=='AUT-01')['status']=='partial'
+    assert len({r['id'] for r in rows})==35
+    assert sum(matrix['counts'].values())==35
     assert next(r for r in rows if r['id']=='SIG-02')['status']=='blocked'
     assert next(r for r in rows if r['id']=='OCR-01')['status']=='partial'
     assert next(r for r in rows if r['id']=='SOC-04')['status']=='blocked'

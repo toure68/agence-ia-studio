@@ -86,3 +86,39 @@ def test_mail_ai_failure_releases_lease_and_disconnect_during_analysis(env,monke
     monkeypatch.setattr(assistant_routes,'provider_response',disconnected)
     assert c.post(url,headers=h,json={'kind':'summary'}).status_code==404
     with env.db() as con:assert con.execute('SELECT COUNT(*) FROM mail_ai').fetchone()[0]==0
+
+
+def test_mail_reply_uses_only_confirmed_company_selling_tariffs_and_refreshes_cache(env,monkeypatch):
+    import assistant_routes
+    from test_workspace_documents import upload
+    from document_fixtures import quote_pdf
+    c,h,base,mid,_=imported(env,monkeypatch);monkeypatch.setenv('OPENAI_API_KEY','sk-test-tariffs-only')
+    did=upload(c,h,'quote',quote_pdf()).json()['id']
+    doc=c.get(f'/api/companies/1/documents/{did}').json();rates=doc['proposal']['rates']
+    assert rates
+    c.post(f'/api/companies/1/documents/{did}/confirm',headers=h,json={'confirmed':True,'profile_fields':{},'rates':[{k:v for k,v in r.items() if k!='source'} for r in rates]})
+    cid=c.post('/api/companies',headers=h,json={'name':'Société autre','city':'Paris','headline':'Test séparation tarifs'}).json()['id']
+    other_did=upload(c,h,'quote',quote_pdf(),cid=cid).json()['id']
+    with env.db() as con:
+        con.execute('UPDATE source_documents SET reviewed=1 WHERE id=?',(other_did,))
+        con.execute('INSERT INTO imported_tariffs(company_id,document_id,description,unit_price_minor,currency,unit) VALUES (?,?,?,?,?,?)',(cid,other_did,'SECRET AUTRE ENTREPRISE',99999,'USD','forfait'))
+        # A not-yet-reviewed source must never ground a selling price.
+        unreviewed=upload(c,h,'quote',quote_pdf(2)).json()['id']
+        con.execute('INSERT INTO imported_tariffs(company_id,document_id,description,unit_price_minor,currency,unit) VALUES (?,?,?,?,?,?)',(1,unreviewed,'NON VALIDÉ',12300,'EUR','heure'))
+    calls=[]
+    async def fake(key,messages,**kw):
+        calls.append((json.loads(messages[0]['content']),kw));return 'Bonjour, voici une proposition à vérifier avant envoi.'
+    monkeypatch.setattr(assistant_routes,'provider_response',fake)
+    url=base+f'/messages/{mid}/analyse';r=c.post(url,headers=h,json={'kind':'reply'})
+    assert r.status_code==200,r.text
+    assert r.json()['tariff_count']==1 and not r.json()['tariffs_limited']
+    context,instructions=calls[0]
+    assert context['validated_selling_tariffs'][0]['unit_price']=='25.5'
+    assert context['validated_selling_tariffs'][0]['currency']=='EUR'
+    assert 'SECRET AUTRE ENTREPRISE' not in str(context) and 'NON VALIDÉ' not in str(context)
+    assert 'coûts de revient' in instructions['instructions'] and 'aucune remise' in instructions['instructions']
+    assert c.post(url,headers=h,json={'kind':'reply'}).json()['cached']
+    with env.db() as con:con.execute('UPDATE imported_tariffs SET unit_price_minor=3000 WHERE company_id=1 AND document_id=?',(did,))
+    changed=c.post(url,headers=h,json={'kind':'reply'}).json();assert not changed['cached']
+    assert calls[-1][0]['validated_selling_tariffs'][0]['unit_price']=='30'
+    assert c.get(base+f'/messages/{mid}').json()['reply_body']==''
