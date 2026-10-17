@@ -539,6 +539,11 @@ const {chromium}=require('playwright');
    await page.locator('#closeModal').click();
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
    assert.equal(await page.evaluate(()=>window.__recognitionAttempts),0);
+   await page.locator('#assistantChat').evaluate(el=>{el.dataset.privateSession='old-session';});
+   await page.locator('.account-menu summary').click();await page.locator('#logout').click();await page.locator('#loginEmail').waitFor();
+   assert.equal(await page.locator('#content>*').count(),0);assert.equal(await page.locator('#contextPanel').count(),0);
+   await page.locator('#loginEmail').fill('ui-owner@example.test');await page.locator('#loginPassword').fill('local-ui-smoke-test-only');await page.getByRole('button',{name:'Se connecter'}).click();
+   await page.locator('#content .module-grid').waitFor();assert.equal(await page.locator('#assistantChat').getAttribute('data-private-session'),null);
    assert.deepEqual(errors,[]);
    console.log('PASS: clean home, four main modules, dynamic badges, keyboard input, cashbook, logistics and explicit compliance gaps, quotation creation/edit/PDF, always-present useful priority, mail settings, speech controls and no integrated dictation, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
  }catch(error){
