@@ -1,5 +1,6 @@
 function priorityPresentation(c){
  if(c.state)return tileState(c.state,c.state_label);
+ if(c.action.type==='social')return tileState('warning','À valider');
  if(c.rank===0)return tileState('danger','Urgent');
  if(c.rank<=2)return tileState('warning',c.action.type==='document'?'À vérifier':'Important');
  if(['client','quote','document','email'].includes(c.action.type))return tileState('warning',({client:'À valider',quote:'À finaliser',document:'À vérifier',email:'À relire'})[c.action.type]);
@@ -41,6 +42,7 @@ async function renderPriorities() {
       if (card.action.type === 'example') return await openTab('priority-example',{recordId:card.action.id});
       if (card.action.type === 'client') return await openTab('client-edit',{recordId:card.action.id});
       if (card.action.type === 'document') return await openTab('document',{recordId:card.action.id});
+      if (card.action.type === 'social') return await openTab('social-post',{recordId:card.action.id});
       if (card.action.type === 'activity-new') return openCommand('activity');
       if (card.action.type === 'risk') return await openTab('risks',{recordId:card.action.id});
       if (card.action.type === 'equipment') return await openTab('equipment',{recordId:card.action.id});

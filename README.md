@@ -81,6 +81,18 @@ Le tableau de bord affiche toutes les cartes utiles sans nombre fixe. Le carrous
 Les cartes sont actualisées à l’ouverture du tableau de bord et chaque minute quand il est visible et sans fenêtre ouverte. Les droits entreprise et la protection CSRF s’appliquent aux nouvelles routes. Les formulaires publics et les envois automatiques restent désactivés.
 
 
+## Publications préparées
+
+La rubrique Publications est accessible à la direction dans Outils et Plus de fonctions. Elle peut être ajoutée à l’accueil ; les seize raccourcis par défaut restent identiques. Les comptes gestionnaires ne peuvent pas lire, préparer ni valider de publications.
+
+Les activités terminées sur les sept derniers jours (date de Paris) sont proposées. La date de fin est enregistrée au passage à l’état terminé et ne change pas lors d’une simple correction. Pour les activités antérieures à cette mise à jour, la dernière modification sert de date estimée, signalée dans l’interface. Une réouverture retire l’activité de cette sélection.
+
+La préparation produit une trame locale LinkedIn, Facebook ou TikTok et un visuel PNG avec du texte : 1080 × 1080 pour les deux premiers, 1080 × 1920 pour TikTok. Il s’agit d’une image, pas d’une vidéo ni d’une photographie générée. Le visuel reprend le titre et un extrait des faits publics ; le texte de la publication conserve la légende complète. Aucun appel IA ni consommation API. Les notes internes, coordonnées et noms des clients ne sont pas repris automatiquement : la direction saisit les faits qu’elle autorise à partager.
+
+Un seul dossier par activité et réseau évite les doublons. Le brouillon remonte dans les priorités jusqu’à validation ou classement. L’approbation nécessite une confirmation explicite et concerne une version précise ; toute modification du texte ou de l’activité la rend à vérifier. Une activité rouverte doit être terminée avant une nouvelle validation. L’aperçu porte une mention brouillon tant qu’il n’est pas validé. La copie du texte et le téléchargement final sont proposés après validation ; le serveur recontrôle l’état et la version pour le téléchargement. Une publication classée peut être reprise en enregistrant un nouveau brouillon.
+
+Aucun compte social connecté et aucune publication automatique ou en un clic : l’utilisateur exporte le texte et l’image, puis publie manuellement sur le réseau. Le statut « Validée pour export » ne signifie jamais « publiée ».
+
 ## Devis, lecture vocale et boîte Gmail
 
 Le module Devis crée des devis internes indépendants des formulaires publics : lignes, prix HT, TVA choisie, devise, validité, conditions, historique, modification et PDF. Les mentions applicables à votre entreprise doivent être complétées dans les conditions. Aucun devis n’est envoyé automatiquement.

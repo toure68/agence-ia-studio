@@ -125,6 +125,11 @@ def install(app, db, require, own_company, utcnow):
                 {'type':'email','id':mail['id']},'Ouvrir l’e-mail',0 if uncertain else 3)
 
         if user['role']=='owner':
+            from social_routes import pending
+            for p in pending(con,cid):
+                add('social','social-'+str(p['id']),str(p['revision'])+':'+str(p['work_version']),
+                    'Valider la publication : '+p['title'],'Vérifiez le texte, le visuel et les autorisations avant export.',
+                    {'type':'social','id':p['id']},'Vérifier la publication',3)
             for row in con.execute('SELECT id,filename,kind FROM source_documents WHERE company_id=? AND reviewed=0',(cid,)):
                 doc=dict(row)
                 add('document','document-'+str(doc['id']),doc['kind'],'Vérifier le document : '+doc['filename'],

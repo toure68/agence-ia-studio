@@ -156,6 +156,8 @@ def init_db():
     init_document_schema(db)
     from assistant_routes import init_schema as init_assistant_schema
     init_assistant_schema(db)
+    from social_routes import init_schema as init_social_schema
+    init_social_schema(db)
 
 
 init_db()
@@ -180,6 +182,8 @@ from document_routes import install as install_documents
 install_documents(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow,secret=SECRET)
 from assistant_routes import install as install_assistant
 install_assistant(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow,secret=SECRET,throttle=lambda *a:throttle(*a))
+from social_routes import install as install_social
+install_social(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow)
 
 
 @app.middleware('http')

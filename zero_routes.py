@@ -124,6 +124,9 @@ def module_states(con,cid,user,risks):
     for r in con.execute('SELECT checked FROM cash_movements WHERE company_id=?',(cid,)):
         put('treasury','success' if r['checked'] else 'warning','Vérifiés' if r['checked'] else 'À vérifier')
     if user['role']=='owner':
+        from social_routes import pending
+        if pending(con,cid):put('social','warning','À valider')
+        elif con.execute("SELECT 1 FROM social_posts WHERE company_id=? AND status='approved'",(cid,)).fetchone():put('social','success','Validées')
         for r in con.execute('SELECT reviewed FROM source_documents WHERE company_id=?',(cid,)):
             put('scanner','success' if r['reviewed'] else 'warning','Vérifiés' if r['reviewed'] else 'À vérifier')
         for r in con.execute('SELECT stage FROM prospects'):

@@ -15,6 +15,7 @@ MODULES=[
  ('treasury','Trésorerie','💶',[],False),('equipment','Matériel','🧰',['cleaning','construction','automotive','agriculture'],False),
  ('risks','Prévention','🛡️',['cleaning','construction','automotive','agriculture'],False),
  ('scanner','Documents & profil','📷',[],True),
+ ('social','Publications','📣',[],True),
 ]
 
 class Preferences(BaseModel):
@@ -47,7 +48,7 @@ def install(app,db,require,own_company):
         modules=catalog(user);allowed={m['key'] for m in modules}
         domain=row['domain'] if row else business['domain'] if business else 'general'
         return {'modules':modules,'domains':DOMAINS,'domain':domain,'configured':bool(row),
-          'visible':[k for k in json.loads(row['visible']) if k in allowed] if row else [m['key'] for m in modules if not business or domain=='general' or not m['domains'] or domain in m['domains']],
+          'visible':[k for k in json.loads(row['visible']) if k in allowed] if row else [m['key'] for m in modules if m['key']!='social' and (not business or domain=='general' or not m['domains'] or domain in m['domains'])],
           'suggested':[m['key'] for m in modules if domain=='general' or not m['domains'] or domain in m['domains']],
           'version':row['version'] if row else 0}
 

@@ -15,7 +15,7 @@ def upload(c,h,kind,raw,name='exemple.pdf',cid=1):
 
 def test_personal_modules_empty_home_domains_and_scope(env):
     c,h=owner(env);path='/api/companies/1/workspace';state=c.get(path).json()
-    assert len(state['modules'])==16 and len(state['visible'])==16 and state['version']==0
+    assert len(state['modules'])==17 and len(state['visible'])==16 and state['version']==0
     assert c.put(path,json={'domain':'agriculture','visible':[],'version':0}).status_code==403
     assert c.put(path,headers=h,json={'domain':'agriculture','visible':[],'version':0}).status_code==200
     state=c.get(path).json();assert state['visible']==[] and 'equipment' in state['suggested'] and 'prospects' not in state['suggested']

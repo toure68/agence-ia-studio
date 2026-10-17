@@ -35,6 +35,7 @@ function renderTools(){
  if(operationsEnabled)links.push(['equipment','Matériel','🧰'],['risks','Prévention & échéances','🛡️'],['conformity','Contrôle du cahier des charges','📋']);
  if(me.role==='owner')links.push(['drafts','Brouillons','✉️'],['team','Équipe','👥',company.id]);
  if(me.role==='owner')links.push(['scanner','Documents & profil','📷']);
+ if(me.role==='owner')links.push(['social','Publications','📣']);
  links.push(['module-library','Plus de fonctions','＋']);
  $('#content').innerHTML='<div class="heading"><h1>Outils</h1></div>'+toolLinks(links);
 }
