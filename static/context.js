@@ -39,7 +39,7 @@ function closeContext(){
  if(!contextState)return;
  const depth=contextState.depth,steps=(history.state?.aiaDepth||0)-depth;
  restoreCockpit();tab='dashboard';$('#topLabel').textContent='';
- if(steps>0)history.go(-steps);else history.replaceState({aiaDepth:depth},'','#/dashboard');
+ if(steps>0){navigationQueue=new Promise(resolve=>window.addEventListener('popstate',resolve,{once:true}));history.go(-steps);}else{navigationQueue=Promise.resolve();history.replaceState({aiaDepth:depth},'','#/dashboard');}
  refreshCockpit().catch(err=>notify(err.message));
 }
 async function refreshCockpit(){
