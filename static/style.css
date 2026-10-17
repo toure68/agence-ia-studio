@@ -370,15 +370,28 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-grid[data-columns="4"] .widget-value{font-size:12px;line-height:14px}
 .module-grid[data-columns="4"] .widget-caption{display:none}
 @media(max-width:750px){.module-grid{--module-height:88px}}
-/* Fine compositor-only glow: urgency color, no layout change or moving content. */
-.module-grid>.module-card{position:relative;isolation:isolate}
-.module-grid>.module-card:has(>.state-danger){--alert-color:#f06569}
-.module-grid>.module-card:has(>.state-warning){--alert-color:#efa544}
-.module-grid>.module-card:has(>.state-danger,>.state-warning):after{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;border:1px solid var(--alert-color);box-shadow:inset 0 0 4px color-mix(in srgb,var(--alert-color) 25%,transparent),0 0 5px color-mix(in srgb,var(--alert-color) 22%,transparent);pointer-events:none;animation:alert-glimmer 3s ease-in-out infinite}
+/* A masked 1px conic reflection travels around actionable cards, never over their content. */
+@property --beam-angle{syntax:"<angle>";inherits:false;initial-value:0deg}
+.module-grid>.module-card,.priority-stack>.priority-card{position:relative;isolation:isolate}
+:is(.module-grid>.module-card,.priority-stack>.priority-card):has(>.state-danger){--alert-color:#f06569;--beam-highlight:#ffe2e8}
+:is(.module-grid>.module-card,.priority-stack>.priority-card):has(>.state-warning){--alert-color:#efa544;--beam-highlight:#fff1d6}
+:is(.module-grid>.module-card,.priority-stack>.priority-card):has(>.state-danger,>.state-warning):after{
+ content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;border:0;padding:1px;pointer-events:none;
+ background:conic-gradient(from var(--beam-angle),transparent 0deg 245deg,color-mix(in srgb,var(--alert-color) 15%,transparent) 285deg,var(--alert-color) 320deg,var(--beam-highlight) 338deg,transparent 360deg);
+ -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;
+ mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;
+ box-shadow:none;opacity:.72;animation:border-beam 8s linear infinite
+}
 .module-grid .module-tile:is(.state-danger,.state-warning){box-shadow:none}
 .module-grid .module-face:before{display:none}
-@keyframes alert-glimmer{0%,100%{opacity:.35}50%{opacity:.9}}
-@media(prefers-reduced-motion:reduce){.module-grid>.module-card:after{animation:none!important;opacity:.8}}
+.priority-tile:is(.state-danger,.state-warning){border-top-color:#ffffff1c;box-shadow:inset 0 1px 0 #ffffff12,0 8px 24px #0004}
+@keyframes border-beam{to{--beam-angle:360deg}}
+@supports not ((mask-composite:exclude) or (-webkit-mask-composite:xor)){
+ :is(.module-grid>.module-card,.priority-stack>.priority-card):has(>.state-danger,>.state-warning):after{background:none;border:1px solid var(--alert-color);animation:none}
+}
+@media(prefers-reduced-motion:reduce){
+ :is(.module-grid>.module-card,.priority-stack>.priority-card):after{animation:none!important;--beam-angle:45deg}
+}
 
 .context-panel,.modal{animation:dialog-appear .16s ease-out}
 @keyframes dialog-appear{from{opacity:.65}to{opacity:1}}
