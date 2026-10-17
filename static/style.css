@@ -150,9 +150,6 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 
 .module-card{min-width:0;position:relative;border:1px solid #cfdfcf;border-radius:23px;overflow:hidden;background:#ffffff9e;align-self:start}
 .module-card>.module-tile{border-left:0;border-right:0;border-bottom:0;border-top-width:5px;border-top-style:solid;border-radius:inherit;box-shadow:none}
-.module-inline{padding:0 16px 14px}.module-insight{font-size:12px;color:#526d5a;margin:3px 0 9px;overflow-wrap:anywhere}.module-inline-action:empty{display:none}
-.module-inline-action .btn{width:100%;min-height:44px}.inline-client-facts{margin:0 0 12px;font-size:12px;overflow-wrap:anywhere}.inline-client-facts dt{font-weight:700}.inline-client-facts dd{margin:0 0 6px;white-space:pre-wrap}
-@media(max-width:750px){.module-inline{padding:0 12px 12px}.module-inline-action .btn{padding:7px;font-size:12px}}
 
 .module-card.tone-green{background:linear-gradient(130deg,#fff,#f1f8ef)}
 .module-card.tone-blue{background:linear-gradient(130deg,#f0f9fb,#fff)}
@@ -160,4 +157,9 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .module-card.tone-purple{background:linear-gradient(130deg,#f7f2fc,#fff)}
 .module-card>.module-tile:not(:active,:focus-visible,[aria-current="page"]){background:transparent}
 .module-card:has(>.module-tile:is(:active,:focus-visible,[aria-current="page"])){background:linear-gradient(125deg,#174a37,#2d7453)}
+.module-card:has(>.module-tile:is(:active,:focus-visible,[aria-current="page"])) .module-insight{color:#fff}
+
+/* Closed cards: only a short action message, no expanded data or validation. */
+.module-copy .module-insight{font-size:12px;line-height:1.35;color:#526d5a;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.module-copy .module-insight:empty{display:none}
 .module-card:has(>.module-tile:is(:active,:focus-visible,[aria-current="page"])) .module-insight{color:#fff}

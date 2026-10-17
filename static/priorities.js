@@ -17,7 +17,7 @@ function priorityMarkup(cards){
   const importance=c.importance||({client:'À valider',document:'À vérifier',quote:'À finaliser'})[c.action.type]||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
   const icon=({activity:'✅',task:'🗓️',client:'👤',document:'📄',quote:'🧾',email:'✉️'})[c.action.type]||'📥';
   const presentation=priorityPresentation(c);
-  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile tone-${moduleTone(({task:'calendar',client:'clients',document:'scanner',activity:'activities',quote:'leads',email:'emails',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment'})[c.action.type])} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(presentation.label)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${['task','activity'].includes(c.action.type)?`<button class="btn primary priority-validate" data-priority-complete="${i}">Marquer comme faite</button>`:''}${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile tone-${moduleTone(({task:'calendar',client:'clients',document:'scanner',activity:'activities',quote:'leads',email:'emails',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment'})[c.action.type])} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(presentation.label)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>`;
 }
 'use strict';
@@ -35,7 +35,7 @@ async function renderPriorities() {
   if (!host.isConnected || company?.id !== cid || request!==priorityRequest) return;
   refreshHomeBadges(cockpit.badges,cockpit.risk_cards,cockpit.module_states);
   priorityCards = cards;
-  await refreshInlineActions(cards,cockpit);
+  refreshHomeMessages(cards,cockpit);
   host.innerHTML = priorityMarkup(cards);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const card = cards[Number(btn.dataset.priorityOpen)];
@@ -59,10 +59,6 @@ async function renderPriorities() {
       await openTab('incoming');
       leadDetail(card.action.id);
     } catch (e) { notify(e.message); }
-  });
-  host.querySelectorAll('[data-priority-complete]').forEach(btn=>btn.onclick=async()=>{
-    const card=cards[Number(btn.dataset.priorityComplete)];btn.disabled=true;
-    try{await completeInlinePriority(card,cid);await renderPriorities();notify('Tâche traitée.');}catch(e){btn.disabled=false;notify(e.message);}
   });
   host.querySelectorAll('[data-priority-dismiss]').forEach(btn => btn.onclick = async () => {
     btn.disabled = true;
@@ -137,35 +133,13 @@ document.addEventListener('visibilitychange',()=>{
  if(me&&tab==='dashboard'&&!document.hidden&&document.querySelector('#modalLayer').classList.contains('hide'))renderPriorities().catch(()=>{});
 });
 
-async function completeInlinePriority(card,cid){
- if(card.action.type==='task')return api(`/api/companies/${cid}/tasks/${card.action.id}/complete`,{method:'POST',body:JSON.stringify({occurrence:card.action.occurrence})});
- if(card.action.type==='activity')return api(`/api/companies/${cid}/activities/${card.action.id}/status`,{method:'PATCH',body:JSON.stringify({status:'done'})});
- throw Error('Cette action nécessite une vérification dans le panneau.');
-}
-async function refreshInlineActions(cards,cockpit){
- const cid=company.id,host=$('#content');
- const clients=cards.some(c=>c.action.type==='client')?await api(`/api/companies/${cid}/clients`):[];
- if(company.id!==cid||host!==$('#content')||tab!=='dashboard')return;
+function refreshHomeMessages(cards,cockpit){
+ if(tab!=='dashboard')return;
  const routes={task:'calendar',activity:'activities',client:'clients',document:'scanner',quote:'leads',email:'emails',social:'social',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment',lead:'requests'};
- host.querySelectorAll('.module-card').forEach(tile=>{
+ document.querySelectorAll('#content .module-card').forEach(tile=>{
   const key=tile.dataset.module,card=cards.find(c=>!c.example&&!c.fallback&&routes[c.action.type]===key);
-  const insight=tile.querySelector('.module-insight'),actions=tile.querySelector('.module-inline-action');actions.replaceChildren();
-  const presentation=modulePresentation(key,cockpit);
-  insight.textContent=card?card.title:presentation.label;
-  if(!card)return;
-  const button=document.createElement('button');button.type='button';button.className='btn small';
-  if(['task','activity'].includes(card.action.type)){
-   button.textContent='Marquer comme faite';button.onclick=async()=>{button.disabled=true;try{await completeInlinePriority(card,cid);await renderPriorities();notify('Tâche traitée.');}catch(err){button.disabled=false;notify(err.message);}};
-  }else if(card.action.type==='client'){
-   const client=clients.find(c=>c.id===card.action.id);if(!client||!client.needs_review)return;
-   const details=document.createElement('dl');details.className='inline-client-facts';
-   for(const [label,key] of [['Nom','name'],['E-mail','email'],['Téléphone','phone'],['Adresse','address'],['Notes','notes']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=client[key]||'Non renseigné';details.append(dt,dd);}
-   actions.append(details);button.textContent='Valider ces informations';
-   button.onclick=async()=>{button.disabled=true;try{await api(`/api/companies/${cid}/clients/${client.id}/validate`,{method:'POST',body:JSON.stringify({revision:client.review_revision})});await renderPriorities();notify('Fiche client validée.');}catch(err){button.disabled=false;notify(err.message);}};
-  }else{
-   button.textContent=card.action.type==='email'?'Relire':card.action.type==='quote'?'Vérifier le devis':'Vérifier';
-   button.onclick=()=>host.querySelector(`[data-priority-open="${cards.indexOf(card)}"]`)?.click();
-  }
-  actions.append(button);
+  const label=modulePresentation(key,cockpit).label;
+  const message=card?card.title:label==='Normal'?'':label;
+  const insight=tile.querySelector('.module-insight');insight.textContent=message;insight.title=message;
  });
 }
