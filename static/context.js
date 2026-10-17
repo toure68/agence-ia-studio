@@ -29,7 +29,7 @@ async function prepareContext(next){
 }
 function restoreCockpit(){
  if(!contextState)return false;
- const saved=contextState;contextState=null;
+ parkAssistant();const saved=contextState;contextState=null;
  closeModal();saved.parent.prepend(saved.back);saved.back.classList.add('hide');
  $('#contextLayer')?.remove();saved.cockpit.id='content';
  document.body.classList.remove('context-open');document.body.style.removeProperty('--cockpit-scroll');

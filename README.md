@@ -163,3 +163,6 @@ Chaque carte reste fermée par défaut et affiche uniquement son état ou un mes
 
 
 Navigation préservée : les boutons de fonction gardent l’adresse et le document de l’accueil. Le panneau possède une croix fixe en haut et un bouton de fermeture en bas ; le cockpit reste visible autour sur mobile. Les sous-vues restent dans ce panneau, y compris après rechargement, avec historique interne et fermeture extérieure/gestuelle conservés. Les liens directs existants restent interprétés puis affichés au-dessus du cockpit.
+
+
+L’assistant est fermé par défaut derrière une petite barre fixe en bas de l’accueil. Un appui ouvre la conversation existante dans le panneau contextuel, à adresse inchangée. La croix, le bouton inférieur, le fond extérieur et le geste ferment le panneau ; l’échange, le brouillon et les pièces jointes non envoyées restent conservés. La fermeture arrête le micro et met les aperçus média en pause. La clé API, les envois, les formats, les quotas et les droits existants sont conservés.

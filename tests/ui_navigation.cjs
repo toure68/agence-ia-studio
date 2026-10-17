@@ -24,9 +24,14 @@ const {chromium}=require('playwright');
    await page.locator('#content .module-grid').waitFor();
  }
  async function goModule(route){
+   if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
    if(await tile.count())await tile.click();
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
+ }
+ async function openAssistant(){
+   if(await page.locator('#assistantMessage').isVisible())return;
+   await backHome();await page.locator('#assistantDock').click();await page.locator('#assistantMessage').waitFor({state:'visible'});
  }
  async function layout(count=16){
    assert.equal(await page.locator('#content .module-grid .module-tile').count(),count);
@@ -41,8 +46,9 @@ const {chromium}=require('playwright');
    assert.equal(g.columns,2);assert(g.sameRow&&g.nextRow);assert(!g.overflow);assert.equal(g.helperText,0);
    assert.equal(await page.locator('.module-state').count(),0);
    assert.equal(await page.locator('#assistantChat').count(),1);
-   const chatPosition=await page.evaluate(()=>({greeting:document.querySelector('.home-heading').getBoundingClientRect().bottom,chat:document.querySelector('#assistantChat').getBoundingClientRect().top,bottom:document.querySelector('#assistantChat').getBoundingClientRect().bottom,priorities:document.querySelector('#priorityBlock').getBoundingClientRect().top}));
-   assert(chatPosition.chat>=chatPosition.greeting&&chatPosition.bottom<=chatPosition.priorities);
+   assert.equal(await page.locator('#assistantParking').evaluate(el=>el.hidden),true);
+   assert.equal(await page.locator('#assistantMessage').isVisible(),false);
+   const dock=await page.locator('#assistantDock').boundingBox();assert(dock.height<=48&&dock.y+dock.height<=page.viewportSize().height&&dock.y>=page.viewportSize().height-100);
    assert.equal(await page.locator('#assistantMessage').getAttribute('placeholder'),'Posez une question ou ajoutez un document…');
 
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
@@ -92,7 +98,14 @@ const {chromium}=require('playwright');
    await page.locator('#content .module-grid').waitFor();
    await layout();
    // Every module opens above the same live cockpit; closing preserves its draft and scroll.
+   const assistantAddress=page.url();await openAssistant();assert.equal(page.url(),assistantAddress);
+   fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/assistant-panel-mobile.png',animations:'disabled'});
    await page.locator('#assistantMessage').fill('Brouillon à conserver');
+   await page.locator('#chatFiles').setInputFiles({name:'brouillon-conserve.txt',mimeType:'text/plain',buffer:Buffer.from('Pièce jointe non envoyée')});
+   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');
+   assert.equal(await page.locator('#assistantMessage').isVisible(),false);
+   await openAssistant();assert.equal(await page.locator('#assistantMessage').inputValue(),'Brouillon à conserver');assert.equal(await page.locator('.chat-file').count(),1);
+   await page.locator('.chat-file button').click();await backHome();
    await page.evaluate(()=>{document.querySelector('#assistantChat').dataset.identity='same-cockpit';});
    await page.locator('#content [data-go="clients"]').click();await page.locator('#contextPanel #content h1').waitFor();
    assert.equal(await page.locator('#cockpitContent .module-grid .module-card').count(),16);
@@ -129,7 +142,7 @@ const {chromium}=require('playwright');
    await page.goForward();await page.locator('#contextPanel #content h1').waitFor();assert.equal(page.url(),cockpitAddress);
    await page.locator('#closeContextBottom').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.waitForFunction(()=>readRoute().tab==='dashboard');
    assert.equal(page.url(),cockpitAddress);
-   await page.locator('#assistantMessage').fill('');
+   await openAssistant();await page.locator('#assistantMessage').fill('');await backHome();
    const pressedTile=page.locator('#content .module-grid .module-tile').first();await pressedTile.scrollIntoViewIfNeeded();
    const pressedBox=await pressedTile.boundingBox();await page.mouse.move(pressedBox.x+20,pressedBox.y+20);await page.mouse.down();
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).color),'rgb(255, 255, 255)');
@@ -164,14 +177,15 @@ const {chromium}=require('playwright');
    const longReading=await page.evaluate(async()=>{window.__spoken=[];const text=('Votre message est prêt pour relecture. Merci de vérifier les informations. ').repeat(24);const b=document.createElement('button');document.body.append(b);readAloud(text,b);await new Promise(r=>setTimeout(r,60));b.remove();return {text,spoken:window.__spoken};});
    assert(longReading.spoken.length>1&&longReading.spoken.length<10);assert.equal(longReading.spoken.join(' ').replace(/\s+/g,' ').trim(),longReading.text.trim());
 
+   await openAssistant();
    await page.waitForFunction(()=>document.querySelector('#chatConnection')?.textContent.includes('activer'));
    assert.equal(await page.locator('#assistantSend').isDisabled(),true);
    await page.locator('#chatConnect').click();await page.locator('#assistantConnectionForm').waitFor();
    assert.equal(await page.locator('#assistantApiKey').getAttribute('type'),'password');await page.locator('#closeModal').click();
-   let uiChatTurns=[],uiChatRevision=0,uiChatPayload=null;
+   let uiChatTurns=[],uiChatRevision=0,uiChatPayload=null,releaseChat;const delayedChat=new Promise(resolve=>{releaseChat=resolve;});
    const chatStatus=()=>({configured:true,can_connect:true,revision:uiChatRevision,busy:false,turns:uiChatTurns});
    await page.route('**/api/companies/1/assistant',route=>route.fulfill({json:chatStatus()}));
-   await page.route('**/api/companies/1/assistant/messages',async route=>{uiChatPayload=route.request().postDataJSON();if(uiChatPayload.text==='Demande en erreur')return route.fulfill({status:502,json:{detail:'Service IA de test indisponible'}});const turn={id:9001+uiChatTurns.length,text:uiChatPayload.text,files:uiChatPayload.files.map(f=>({name:f.name,kind:'document'})),answer:'Réponse interface de test. <script>texte inoffensif</script>',created:new Date().toISOString()};uiChatTurns.push(turn);uiChatRevision++;await route.fulfill({status:201,json:{turn,revision:uiChatRevision}});});
+   await page.route('**/api/companies/1/assistant/messages',async route=>{uiChatPayload=route.request().postDataJSON();if(uiChatPayload.text==='Réponse en arrière-plan')await delayedChat;if(uiChatPayload.text==='Demande en erreur')return route.fulfill({status:502,json:{detail:'Service IA de test indisponible'}});const turn={id:9001+uiChatTurns.length,text:uiChatPayload.text,files:uiChatPayload.files.map(f=>({name:f.name,kind:'document'})),answer:'Réponse interface de test. <script>texte inoffensif</script>',created:new Date().toISOString()};uiChatTurns.push(turn);uiChatRevision++;await route.fulfill({status:201,json:{turn,revision:uiChatRevision}});});
    await page.route('**/api/companies/1/assistant/reset',route=>{uiChatTurns=[];uiChatRevision++;return route.fulfill({json:chatStatus()});});
    await page.evaluate(()=>mountAssistant());
    await page.locator('#chatFiles').setInputFiles([{name:'notes-assistant.txt',mimeType:'text/plain',buffer:Buffer.from('Mes documents de test')},{name:'photo-assistant.png',mimeType:'image/png',buffer:fs.readFileSync('/tmp/ui-kbis.png')}]);
@@ -180,7 +194,11 @@ const {chromium}=require('playwright');
    await page.locator('.chat-answer').waitFor();assert.equal(uiChatPayload.files.length,2);assert(uiChatPayload.files[1].data.length>20);
    assert.equal(uiChatPayload.text,'Analyse mes documents');assert((await page.locator('.chat-answer').innerText()).includes('<script>'));assert.equal(await page.locator('#chatTurns script').count(),0);
    assert.equal(await page.locator('#chatAttachments .chat-file').count(),0);assert.equal(await page.locator('#assistantMessage').inputValue(),'');
-   await page.reload();await page.locator('.chat-answer').waitFor();assert.equal(await page.locator('.chat-user').count(),1);
+   await page.locator('#assistantMessage').fill('Réponse en arrière-plan');await page.locator('#assistantSend').click();
+   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');releaseChat();
+   await page.waitForFunction(()=>document.querySelector('#chatTurns .chat-user')&&document.querySelectorAll('.chat-user').length===2&&document.querySelector('#assistantMessage').value==='');
+   await openAssistant();assert.equal(await page.locator('.chat-user').count(),2);
+   await page.reload();await page.locator('.chat-answer').first().waitFor();assert.equal(await page.locator('.chat-user').count(),2);
    await page.evaluate(()=>{window.__chatTracksStopped=0;Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>({getTracks:()=>[{stop(){window.__chatTracksStopped++;}}]})}});window.MediaRecorder=class{static isTypeSupported(){return true;}constructor(stream,options){this.mimeType=options?.mimeType||'audio/webm';this.state='inactive';}start(){this.state='recording';}stop(){if(this.state==='inactive')return;this.state='inactive';this.ondataavailable?.({data:new Blob(['synthetic-test-audio'],{type:this.mimeType})});this.onstop?.();}};});
    await page.evaluate(()=>mountAssistant());await page.locator('#assistantMic').click();await page.waitForFunction(()=>document.querySelector('#assistantMic').getAttribute('aria-pressed')==='true');
    await page.locator('#assistantMic').click();await page.locator('.chat-file').waitFor();assert((await page.locator('.chat-file').innerText()).includes('message-vocal'));
@@ -197,7 +215,7 @@ const {chromium}=require('playwright');
    await page.locator('#budgetCalls').fill('0');
    await Promise.all([page.waitForResponse(r=>r.url().endsWith('/ai-usage')&&r.request().method()==='PUT'),page.locator('#budgetForm button').click()]);
    await page.waitForFunction(()=>document.querySelector('#content [role="status"]')?.textContent.includes('bloqués'));
-   await backHome();await page.locator('#chatConnect').click();await page.locator('#assistantApiKey').fill('sk-fake-budget-ui-key-no-provider-call');
+   await backHome();await openAssistant();await page.locator('#chatConnect').click();await page.locator('#assistantApiKey').fill('sk-fake-budget-ui-key-no-provider-call');
    await page.locator('#assistantConnectionForm button').click();
    await page.waitForFunction(()=>document.querySelector('#assistantConnectionStatus')?.textContent.includes('Quota mensuel'));
    assert.equal((await page.evaluate(()=>api('/api/companies/1/ai-usage'))).calls,0);

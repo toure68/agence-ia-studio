@@ -5,7 +5,7 @@ const money=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',ma
 const timestamp=s=>s?new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
 let me=null,companies=[],company=null,leads=[],prospects=[],tab='dashboard',currentProspect=null,csrf='';
 function notify(m){const e=$('#toast');e.textContent=m;e.classList.remove('hide');setTimeout(()=>e.classList.add('hide'),4500);}
-async function api(path,opts={}){const origin=contextState;const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...opts,headers});const obj=await response.json().catch(()=>({}));if(origin&&origin!==contextState)throw Error('Panneau fermé. Consultez le dossier pour vérifier une opération déjà engagée.');if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
+async function api(path,opts={}){const {keepAfterPanelClose=false,...requestOptions}=opts;const origin=contextState;const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...requestOptions,headers});const obj=await response.json().catch(()=>({}));if(origin&&origin!==contextState&&!keepAfterPanelClose)throw Error('Panneau fermé. Consultez le dossier pour vérifier une opération déjà engagée.');if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
 function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
 function showAuth(){restoreCockpit();closeModal();cleanupAssistant();assistantDrafts.clear();$('#content').replaceChildren();company=null;companies=[];leads=[];prospects=[];me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
@@ -27,6 +27,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  Object.assign(labels,{'module-library':'Mes fonctions',scanner:'Documents & profil',document:'Vérifier le document'});
  ownerTabs.add('scanner');ownerTabs.add('document');
  Object.assign(labels,{social:'Publications','social-new':'Préparer une publication','social-post':'Vérifier la publication'});
+ labels.assistant='Assistant IA';
  labels['ai-usage']='Budget IA';ownerTabs.add('ai-usage');
  ['social','social-new','social-post'].forEach(key=>ownerTabs.add(key));
  const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material']);
@@ -38,7 +39,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    companyId=companyId||company?.id;
    if(!companies.some(c=>c.id===companyId))next='dashboard';
  }
- stopReading();cleanupAssistant(false);
+ stopReading();cleanupAssistant(false);parkAssistant();
  closeModal();
  if(contextState&&contextState.cid!==company.id){restoreCockpit();$('#content').replaceChildren();}
  const cockpitUrl=contextState?.homeUrl||history.state?.aiaHomeUrl||location.href;
@@ -62,11 +63,13 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  document.querySelectorAll('[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===active));
  $('#topLabel').textContent='';
  if($('#contextTitle'))$('#contextTitle').textContent=labels[next];
+ if($('#contextPanel'))$('#contextPanel').dataset.module=next;
  $('#moduleBack').classList.toggle('hide',next==='dashboard');
  $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
  const renderHost=$('#content');
  try{
    if(next==='dashboard')await dashboard();
+   else if(next==='assistant')renderAssistantPanel();
    else if(next==='module-library')await renderModuleLibrary();
    else if(next==='scanner')await renderScanner();
    else if(next==='document')await renderDocument(recordId);

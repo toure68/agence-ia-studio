@@ -22,7 +22,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
 async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
- $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header>${assistantMarkup()}<section id="priorityBlock" aria-label="Priorités à traiter"></section>`+homeModulesMarkup(workspace,state);
+ $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header>${assistantDockMarkup()}<section id="priorityBlock" aria-label="Priorités à traiter"></section>`+homeModulesMarkup(workspace,state);
  await Promise.all([renderPriorities(),mountAssistant()]);
 }
 
