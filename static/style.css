@@ -131,3 +131,25 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 @media(max-width:750px){.assistant-chat{padding:12px;border-radius:20px;margin-bottom:18px}.chat-heading{gap:7px}.chat-heading strong{font-size:13px}.chat-heading #chatConnection{font-size:10px}.chat-heading #chatConnect{font-size:10px;padding:5px 8px}.chat-turns{max-height:310px}.chat-message{font-size:13px}.chat-toolbar{gap:6px}.chat-icon-button{width:37px;height:37px;flex-basis:37px}#assistantMessage{font-size:16px}.chat-toolbar #chatProgress{font-size:10px}}
 
 .chat-file{flex-wrap:wrap}.chat-file>span{flex:1;min-width:70px}.chat-file-preview{border-radius:7px;max-width:100%;object-fit:contain}.chat-file img{width:48px;height:48px}.chat-file video{width:150px;height:85px}.chat-file audio{width:180px;height:38px}
+
+/* Contextual navigation keeps the live cockpit behind one floating panel. */
+.context-open{position:fixed;width:100%;top:var(--cockpit-scroll,0)}
+.has-floating-layer{overflow:hidden}
+.context-layer{position:fixed;inset:0;z-index:25;background:#14332c40;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px}
+.context-panel{background:#f5faf3;border:1px solid #d3e2d3;border-radius:24px;width:min(1000px,100%);max-height:92dvh;display:flex;flex-direction:column;min-height:180px;overflow:hidden;animation:sheet-enter .2s ease-out}
+.context-header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid #d3e2d3;flex-shrink:0;background:#fff}
+.context-header #moduleBack{margin:0}.context-header #contextTitle{flex:1;font-weight:700}.context-header #closeContext{font-size:28px;width:44px;height:44px;flex-basis:44px}
+.context-scroll{overflow:auto;overscroll-behavior:contain;padding:24px;min-height:0}.context-panel:focus{outline:none}
+.sheet-handle{width:48px;height:20px;align-self:center;position:relative;flex-shrink:0;touch-action:none;cursor:grab}
+.sheet-handle:after{content:"";position:absolute;left:0;right:0;top:8px;height:4px;border-radius:4px;background:#aec7b6}
+.modal-wrap{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal{animation:sheet-enter .2s ease-out}.modal .sheet-handle{margin:0 auto 10px}
+@keyframes sheet-enter{from{opacity:.5;transform:translateY(35px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:750px){.context-layer{align-items:flex-end;padding:0}.context-panel{max-height:92dvh;width:100%;border-radius:24px 24px 0 0}.context-header{padding:8px 14px}.context-scroll{padding:18px 14px max(24px,env(safe-area-inset-bottom))}.modal-wrap{align-items:end;padding:0}.modal{max-height:92dvh;border-radius:24px 24px 0 0;padding:20px 16px max(24px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.context-panel,.modal{animation:none}}
+
+.module-card{min-width:0;position:relative;border:1px solid #cfdfcf;border-radius:23px;overflow:hidden;background:#ffffff9e;align-self:start}
+.module-card>.module-tile{border-left:0;border-right:0;border-bottom:0;border-top-width:5px;border-top-style:solid;border-radius:22px 22px 0 0;box-shadow:none}
+.module-inline{padding:0 16px 14px}.module-insight{font-size:12px;color:#526d5a;margin:3px 0 9px;overflow-wrap:anywhere}.module-inline-action:empty{display:none}
+.module-inline-action .btn{width:100%;min-height:44px}.inline-client-facts{margin:0 0 12px;font-size:12px;overflow-wrap:anywhere}.inline-client-facts dt{font-weight:700}.inline-client-facts dd{margin:0 0 6px;white-space:pre-wrap}
+@media(max-width:750px){.module-inline{padding:0 12px 12px}.module-inline-action .btn{padding:7px;font-size:12px}}

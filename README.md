@@ -151,3 +151,12 @@ Sans consommation confirmée, la réserve reste retenue après redémarrage. La 
 Un message audio/vidéo peut compter plusieurs appels : transcription puis réponse. Le quota porte sur chaque appel, pas sur le message complet ; une limite peut bloquer la suite après une transcription déjà payante. Les futurs traitements en arrière-plan devront transmettre le contexte entreprise et prévoir leurs parcours complets avant activation. Aucun traitement IA autonome supplémentaire n’est activé par cette étape.
 
 Les tests utilisent des clés fictives et des réponses fournisseur simulées, sans dépense réelle. Le montant reste une estimation distincte de la facture, des taxes, du change, du solde fournisseur, de l’hébergement et de l’assistance.
+
+
+## Navigation contextuelle et actions sur les cartes
+
+Les fonctions s’ouvrent dans un panneau au-dessus du cockpit conservé et flouté : bas d’écran sur téléphone, panneau central sur grand écran. Le contenu de l’assistant, les pièces jointes et la position de l’accueil restent montés. Un changement d’entreprise repart sur le contexte de cette entreprise. Les liens directs et le bouton Retour du navigateur restent pris en charge.
+
+Fermer avec la croix, Échap, le fond extérieur ou un glissement vers le bas depuis la poignée (ou une zone non interactive lorsque le panneau est en haut). Les champs, lecteurs et la signature sont exclus du geste. Une boîte de dialogue secondaire se ferme avant le panneau principal. Le fond est inerte, le clavier reste dans le dialogue et les animations respectent la réduction de mouvement. Fermer ne valide ni n’enregistre une saisie.
+
+Chaque carte affiche son état ou sa première priorité. Les échéances/activités peuvent être marquées faites directement ; les fiches client affichent les informations avant validation de leur version précise. Les documents, e-mails et devis à relire ouvrent le panneau de vérification. Aucun envoi ou signature aveugle n’est ajouté. Les vérifications métier et droits serveur restent appliqués.

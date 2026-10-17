@@ -8,7 +8,7 @@ function notify(m){const e=$('#toast');e.textContent=m;e.classList.remove('hide'
 async function api(path,opts={}){const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...opts,headers});const obj=await response.json().catch(()=>({}));if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
 function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
-function showAuth(){cleanupAssistant();me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
+function showAuth(){restoreCockpit();closeModal();cleanupAssistant();me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
 async function refreshCompanies(){companies=await api('/api/companies');const mailCompany=Number(new URLSearchParams(location.search).get('mail_company'));if(mailCompany&&companies.some(c=>c.id===mailCompany))company=companies.find(c=>c.id===mailCompany);if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name+' · '+c.city;option.selected=company?.id===c.id;return option;}));}
 function finishForm(parent){
  if(history.state?.aiaFrom===parent&&(history.state?.aiaDepth||0)>0){history.back();return;}
@@ -38,8 +38,11 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    companyId=companyId||company?.id;
    if(!companies.some(c=>c.id===companyId))next='dashboard';
  }
- stopReading();cleanupAssistant();
+ stopReading();cleanupAssistant(false);
  closeModal();
+ if(contextState&&contextState.cid!==company.id){restoreCockpit();$('#content').replaceChildren();}
+ if(next==='dashboard'&&(restoreCockpit()||$('#content .module-grid'))){tab='dashboard';$('#topLabel').textContent='';if(updateHistory)history.replaceState({aiaDepth:history.state?.aiaDepth||0},'','#/dashboard');await refreshCockpit();return;}
+ await prepareContext(next);
  document.querySelector('.account-menu')?.removeAttribute('open');
  const previousTab=tab;
  tab=next;
@@ -53,7 +56,8 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  const active=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies',team:'companies'})[next]||next;
  document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));
  document.querySelectorAll('[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===active));
- $('#topLabel').textContent=next==='dashboard'?'':labels[next];
+ $('#topLabel').textContent='';
+ if($('#contextTitle'))$('#contextTitle').textContent=labels[next];
  $('#moduleBack').classList.toggle('hide',next==='dashboard');
  $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
  try{
@@ -99,7 +103,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    else if(next==='drafts')await renderDrafts();
    else if(next==='draft')await renderDrafts(recordId);
    else if(next==='priority-example')await renderPriorityExample(recordId);
-   window.scrollTo(0,0);
+   if($('#contextPanel')){$('#contextPanel .context-scroll').scrollTop=0;$('#contextPanel').focus({preventScroll:true});}else window.scrollTo(0,0);
  }catch(err){$('#content').innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
 }
 function readRoute(){
@@ -120,12 +124,14 @@ function goBack(){
 async function dashboard(){return zeroDashboard();}
 async function renderLeads(){if(!company)return;leads=await api('/api/companies/'+company.id+'/leads');$('#content').innerHTML=`<div class="heading"><div><h1>Demandes de devis</h1><p class="sub">${clean(company.name)} · ${leads.length} demande(s) dans la base centralisée</p></div><div class="row"><button class="btn" id="reloadLeads" aria-label="Actualiser" title="Actualiser">↻</button><a class="btn" href="/api/companies/${company.id}/leads-export">Exporter CSV</a></div></div>${leads.length?`<div class="tablewrap"><table><thead><tr><th>Client</th><th>Prestation</th><th>Montant estimé</th><th>Statut</th><th>Date</th><th></th></tr></thead><tbody>${leads.map(l=>`<tr><td><b>${clean(l.name)}</b><div class="tiny sub">${clean(l.phone)}</div></td><td>${clean(({'home':'Logement','office':'Bureaux','after':'Après travaux','windows':'Vitres'})[l.service]||l.service)}<div class="tiny sub">${l.area} m²</div></td><td>${money(l.amount)}</td><td><span class="badge">${clean(l.status)}</span></td><td>${timestamp(l.created)}</td><td><button class="linklike" data-lead="${l.id}">Détails →</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Aucune demande.</div>'}`;$('#reloadLeads').onclick=renderLeads;}
 function openModal(html){
- $('#modalLayer').innerHTML=`<div class="modal-wrap" id="modalBackdrop"><div class="modal" role="dialog" aria-modal="true"><button type="button" class="back-circle" id="closeModal" aria-label="Retour" title="Retour">${backIcon()}</button>${html}</div></div>`;
+ $('#modalLayer').innerHTML=`<div class="modal-wrap" id="modalBackdrop"><div class="modal" role="dialog" aria-modal="true"><div class="sheet-handle" aria-label="Glisser vers le bas pour fermer"></div><button type="button" class="back-circle" id="closeModal" aria-label="Retour" title="Retour">${backIcon()}</button>${html}</div></div>`;
  $('#modalLayer').classList.remove('hide');
+ syncContextLayers();bindSheetGesture($('#modalLayer .modal'),closeModal);
+ const dialog=$('#modalLayer .modal');dialog.setAttribute('aria-label',dialog.querySelector('h1,h2')?.textContent||'Détails');dialog.tabIndex=-1;dialog.focus({preventScroll:true});
  $('#closeModal').onclick=closeModal;
  $('#modalBackdrop').onclick=e=>{if(e.target.id==='modalBackdrop')closeModal();};
 }
-function closeModal(){stopReading();$('#modalLayer').classList.add('hide');$('#modalLayer').replaceChildren();}
+function closeModal(){stopReading();$('#modalLayer').classList.add('hide');$('#modalLayer').replaceChildren();syncContextLayers();}
 function leadDetail(id){const l=leads.find(x=>x.id===id);if(!l)return;openModal(`<h2>Demande de ${clean(l.name)}</h2><form id="leadEdit" class="stack" style="margin-top:20px"><div class="field"><label>Statut</label><select name="status">${options(['Nouveau','À rappeler','Devis envoyé','Signé','Perdu'],l.status)}</select></div><div class="field"><label>Notes internes</label><textarea name="notes" maxlength="4000">${clean(l.notes)}</textarea></div><button class="btn primary">Enregistrer le suivi</button></form><details class="record-details"><summary>Coordonnées & devis</summary><div class="grid grid2"><div class="card-flat"><b>Contact</b><p class="small">${clean(l.phone)}<br>${clean(l.email)||'Pas d’email'}</p></div><div class="card-flat"><b>Devis indicatif</b><div class="stat-num">${money(l.amount)}</div><span class="tiny sub">${clean(l.service)} · ${l.area} m²</span></div></div></details>`);$('#leadEdit').onsubmit=async e=>{e.preventDefault();try{await api('/api/companies/'+company.id+'/leads/'+id,{method:'PATCH',body:JSON.stringify({status:e.target.status.value,notes:e.target.notes.value})});closeModal();notify('Demande mise à jour.');await renderLeads();}catch(err){notify(err.message)}};}
 async function renderProspects(){prospects=await api('/api/prospects');const statuses=['À contacter','Contacté','Réponse reçue','Intéressé','Démo prévue','Accord de principe','Signé','Refus'];$('#content').innerHTML=`<div class="heading"><div><h1>Prospection</h1></div><div class="row"><a class="btn" href="/api/prospects-export">Exporter CSV</a><button class="btn primary" id="newProspect">+ Prospect</button></div></div>${prospects.length?`<div class="tablewrap"><table><thead><tr><th>Entreprise</th><th>Secteur / ville</th><th>Email</th><th>Étape</th><th></th></tr></thead><tbody>${prospects.map(p=>`<tr><td><b>${clean(p.name)}</b><div class="tiny sub">${clean(p.contact)}</div></td><td>${clean(p.sector)}<div class="tiny sub">${clean(p.city)}</div></td><td>${clean(p.email)||'—'}</td><td><span class="badge">${clean(p.stage)}</span></td><td><button class="linklike" data-prospect="${p.id}">Suivi →</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Aucun prospect.</div>'}`;$('#newProspect').onclick=newProspect;}
 function newProspect(){return openCommand('prospect');}
@@ -151,13 +157,14 @@ $('#passwordBtn').onclick=()=>{
  $('#passwordForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);try{await api('/api/password',{method:'POST',body:JSON.stringify(Object.fromEntries(f.entries()))});closeModal();showAuth();$('#authMessage').textContent='Mot de passe modifié. Reconnectez-vous.';}catch(err){notify(err.message)}};
 };
 $('#logout').onclick=async()=>{try{await api('/api/logout',{method:'POST'});}catch(e){}showAuth();};
-$('#companySelect').onchange=async e=>{company=companies.find(c=>c.id===Number(e.target.value));await openTab(tab);};
+$('#companySelect').onchange=async e=>{restoreCockpit();cleanupAssistant();$('#content').replaceChildren();company=companies.find(c=>c.id===Number(e.target.value));await openTab(tab);};
 $$('#sideNav').forEach(el=>el.addEventListener('click',e=>{const x=e.target.closest('[data-tab]');if(x)openTab(x.dataset.tab)}));
-$('#content').addEventListener('click',e=>{let x=e.target.closest('[data-go]');if(x){e.preventDefault();if(x.getAttribute('aria-disabled')==='true')return notify('Accès réservé à la direction.');if(['task-new','activity-new'].includes(x.dataset.go))return openCommand(x.dataset.go==='task-new'?'task':'activity');return openTab(x.dataset.go,{companyId:x.dataset.companyId?Number(x.dataset.companyId):null,recordId:x.dataset.recordId?Number(x.dataset.recordId):null});}x=e.target.closest('[data-lead]');if(x)return leadDetail(Number(x.dataset.lead));x=e.target.closest('[data-prospect]');if(x)return prospectDetail(Number(x.dataset.prospect));x=e.target.closest('[data-editcompany]');if(x)return companyForm(Number(x.dataset.editcompany));x=e.target.closest('[data-adduser]');if(x)return userForm(Number(x.dataset.adduser));});
+function handleContentClick(e){let x=e.target.closest('[data-go]');if(x){e.preventDefault();if(x.getAttribute('aria-disabled')==='true')return notify('Accès réservé à la direction.');if(['task-new','activity-new'].includes(x.dataset.go))return openCommand(x.dataset.go==='task-new'?'task':'activity');return openTab(x.dataset.go,{companyId:x.dataset.companyId?Number(x.dataset.companyId):null,recordId:x.dataset.recordId?Number(x.dataset.recordId):null});}x=e.target.closest('[data-lead]');if(x)return leadDetail(Number(x.dataset.lead));x=e.target.closest('[data-prospect]');if(x)return prospectDetail(Number(x.dataset.prospect));x=e.target.closest('[data-editcompany]');if(x)return companyForm(Number(x.dataset.editcompany));x=e.target.closest('[data-adduser]');if(x)return userForm(Number(x.dataset.adduser));}
+$('#content').addEventListener('click',handleContentClick);
 $('#moduleBack').addEventListener('click',e=>{if(e.target.closest('[data-back]'))goBack();});
 window.addEventListener('popstate',()=>{if(me){const route=readRoute();openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,recordId:route.recordId,updateHistory:false});}});
 window.addEventListener('hashchange',()=>{const route=readRoute();if(me&&(route.tab!==tab||route.taskId||route.companyId||route.recordId))openTab(route.tab,{taskId:route.taskId,companyId:route.companyId,recordId:route.recordId,updateHistory:false});});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
 $('#accountTools').onclick=()=>openTab('tools');
 $('#accountSpeech').onclick=openSpeechSettings;
 $('#accountAudit').classList.toggle('hide',!operationsEnabled);

@@ -35,6 +35,7 @@ async function renderPriorities() {
   if (!host.isConnected || company?.id !== cid || request!==priorityRequest) return;
   refreshHomeBadges(cockpit.badges,cockpit.risk_cards,cockpit.module_states);
   priorityCards = cards;
+  await refreshInlineActions(cards,cockpit);
   host.innerHTML = priorityMarkup(cards);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const card = cards[Number(btn.dataset.priorityOpen)];
@@ -61,7 +62,7 @@ async function renderPriorities() {
   });
   host.querySelectorAll('[data-priority-complete]').forEach(btn=>btn.onclick=async()=>{
     const card=cards[Number(btn.dataset.priorityComplete)];btn.disabled=true;
-    try{if(card.action.type==='task')await api(`/api/companies/${cid}/tasks/${card.action.id}/complete`,{method:'POST',body:JSON.stringify({occurrence:card.action.occurrence})});else await api(`/api/companies/${cid}/activities/${card.action.id}/status`,{method:'PATCH',body:JSON.stringify({status:'done'})});await renderPriorities();notify('Tâche traitée.');}catch(e){btn.disabled=false;notify(e.message);}
+    try{await completeInlinePriority(card,cid);await renderPriorities();notify('Tâche traitée.');}catch(e){btn.disabled=false;notify(e.message);}
   });
   host.querySelectorAll('[data-priority-dismiss]').forEach(btn => btn.onclick = async () => {
     btn.disabled = true;
@@ -135,3 +136,36 @@ setInterval(() => {
 document.addEventListener('visibilitychange',()=>{
  if(me&&tab==='dashboard'&&!document.hidden&&document.querySelector('#modalLayer').classList.contains('hide'))renderPriorities().catch(()=>{});
 });
+
+async function completeInlinePriority(card,cid){
+ if(card.action.type==='task')return api(`/api/companies/${cid}/tasks/${card.action.id}/complete`,{method:'POST',body:JSON.stringify({occurrence:card.action.occurrence})});
+ if(card.action.type==='activity')return api(`/api/companies/${cid}/activities/${card.action.id}/status`,{method:'PATCH',body:JSON.stringify({status:'done'})});
+ throw Error('Cette action nécessite une vérification dans le panneau.');
+}
+async function refreshInlineActions(cards,cockpit){
+ const cid=company.id,host=$('#content');
+ const clients=cards.some(c=>c.action.type==='client')?await api(`/api/companies/${cid}/clients`):[];
+ if(company.id!==cid||host!==$('#content')||tab!=='dashboard')return;
+ const routes={task:'calendar',activity:'activities',client:'clients',document:'scanner',quote:'leads',email:'emails',social:'social',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment',lead:'requests'};
+ host.querySelectorAll('.module-card').forEach(tile=>{
+  const key=tile.dataset.module,card=cards.find(c=>!c.example&&!c.fallback&&routes[c.action.type]===key);
+  const insight=tile.querySelector('.module-insight'),actions=tile.querySelector('.module-inline-action');actions.replaceChildren();
+  const presentation=modulePresentation(key,cockpit);
+  insight.textContent=card?card.title:presentation.label;
+  if(!card)return;
+  const button=document.createElement('button');button.type='button';button.className='btn small';
+  if(['task','activity'].includes(card.action.type)){
+   button.textContent='Marquer comme faite';button.onclick=async()=>{button.disabled=true;try{await completeInlinePriority(card,cid);await renderPriorities();notify('Tâche traitée.');}catch(err){button.disabled=false;notify(err.message);}};
+  }else if(card.action.type==='client'){
+   const client=clients.find(c=>c.id===card.action.id);if(!client||!client.needs_review)return;
+   const details=document.createElement('dl');details.className='inline-client-facts';
+   for(const [label,key] of [['Nom','name'],['E-mail','email'],['Téléphone','phone'],['Adresse','address'],['Notes','notes']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=client[key]||'Non renseigné';details.append(dt,dd);}
+   actions.append(details);button.textContent='Valider ces informations';
+   button.onclick=async()=>{button.disabled=true;try{await api(`/api/companies/${cid}/clients/${client.id}/validate`,{method:'POST',body:JSON.stringify({revision:client.review_revision})});await renderPriorities();notify('Fiche client validée.');}catch(err){button.disabled=false;notify(err.message);}};
+  }else{
+   button.textContent=card.action.type==='email'?'Relire':card.action.type==='quote'?'Vérifier le devis':'Vérifier';
+   button.onclick=()=>host.querySelector(`[data-priority-open="${cards.indexOf(card)}"]`)?.click();
+  }
+  actions.append(button);
+ });
+}
