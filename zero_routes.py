@@ -248,7 +248,7 @@ def install(app,db,require,own_company,utcnow):
               'equipment':{'value':sum(c['action']['type'] in ('equipment','material') for c in risks),'label':'Alertes'},
               'risks':{'value':sum(c['action']['type']=='risk' for c in risks),'label':'Échéances'},
               'companies':{'value':scalar('SELECT COUNT(*) FROM companies',()) if user['role']=='owner' else 1,'label':'Entreprises'},
-              'company-edit':{'value':'Profil','label':'À consulter'},
+              'company-edit':{'value':len(json.loads(con.execute('SELECT rates FROM companies WHERE id=?',(cid,)).fetchone()['rates'])),'label':'Tarifs du site'},
             }
             if user['role']=='owner':
                 from social_routes import pending as pending_posts

@@ -40,8 +40,8 @@ function moduleWidget(key,state){
   const [currency,amount]=balances[0];
   return {value:new Intl.NumberFormat('fr-FR',{notation:'compact',maximumFractionDigits:1}).format(amount/100),label:currency+' · interne',detail};
  }
- const value=String(data.value),label=data.label;
- return {value,label,detail:value+' · '+label};
+ const value=typeof data.value==='number'?new Intl.NumberFormat('fr-FR',{notation:'compact',maximumFractionDigits:1}).format(data.value):String(data.value),label=data.label;
+ return {value,label,detail:String(data.value)+' · '+label};
 }
 function widgetMarkup(widget){return `<span class="widget-metric" title="${clean(widget.detail)}"><b class="widget-value">${clean(widget.value)}</b><span class="widget-caption">${clean(widget.label)}</span></span>`;}
 function refreshHomeWidgets(state){

@@ -561,7 +561,12 @@ const {chromium}=require('playwright');
        assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert.equal(geometry.count%columns,0);for(const size of geometry.sizes){assert(Math.abs(size.width-geometry.sizes[0].width)<2&&Math.abs(size.height-geometry.sizes[0].height)<2,'Every icon card has the same dimensions');}assert(geometry.cards.every(Boolean),'Dense cards remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
        const metrics=await page.locator('#content .module-grid').evaluate(el=>[...el.querySelectorAll('.module-tile')].every(c=>{const f=c.querySelector('.module-face').getBoundingClientRect(),m=c.querySelector('.widget-metric').getBoundingClientRect(),icon=c.querySelector('.module-icon').getBoundingClientRect();return c.querySelector('.module-icon svg')&&m.top>=f.top&&m.bottom<=f.bottom&&m.width>0&&icon.width>=f.width*.4&&icon.width<=f.width*.51;}));
        assert(metrics,'Dense widgets retain SVG and visible data within equal cards');
-       if(width===390)await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
+       if(width===390){
+         await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
+         const frames=await page.evaluate(()=>new Promise(resolve=>{const samples=[],saved=scrollY;let previous;function step(now){if(previous!==undefined)samples.push(now-previous);previous=now;window.scrollBy(0,8);if(samples.length<30)requestAnimationFrame(step);else{window.scrollTo(0,saved);samples.sort((a,b)=>a-b);resolve({medianMs:samples[15],p95Ms:samples[28]});}}requestAnimationFrame(step);}));
+         console.log('Scroll frame sample (CI browser)',JSON.stringify({columns,...frames}));
+       }
+
      }
      await page.setViewportSize({width:390,height:844});await goModule('clients');await page.locator('#contextPanel').waitFor();await backHome();
      assert.equal(await page.locator('.module-grid').getAttribute('data-columns'),String(columns));
