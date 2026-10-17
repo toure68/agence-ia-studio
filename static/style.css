@@ -328,7 +328,7 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-grid[data-columns="3"]{gap:10px 8px}
 .module-grid[data-columns="3"]>.module-card{overflow:hidden;align-self:start}
 .module-grid[data-columns="3"] .module-tile{height:auto;padding:5px 4px;gap:4px}
-.module-grid[data-columns="3"] .module-icon{width:30cqw;height:30cqw;flex:0 0 30cqw;max-width:78px;border-radius:25%}
+.module-grid[data-columns="3"] .module-icon{width:30cqw;height:auto;flex:0 0 30cqw;max-width:78px;border-radius:25%}
 .module-grid[data-columns="3"] .widget-copy{gap:2px}
 .module-grid[data-columns="3"] .module-copy{height:auto;width:auto;gap:0}
 .module-grid[data-columns="3"] .module-copy strong{font-size:clamp(8px,8.5cqw,14px);line-height:1.12;-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis;display:block;overflow:hidden}
