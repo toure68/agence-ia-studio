@@ -9,10 +9,12 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Preserve existing business workflows, explicit validation, signature consent, and company/user isolation. Never send real messages or use paid provider calls during tests.
 - Check affected workflows and navigation regressions before shipping. Inspect the final change for unrelated behavior changes. Verify deployment SUCCESS and live asset version before reporting the change online.
 
-- Grid cards must always have identical dimensions; never span or stretch a last card. Use complete rows and keep overflow in the reserve. Dense grids put icon cards above their labels. Dynamic home is enabled by default: ten days of inactivity moves a module into reserve unless an actionable alert requires it; only an explicit user setting disables this behavior.
+- Grid cards must always have identical dimensions; never span or stretch a last card. Use complete rows and keep overflow in the reserve. Four-column grids put icon cards above their labels; three columns retain rectangular inline widgets. Dynamic home is enabled by default: ten days of inactivity moves a module into reserve unless an actionable alert requires it; only an explicit user setting disables this behavior.
 
 - Home widgets use inline SVG and CSS with a factual metric from the shared cockpit snapshot; no bitmap assets, per-card requests, invented figures or mixed-currency totals. Preserve equal cards, dynamic priorities and contextual navigation.
 
-- All grid modes, including manual two-column homes, must have complete rows. Two-column widgets are horizontal with name and metric inside; compact squares keep their labels below. Do not invent new alert-color rules or detailed backgrounds during visual refinements.
+- All grid modes, including manual two-column homes, must have complete rows. Two-column widgets are horizontal with name and metric inside; four-column compact squares keep their labels below. Do not invent new alert-color rules or detailed backgrounds during visual refinements.
 
 - Two-column visual reference uses equal 1.95:1 graphite glass cards, fine bright rims, large glass-backed colored SVG glyphs, uppercase names and wrapped factual metrics. Keep greeting, assistant, urgency banners and all workflows. Home search opens the existing searchable module reserve.
+
+- Outer grid card corners are lightly rounded (10px). Three columns now retain the 1.95:1 horizontal rectangle with smaller icons and inline labels/data; four-column layout remains unchanged except outer corner radius. Preserve colors.
