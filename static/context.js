@@ -42,7 +42,7 @@ function closeContext(){
  const homeUrl=contextState.homeUrl,depth=contextState.depth,steps=(history.state?.aiaDepth||0)-depth;
  restoreCockpit();tab='dashboard';$('#topLabel').textContent='';
  if(steps>0){navigationQueue=new Promise(resolve=>window.addEventListener('popstate',resolve,{once:true}));history.go(-steps);}else{navigationQueue=Promise.resolve();history.replaceState({aiaDepth:depth},'',homeUrl);}
- refreshCockpit().catch(err=>notify(err.message));
+ if(steps<=0)refreshCockpit().catch(err=>notify(err.message));
 }
 async function refreshCockpit(){
  if(tab!=='dashboard'||!company)return;
@@ -50,7 +50,9 @@ async function refreshCockpit(){
  const [workspace,state]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);
  if(tab!=='dashboard'||company.id!==cid||host!==$('#content'))return;
  const fragment=document.createElement('div');fragment.innerHTML=homeModulesMarkup(workspace,state);
- host.querySelector('.module-grid')?.replaceWith(fragment.querySelector('.module-grid'));
+ const current=host.querySelector('.module-grid'),next=fragment.querySelector('.module-grid');
+ const keys=grid=>[...grid.children].map(node=>node.dataset.module).join('|');
+ if(current&&keys(current)!==keys(next))current.replaceWith(next);
  await renderPriorities();
 }
 function bindSheetGesture(panel,close){
