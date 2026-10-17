@@ -5,7 +5,7 @@ const money=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',ma
 const timestamp=s=>s?new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
 let me=null,companies=[],company=null,leads=[],prospects=[],tab='dashboard',currentProspect=null,csrf='';
 function notify(m){const e=$('#toast');e.textContent=m;e.classList.remove('hide');setTimeout(()=>e.classList.add('hide'),4500);}
-async function api(path,opts={}){const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...opts,headers});const obj=await response.json().catch(()=>({}));if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
+async function api(path,opts={}){const origin=contextState;const method=opts.method||'GET';let headers={'Accept':'application/json',...opts.headers};if(opts.body)headers['Content-Type']='application/json';if(!['GET','HEAD'].includes(method))headers['X-CSRF-Token']=csrf;const response=await fetch(path,{credentials:'same-origin',...opts,headers});const obj=await response.json().catch(()=>({}));if(origin&&origin!==contextState)throw Error('Panneau fermé. Consultez le dossier pour vérifier une opération déjà engagée.');if(!response.ok)throw new Error(typeof obj.detail==='string'?obj.detail:(Array.isArray(obj.detail)?obj.detail.map(x=>x.msg).join(', '):'Erreur du serveur'));return obj;}
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
 function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
 function showAuth(){restoreCockpit();closeModal();cleanupAssistant();me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
@@ -60,6 +60,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  if($('#contextTitle'))$('#contextTitle').textContent=labels[next];
  $('#moduleBack').classList.toggle('hide',next==='dashboard');
  $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
+ const renderHost=$('#content');
  try{
    if(next==='dashboard')await dashboard();
    else if(next==='module-library')await renderModuleLibrary();
@@ -104,7 +105,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    else if(next==='draft')await renderDrafts(recordId);
    else if(next==='priority-example')await renderPriorityExample(recordId);
    if($('#contextPanel')){$('#contextPanel .context-scroll').scrollTop=0;$('#contextPanel').focus({preventScroll:true});}else window.scrollTo(0,0);
- }catch(err){$('#content').innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
+ }catch(err){if(renderHost.isConnected&&renderHost===$('#content'))renderHost.innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
 }
 function readRoute(){
  const parts=location.hash.replace(/^#\/?/,'').split('/');
