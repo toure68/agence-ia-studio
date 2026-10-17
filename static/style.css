@@ -447,12 +447,12 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
  .priority-tier-4{--priority-card-height:116px}
 }
 
-/* Matching rainbow reflections on the top and bottom of the assistant pill. */
+/* Top and bottom rainbow reflections travel in opposite directions. */
 .assistant-dock{--assistant-rainbow:linear-gradient(90deg,#59d9ff,#a383ff,#f18bc6,#f4cf73,#95e6a4,#59d9ff);isolation:isolate;overflow:visible}
 .assistant-dock::before,.assistant-dock::after{content:"";position:absolute;left:12px;right:12px;pointer-events:none;background:var(--assistant-rainbow);background-size:200% 100%;animation:assistant-rainbow-drift 6s linear infinite;z-index:0}
 .assistant-dock::before,.assistant-dock::after{background-image:var(--assistant-rainbow),var(--assistant-rainbow);background-repeat:no-repeat}
 .assistant-dock::before{top:-6px;bottom:-6px;background-size:200% 10px;filter:blur(8px);opacity:.55;border-radius:12px}
 .assistant-dock::after{top:-1px;bottom:-1px;background-size:200% 1px;border-radius:12px;opacity:.9}
 .assistant-dock>span,.assistant-dock>strong{position:relative;z-index:1}
-@keyframes assistant-rainbow-drift{from{background-position:0% 0%,0% 100%}to{background-position:200% 0%,200% 100%}}
+@keyframes assistant-rainbow-drift{from{background-position:0% 0%,200% 100%}to{background-position:200% 0%,0% 100%}}
 @media(prefers-reduced-motion:reduce){.assistant-dock::before,.assistant-dock::after{animation:none;background-position:50% 0%,50% 100%}}
