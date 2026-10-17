@@ -258,3 +258,4 @@ body:has(#assistantDock){background:radial-gradient(ellipse at 12% 6%,#e0e8f3 0%
 .module-icon:has(>[data-icon="social"]){--icon-from:#73d5e8;--icon-to:#777cdd}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.module-grid[data-columns="2"]>.module-card,.priority-tile.module-tile,.module-grid .module-face{background:#f6f8fbeF!important}}
 @media(prefers-reduced-transparency:reduce){.module-grid[data-columns="2"]>.module-card,.priority-tile.module-tile,.module-grid .module-face{background:#f6f8fb!important;backdrop-filter:none;-webkit-backdrop-filter:none}}
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-icon{border-radius:25%}
