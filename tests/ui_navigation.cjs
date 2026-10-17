@@ -67,7 +67,7 @@ const {chromium}=require('playwright');
    for(const tone of Object.values(surfaces.tones))for(const state of Object.values(tone.states))assert.deepEqual(state.surface,tone.original,'State changes preserve the neutral glass surface');
    assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,1);assert(surfaces.glass.filter.includes('blur'));assert(surfaces.iconColors>=6,'App badges are colorful and identifiable');
    assert.equal(surfaces.tones.green.states.neutral.top,'rgba(0, 0, 0, 0)');assert(surfaces.tones.green.states.danger.shadow.includes('227, 99, 101'),'Danger remains visible through a fine upper indicator');
-   assert.equal(surfaces.active.color,'rgb(38, 50, 71)');assert.equal(surfaces.active.band,'rgb(117, 165, 237)');
+   assert.equal(surfaces.active.color,'rgb(237, 242, 250)');assert.equal(surfaces.active.band,'rgb(117, 165, 237)');
 
  }
  async function priorityLayout(count){
@@ -103,6 +103,8 @@ const {chromium}=require('playwright');
    await layout();
    const initialWidgets=await page.locator('#content .module-grid').evaluate(el=>({cards:el.querySelectorAll('.module-tile').length,icons:el.querySelectorAll('.module-icon svg').length,metrics:el.querySelectorAll('.widget-metric').length,images:el.querySelectorAll('img,image,use').length,cockpitRequests:performance.getEntriesByType('resource').filter(r=>new URL(r.name).pathname==='/api/companies/1/cockpit').length}));
    assert.equal(initialWidgets.icons,initialWidgets.cards);assert.equal(initialWidgets.metrics,initialWidgets.cards);assert.equal(initialWidgets.images,0);assert.equal(initialWidgets.cockpitRequests,1,'Initial widgets reuse one cockpit snapshot');
+   const darkHome=await page.locator('#content .module-grid').evaluate(grid=>{const tile=grid.querySelector('.module-tile'),r=tile.getBoundingClientRect(),icon=tile.querySelector('.module-icon').getBoundingClientRect(),copy=tile.querySelector('.widget-copy').getBoundingClientRect(),card=getComputedStyle(tile.parentElement);return {body:getComputedStyle(document.body).backgroundColor,color:getComputedStyle(tile).color,background:card.backgroundImage,horizontal:r.width>r.height&&icon.right<=copy.left&&copy.top>=r.top&&copy.bottom<=r.bottom,sizes:[...grid.querySelectorAll('.module-tile')].map(c=>c.getBoundingClientRect().height)};});
+   assert.equal(darkHome.body,'rgb(8, 11, 16)');assert.equal(darkHome.color,'rgb(237, 242, 250)');assert(darkHome.background.includes('37, 44, 56'));assert(darkHome.horizontal);assert(darkHome.sizes.every(h=>Math.abs(h-darkHome.sizes[0])<2),'Wide widgets keep the same height');
    // Every module opens above the same live cockpit; closing preserves its draft and scroll.
    const assistantAddress=page.url();await openAssistant();assert.equal(page.url(),assistantAddress);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/assistant-panel-mobile.png',animations:'disabled'});
@@ -151,7 +153,7 @@ const {chromium}=require('playwright');
    await openAssistant();await page.locator('#assistantMessage').fill('');await backHome();
    const pressedTile=page.locator('#content .module-grid .module-tile').first();await pressedTile.scrollIntoViewIfNeeded();
    const pressedBox=await pressedTile.boundingBox();await page.mouse.move(pressedBox.x+20,pressedBox.y+20);await page.mouse.down();
-   assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).color),'rgb(38, 50, 71)');
+   assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).color),'rgb(237, 242, 250)');
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopColor),'rgb(117, 165, 237)');
    await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
    assert.equal(await page.locator('#content .module-grid').count(),1);
@@ -517,8 +519,8 @@ const {chromium}=require('playwright');
    await page.locator('.more-functions').click();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
    await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
    await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
-   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===1);
-   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),1);
+   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===2);
+   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
    await page.locator('.more-functions').click();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
    assert.equal(await page.locator('.more-functions').isVisible(),true);
@@ -529,7 +531,7 @@ const {chromium}=require('playwright');
    // Filling is derived from the authorized catalog and never alters saved preferences.
    const fillCases=await page.evaluate(async()=>{
      const source=await api('/api/companies/1/workspace');
-     return [3,4].map(columns=>{
+     return [2,3,4].map(columns=>{
        const input={...source,dynamic:false,columns,visible:['clients']},before=JSON.stringify(input),filled=homeGridModules(input);
        const none=homeGridModules({...input,visible:[]}),full=homeGridModules({...input,visible:source.modules.map(m=>m.key)});
        return {columns,count:filled.modules.length,keys:filled.modules.map(m=>m.key),automatic:filled.modules.filter(m=>m.automatic).length,unchanged:JSON.stringify(input)===before,empty:none.modules.length,allowed:filled.modules.every(m=>source.modules.some(a=>a.key===m.key)),fullCount:full.modules.length};

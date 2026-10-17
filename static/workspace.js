@@ -61,7 +61,7 @@ function homeGridModules(workspace,state={}){
  const recent=key=>workspace.last_used?.[key]||0;
  let keys=dynamic?[...new Set([...workspace.modules.filter(m=>urgent(m.key)).map(m=>m.key),...selected.filter(key=>!inactive.has(key)||urgent(key))])]:[...selected];
  if(dynamic)keys.sort((a,b)=>weight(b)-weight(a)||recent(b)-recent(a));
- if(keys.length&&keys.length%columns&&(dynamic||columns>2)){
+ if(keys.length&&keys.length%columns){
   const reserve=workspace.modules.filter(m=>!keys.includes(m.key)&&(!dynamic||!inactive.has(m.key)||urgent(m.key)));
   reserve.sort((a,b)=>weight(b.key)-weight(a.key)||Number(workspace.suggested?.includes(b.key)||false)-Number(workspace.suggested?.includes(a.key)||false)||recent(b.key)-recent(a.key));
   keys.push(...reserve.slice(0,columns-keys.length%columns).map(m=>m.key));

@@ -188,3 +188,8 @@ Les cartes en 3 ou 4 colonnes gardent des faces carrées identiques, une icône 
 ## Finition verre translucide
 
 Le cockpit adopte des surfaces neutres translucides (bordures fines, ombres douces, flou CSS limité à 8 px) et des badges d’applications colorés avec pictogrammes SVG intégrés. Aucun bitmap ou fichier d’icône externe. Les alertes rouges/orange restent discrètes et n’affectent pas les dimensions. Le navigateur sans flou d’arrière-plan reçoit un fond neutre de repli ; la préférence de réduction de transparence supprime le flou. Les micro-données, libellés sous les grilles denses, rangées complètes, rangement dynamique et panneaux flottants conservent leur fonctionnement.
+
+
+## Direction esthétique définitive : Dark Glassmorphism
+
+Cockpit sur fond noir avec cartes en verre sombre translucide et reflets fins. Deux colonnes : widgets horizontaux de même hauteur, icône colorée, nom et donnée à l’intérieur. Trois ou quatre colonnes : faces carrées identiques, pictogrammes colorés centrés et libellés dessous ; les micro-données restent disponibles. Les rangées sont complètes même en mode manuel à deux colonnes, en empruntant les modules autorisés de la réserve ou en y conservant les modules excédentaires. Aucune carte n’est étirée. Les règles existantes de priorités, d’alertes, de rangement et de navigation restent conservées ; aucun nouveau moteur de couleurs dynamiques ni arrière-plan détaillé n’est ajouté.
