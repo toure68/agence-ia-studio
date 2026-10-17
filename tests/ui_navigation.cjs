@@ -18,7 +18,7 @@ const {chromium}=require('playwright');
    for(let i=0;i<5;i++){
     if(await page.locator('#content .module-grid').count())return;
     const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
-    await page.waitForFunction(route=>JSON.stringify(readRoute())!==route,before);
+    await page.waitForFunction(route=>JSON.stringify(readRoute())!==route||Boolean(document.querySelector('#content .module-grid')),before);
     await page.waitForFunction(()=>!document.querySelector('#content > [role="status"]'));
    }
    await page.locator('#content .module-grid').waitFor();
