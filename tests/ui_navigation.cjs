@@ -73,6 +73,8 @@ const {chromium}=require('playwright');
  async function priorityLayout(count){
    assert.equal(await page.locator('.priority-card').count(),count);
    assert.equal(await page.locator('#priorityBlock .priority-panel').count(),0,'Functions retain independent frames');
+   const icons=await page.locator('.priority-tile').evaluateAll(tiles=>tiles.every(tile=>{const icon=tile.querySelector('.module-icon').getBoundingClientRect(),copy=tile.querySelector('.priority-copy').getBoundingClientRect(),panel=tile.getBoundingClientRect();return icon.width>=52&&Math.abs(icon.width-icon.height)<1&&icon.right<=copy.left&&icon.top>=panel.top&&icon.bottom<=panel.bottom;}));
+   assert(icons,'Priority icons scale with their panel and stay square, contained and separate from text');
    const cards=await page.locator('.priority-stack').evaluate(el=>[...el.children].map(c=>{const r=c.getBoundingClientRect();return {module:c.dataset.priorityModule,top:r.top,bottom:r.bottom,left:r.left,width:r.width,height:r.height};}));
    assert.equal(new Set(cards.map(c=>c.module)).size,count,'One priority card per function');
    for(let i=0;i<cards.length;i++){assert(cards[i].height>=104);if(i){assert(cards[i].top-cards[i-1].bottom>=10,'Independent cards stay spaced');assert(cards[i].height<=cards[i-1].height,'Original graduated heights remain');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}}

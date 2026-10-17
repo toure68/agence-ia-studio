@@ -430,3 +430,19 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-grid[data-columns="3"] .widget-value{font-size:inherit}
 .module-grid[data-columns="3"] .widget-caption{display:inline;font-size:inherit}
 .module-grid[data-columns="3"] .module-count{top:calc(11px * var(--module-scale));right:calc(11px * var(--module-scale));min-width:calc(23px * var(--module-scale));height:calc(23px * var(--module-scale));font-size:calc(11px * var(--module-scale));padding:0 calc(5px * var(--module-scale))}
+
+/* Action panels use the same glass badge, sized for their graduated panel height. */
+.priority-card{--priority-card-height:112px}
+.priority-tier-1{--priority-card-height:184px}
+.priority-tier-2{--priority-card-height:164px}
+.priority-tier-3{--priority-card-height:144px}
+.priority-tier-4{--priority-card-height:124px}
+.priority-tile .module-icon{--priority-icon-size:clamp(52px,calc(var(--priority-card-height) * .5),96px);width:var(--priority-icon-size);height:var(--priority-icon-size);flex:0 0 var(--priority-icon-size)}
+.priority-tile .priority-copy{flex:1 1 auto}
+@media(max-width:750px){
+ .priority-card{--priority-card-height:104px}
+ .priority-tier-1{--priority-card-height:164px}
+ .priority-tier-2{--priority-card-height:148px}
+ .priority-tier-3{--priority-card-height:132px}
+ .priority-tier-4{--priority-card-height:116px}
+}
