@@ -23,7 +23,7 @@ async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
  $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header>${assistantDockMarkup()}<section id="priorityBlock" aria-label="Priorités à traiter"></section>`+homeModulesMarkup(workspace,state);
- await Promise.all([renderPriorities(),mountAssistant()]);
+ await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
 
 function toolLinks(items){return `<div class="tool-list">${items.map(([route,title,icon,id])=>`<a class="task-row" href="#/${route}${id?'/'+id:''}" data-go="${route}"${id?` data-company-id="${id}"`:''}><span><strong>${icon} ${title}</strong></span><span aria-hidden="true">›</span></a>`).join('')}</div>`;}

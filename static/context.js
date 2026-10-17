@@ -50,7 +50,7 @@ async function refreshCockpit(){
  const [workspace,state]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);
  if(tab!=='dashboard'||company.id!==cid||host!==$('#content'))return;
  updateHomeGrid(workspace,state);
- await renderPriorities();
+ await renderPriorities({cockpit:state,workspace});
 }
 function bindSheetGesture(panel,close){
  let start=null;

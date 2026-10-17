@@ -10,3 +10,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Check affected workflows and navigation regressions before shipping. Inspect the final change for unrelated behavior changes. Verify deployment SUCCESS and live asset version before reporting the change online.
 
 - Grid cards must always have identical dimensions; never span or stretch a last card. Use complete rows and keep overflow in the reserve. Dense grids put icon cards above their labels. Dynamic home is enabled by default: ten days of inactivity moves a module into reserve unless an actionable alert requires it; only an explicit user setting disables this behavior.
+
+- Home widgets use inline SVG and CSS with a factual metric from the shared cockpit snapshot; no bitmap assets, per-card requests, invented figures or mixed-currency totals. Preserve equal cards, dynamic priorities and contextual navigation.

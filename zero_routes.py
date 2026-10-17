@@ -231,7 +231,36 @@ def install(app,db,require,own_company,utcnow):
             risks=risk_cards(con,cid)
             pending=con.execute('SELECT COUNT(*) FROM cash_movements WHERE company_id=? AND checked=0',(cid,)).fetchone()[0]
             states=module_states(con,cid,user,risks)
-        return {'badges':{'requests':incoming+quotes+mails,'prospects':prospect,'calendar':agenda+len(risks),'treasury':pending},'risk_cards':risks,'module_states':states}
+            # Micro-widgets share this snapshot: no request per card or external call.
+            scalar=lambda sql,args=(cid,):con.execute(sql,args).fetchone()[0]
+            clients=scalar('SELECT COUNT(*) FROM clients WHERE company_id=? AND archived=0')
+            active=scalar("SELECT COUNT(*) FROM work_items WHERE company_id=? AND status NOT IN ('done','cancelled')")
+            balances={r['currency']:r['balance'] for r in con.execute("SELECT currency,SUM(CASE WHEN direction='in' THEN amount_minor ELSE -amount_minor END) AS balance FROM cash_movements WHERE company_id=? GROUP BY currency",(cid,))}
+            widgets={
+              'requests':{'value':incoming+quotes+mails,'label':'À traiter'},
+              'clients':{'value':clients,'label':'Clients'},
+              'activities':{'value':active,'label':'En cours'},
+              'leads':{'value':quotes,'label':'À finaliser'},
+              'emails':{'value':mails,'label':'À relire'},
+              'calendar':{'value':agenda+len(risks),'label':'À prévoir'},
+              'reports':{'value':active,'label':'Activités ouvertes'},
+              'treasury':{'balances_minor':balances,'bank_connected':False,'label':'Solde interne'},
+              'equipment':{'value':sum(c['action']['type'] in ('equipment','material') for c in risks),'label':'Alertes'},
+              'risks':{'value':sum(c['action']['type']=='risk' for c in risks),'label':'Échéances'},
+              'companies':{'value':scalar('SELECT COUNT(*) FROM companies',()) if user['role']=='owner' else 1,'label':'Entreprises'},
+              'company-edit':{'value':'Profil','label':'À consulter'},
+            }
+            if user['role']=='owner':
+                from social_routes import pending as pending_posts
+                widgets.update({
+                  'prospects':{'value':prospect,'label':'Agence · à suivre'},
+                  'drafts':{'value':scalar('SELECT COUNT(*) FROM drafts',()),'label':'Agence · brouillons'},
+                  'team':{'value':scalar('SELECT COUNT(*) FROM users WHERE company_id=?'),'label':'Accès équipe'},
+                  'scanner':{'value':scalar('SELECT COUNT(*) FROM source_documents WHERE company_id=? AND reviewed=0'),'label':'À vérifier'},
+                  'social':{'value':len(pending_posts(con,cid)),'label':'À valider'},
+                })
+
+        return {'badges':{'requests':incoming+quotes+mails,'prospects':prospect,'calendar':agenda+len(risks),'treasury':pending},'risk_cards':risks,'module_states':states,'widgets':widgets}
 
     @app.get('/api/companies/{cid}/conformity')
     def conformity(cid:int,req:Request):

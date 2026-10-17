@@ -125,3 +125,26 @@ def test_operational_reminders_and_due_today_availability(env):
         request=c.put if 'material' in path else c.post
         assert request(base+path,headers=h,json=data).status_code==422
     env.init_db();assert len(c.get(base+'/risks').json())==5
+
+
+def test_cockpit_widgets_share_factual_scoped_snapshot(env):
+    c,h=owner(env);base='/api/companies/1'
+    widgets=c.get(base+'/cockpit').json()['widgets']
+    assert widgets['leads']['value']==0 and widgets['clients']['value']==0
+    assert widgets['treasury']['balances_minor']=={} and widgets['treasury']['bank_connected'] is False
+    c.post(base+'/treasury',headers=h,json={'label':'Entrée EUR','direction':'in','amount':'128.10','currency':'EUR','date':'2026-10-16'})
+    c.post(base+'/treasury',headers=h,json={'label':'Sortie EUR','direction':'out','amount':'28.10','currency':'EUR','date':'2026-10-16'})
+    c.post(base+'/treasury',headers=h,json={'label':'Entrée XOF','direction':'in','amount':'500','currency':'XOF','date':'2026-10-16'})
+    c.post(base+'/quotations',headers=h,json={'customer_name':'Client widget','title':'Devis widget','lines':[{'description':'Prestation','quantity':1,'unit_price':'10'}]})
+    c.post(base+'/clients',headers=h,json={'name':'Client widget'})
+    c.post(base+'/equipment',headers=h,json={'name':'Perceuse widget','quantity':1,'condition':'broken'})
+    widgets=c.get(base+'/cockpit').json()['widgets']
+    assert widgets['treasury']['balances_minor']=={'EUR':10000,'XOF':50000}
+    assert widgets['leads']['value']==1 and widgets['clients']['value']==1 and widgets['equipment']['value']>=1
+    cid=c.post('/api/companies',headers=h,json={'name':'Autre widget','city':'Paris','headline':'Test isolation'}).json()['id']
+    c.post(f'/api/companies/{cid}/users',headers=h,json={'email':'widgets@demo.test','password':'widgets-password-very-long'})
+    m=TestClient(env.app);auth(m,'widgets@demo.test','widgets-password-very-long')
+    assert m.get(base+'/cockpit').status_code==403
+    own=m.get(f'/api/companies/{cid}/cockpit').json()['widgets']
+    assert own['leads']['value']==0 and own['clients']['value']==0 and own['treasury']['balances_minor']=={}
+    assert not {'scanner','team','prospects','drafts','social'}&own.keys()

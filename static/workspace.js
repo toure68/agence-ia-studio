@@ -8,6 +8,49 @@ function moduleTone(key){return moduleTones[key]||'green';}
 const tileStates=new Set(['neutral','info','success','warning','danger']);
 function tileState(state,label){return {state:tileStates.has(state)?state:'neutral',label:label||'Normal'};}
 function modulePresentation(key,state){const p=state.module_states?.[key];return p?tileState(p.state,p.label):tileState((state.badges?.[key]||0)>0?'warning':'neutral',(state.badges?.[key]||0)>0?'À traiter':'Normal');}
+const widgetIconPaths={
+ requests:'<path d="M4 4h16v16H4zM4 13h5l2 3h2l2-3h5M12 2v8m-3-3 3 3 3-3"/>',
+ clients:'<circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',
+ activities:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m7 12 3 3 7-7"/>',
+ leads:'<path d="M6 2h8l4 4v16H6zM14 2v5h4M9 11h6m-6 4h6m-6 4h4"/>',
+ emails:'<rect x="2" y="4" width="20" height="16" rx="3"/><path d="m3 6 9 7 9-7"/>',
+ prospects:'<circle cx="10" cy="9" r="6"/><path d="m15 14 7 7M7 9h6m-3-3v6"/>',
+ calendar:'<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M7 2v5m10-5v5M3 10h18m-13 5h2m4 0h2m-8 4h2"/>',
+ reports:'<path d="M3 3v18h19M7 17v-5m5 5V6m5 11V9"/>',
+ drafts:'<path d="M5 3h10l4 4v14H5zM9 10h6m-6 4h4m1 6 7-7 2 2-7 7-3 1z"/>',
+ companies:'<path d="M4 22V3h16v19M2 22h20M8 7h2m4 0h2M8 11h2m4 0h2M8 15h2m4 0h2m-6 7v-4h4v4"/>',
+ 'company-edit':'<path d="m4 17 12-12 3 3L7 20l-4 1zM14 7l3 3M4 4h6M4 8h3M14 21h7"/>',
+ team:'<circle cx="9" cy="8" r="4"/><path d="M2 22v-3a7 7 0 0 1 14 0v3M17 4a4 4 0 0 1 0 8m2 3a6 6 0 0 1 3 5v2"/>',
+ treasury:'<rect x="2" y="5" width="20" height="15" rx="3"/><path d="M3 5V3h16m3 7h-6v6h6m-3-3h.01M6 10h5m-5 4h3"/>',
+ equipment:'<path d="M9 3h6l2 5h5v13H2V8h5zM2 13h20m-13-1v4h6v-4"/>',
+ risks:'<path d="m12 2 9 4v6c0 5-5 9-9 11-4-2-9-6-9-11V6zM12 7v6m0 4h.01"/>',
+ scanner:'<path d="M8 2H3v5m13-5h5v5M3 17v5h5m13-5v5h-5M7 6h10v12H7zM5 12h14"/>',
+ social:'<path d="m4 10 13-6v16L4 14zM4 10H2v4h2m3 1 2 7h4l-3-6M20 9l3-2m-3 8 3 2"/>'
+};
+function moduleIcon(key){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${widgetIconPaths[key]||widgetIconPaths.requests}</svg>`;}
+function moduleWidget(key,state){
+ const data=state.widgets?.[key];
+ if(!data)return {value:'—',label:'À actualiser',detail:'Données à actualiser'};
+ if(key==='treasury'){
+  const balances=Object.entries(data.balances_minor||{});
+  const format=([currency,amount])=>new Intl.NumberFormat('fr-FR',{style:'currency',currency}).format(amount/100);
+  const detail=balances.length?'Solde interne : '+balances.map(format).join(' · '):'Aucun mouvement enregistré';
+  if(balances.length>1)return {value:String(balances.length),label:'Devises · interne',detail};
+  if(!balances.length)return {value:'—',label:'Aucun mouvement',detail};
+  const [currency,amount]=balances[0];
+  return {value:new Intl.NumberFormat('fr-FR',{notation:'compact',maximumFractionDigits:1}).format(amount/100),label:currency+' · interne',detail};
+ }
+ const value=String(data.value),label=data.label;
+ return {value,label,detail:value+' · '+label};
+}
+function widgetMarkup(widget){return `<span class="widget-metric" title="${clean(widget.detail)}"><b class="widget-value">${clean(widget.value)}</b><span class="widget-caption">${clean(widget.label)}</span></span>`;}
+function refreshHomeWidgets(state){
+ document.querySelectorAll('#content .module-grid [data-go]').forEach(tile=>{
+  const widget=moduleWidget(tile.dataset.go,state),host=tile.querySelector('.widget-metric');
+  if(host){const value=host.querySelector('.widget-value'),label=host.querySelector('.widget-caption');if(value.textContent!==widget.value)value.textContent=widget.value;if(label.textContent!==widget.label)label.textContent=widget.label;host.title=widget.detail;}
+  tile.setAttribute('aria-label',tile.dataset.moduleLabel+' · '+widget.detail+' · '+modulePresentation(tile.dataset.go,state).label);
+ });
+}
 function homeGridModules(workspace,state={}){
  const columns=[2,3,4].includes(workspace.columns)?workspace.columns:2;
  const byKey=new Map(workspace.modules.map(m=>[m.key,m]));
@@ -32,9 +75,9 @@ function homeModulesMarkup(workspace,state){
  const counts={...state.badges,equipment:state.risk_cards.filter(c=>['equipment','material'].includes(c.action.type)).length,risks:state.risk_cards.filter(c=>c.action.type==='risk').length};
  return `<nav class="module-grid" data-columns="${grid.columns}" aria-label="Fonctions de l’entreprise">${grid.modules.map(m=>{
   const id=['company-edit','team'].includes(m.key)?company.id:null,n=counts[m.key]||0,p=modulePresentation(m.key,state);
-  const icon=`<span class="module-icon" aria-hidden="true">${m.icon}</span>`,count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
+  const icon=`<span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>`,widget=widgetMarkup(moduleWidget(m.key,state)),count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
   const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
-  return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns>2?`<span class="module-face">${icon}${count}</span>${label}`:`${icon}${label}${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
+  return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns>2?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
  }).join('')}</nav><a class="btn more-functions" data-go="module-library" href="#/module-library">＋ Plus de fonctions</a>`;
 }
 function updateHomeGrid(workspace,state){

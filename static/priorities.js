@@ -15,7 +15,7 @@ function priorityMarkup(cards){
  return `<div class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
   const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
   const importance=c.importance||({client:'À valider',document:'À vérifier',quote:'À finaliser'})[c.action.type]||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
-  const icon=({activity:'✅',task:'🗓️',client:'👤',document:'📄',quote:'🧾',email:'✉️'})[c.action.type]||'📥';
+  const icon=moduleIcon(({activity:'activities',task:'calendar',client:'clients',document:'scanner',quote:'leads',email:'emails',equipment:'equipment',material:'equipment',risk:'risks',social:'social',prospect:'prospects'})[c.action.type]||'requests');
   const presentation=priorityPresentation(c);
   return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile tone-${moduleTone(({task:'calendar',client:'clients',document:'scanner',activity:'activities',quote:'leads',email:'emails',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment'})[c.action.type])} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(presentation.label)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>`;
@@ -24,17 +24,18 @@ function priorityMarkup(cards){
 let priorityCards = [];
 let priorityRequest = 0;
 
-async function renderPriorities() {
+async function renderPriorities(initial={}) {
   const host = document.querySelector('#priorityBlock');
   const cid = company?.id;
   if (!host || !cid) return;
   const request=++priorityRequest;
-  const [actualCards,cockpit,workspace] = await Promise.all([api(`/api/companies/${cid}/priorities`),api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
+  const [actualCards,cockpit,workspace] = await Promise.all([api(`/api/companies/${cid}/priorities`),initial.cockpit||api(`/api/companies/${cid}/cockpit`),initial.workspace||api(`/api/companies/${cid}/workspace`)]);
   actualCards.sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
   const cards = actualCards.length ? actualCards : await routinePriorities(cid);
   if (!host.isConnected || company?.id !== cid || request!==priorityRequest) return;
   updateHomeGrid(workspace,cockpit);
   refreshHomeBadges(cockpit.badges,cockpit.risk_cards,cockpit.module_states);
+  refreshHomeWidgets(cockpit);
   priorityCards = cards;
   refreshHomeMessages(cards,cockpit);
   host.innerHTML = priorityMarkup(cards);

@@ -98,6 +98,8 @@ const {chromium}=require('playwright');
    await page.getByRole('button',{name:'Se connecter'}).click();
    await page.locator('#content .module-grid').waitFor();
    await layout();
+   const initialWidgets=await page.locator('#content .module-grid').evaluate(el=>({cards:el.querySelectorAll('.module-tile').length,icons:el.querySelectorAll('.module-icon svg').length,metrics:el.querySelectorAll('.widget-metric').length,images:el.querySelectorAll('img,image,use').length,cockpitRequests:performance.getEntriesByType('resource').filter(r=>new URL(r.name).pathname==='/api/companies/1/cockpit').length}));
+   assert.equal(initialWidgets.icons,initialWidgets.cards);assert.equal(initialWidgets.metrics,initialWidgets.cards);assert.equal(initialWidgets.images,0);assert.equal(initialWidgets.cockpitRequests,1,'Initial widgets reuse one cockpit snapshot');
    // Every module opens above the same live cockpit; closing preserves its draft and scroll.
    const assistantAddress=page.url();await openAssistant();assert.equal(page.url(),assistantAddress);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/assistant-panel-mobile.png',animations:'disabled'});
@@ -531,6 +533,14 @@ const {chromium}=require('playwright');
      });
    });
    for(const result of fillCases){assert.equal(result.count,result.columns);assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,Math.floor(17/result.columns)*result.columns);}
+   const widgetRefresh=await page.evaluate(async()=>{
+     const state=await api('/api/companies/1/cockpit'),tile=document.querySelector('[data-go="leads"]');
+     const icon=tile.querySelector('svg');tile.dataset.identity='widget-kept';
+     refreshHomeWidgets({...state,widgets:{...state.widgets,leads:{value:99,label:'À finaliser'}}});
+     const result={value:tile.querySelector('.widget-value').textContent,same:document.querySelector('[data-go="leads"]')===tile&&tile.querySelector('svg')===icon,multi:moduleWidget('treasury',{widgets:{treasury:{balances_minor:{EUR:10000,XOF:50000}}}})};
+     refreshHomeWidgets(state);return result;
+   });
+   assert.equal(widgetRefresh.value,'99');assert(widgetRefresh.same);assert.equal(widgetRefresh.multi.value,'2');assert(widgetRefresh.multi.detail.includes('100')&&widgetRefresh.multi.detail.includes('500'));
    const dynamics=await page.evaluate(async()=>{
      const source=await api('/api/companies/1/workspace'),inactive=source.modules.map(m=>m.key).filter(k=>!['clients','calendar','reports'].includes(k));
      const input={...source,dynamic:true,columns:3,visible:['reports','equipment','clients'],inactive};
@@ -549,6 +559,8 @@ const {chromium}=require('playwright');
        await page.setViewportSize({width,height:844});
        const geometry=await page.locator('#content .module-grid').evaluate(el=>({columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect(),face=c.querySelector('.module-face').getBoundingClientRect(),label=c.querySelector('.module-copy').getBoundingClientRect();return r.width>=44&&c.scrollWidth<=c.clientWidth&&Math.abs(face.height-face.width)<2&&label.top>=face.bottom;}),sizes:[...el.querySelectorAll('.module-face')].map(c=>({width:c.getBoundingClientRect().width,height:c.getBoundingClientRect().height})),count:el.children.length,closedRow:Math.abs(el.lastElementChild.getBoundingClientRect().right-el.getBoundingClientRect().right)<2,prioritiesAbove:document.querySelector('#priorityBlock').getBoundingClientRect().bottom<=el.getBoundingClientRect().top}));
        assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert.equal(geometry.count%columns,0);for(const size of geometry.sizes){assert(Math.abs(size.width-geometry.sizes[0].width)<2&&Math.abs(size.height-geometry.sizes[0].height)<2,'Every icon card has the same dimensions');}assert(geometry.cards.every(Boolean),'Dense cards remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
+       const metrics=await page.locator('#content .module-grid').evaluate(el=>[...el.querySelectorAll('.module-tile')].every(c=>{const f=c.querySelector('.module-face').getBoundingClientRect(),m=c.querySelector('.widget-metric').getBoundingClientRect(),icon=c.querySelector('.module-icon').getBoundingClientRect();return c.querySelector('.module-icon svg')&&m.top>=f.top&&m.bottom<=f.bottom&&m.width>0&&icon.width>=f.width*.4&&icon.width<=f.width*.51;}));
+       assert(metrics,'Dense widgets retain SVG and visible data within equal cards');
        if(width===390)await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
      }
      await page.setViewportSize({width:390,height:844});await goModule('clients');await page.locator('#contextPanel').waitFor();await backHome();
