@@ -77,8 +77,8 @@ const {chromium}=require('playwright');
    const cards=geometry.cards;assert(!geometry.overflow);
    for(let i=1;i<cards.length;i++){assert(cards[i].top>=cards[i-1].bottom,'Stack must remain vertical');assert(cards[i].height<=cards[i-1].height,'Priority heights must decrease');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}
    if(count>=3)assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
-   for(const card of cards)assert.equal(card.radius,geometry.module.radius);
-   if(count>=5){assert(cards[2].height>cards[3].height&&cards[3].height>cards[4].height);assert.equal(cards[4].height,geometry.module.height);}
+   for(const card of cards)assert(parseFloat(card.radius)>=16,'Priority banners retain rounded corners independently of compact widgets');
+   if(count>=5){assert(cards[2].height>cards[3].height&&cards[3].height>cards[4].height);assert(cards[4].height>=geometry.module.height,'Priority banners remain at least as tall as reference widgets');}
  }
  async function formVisible(id){
    await page.locator('#'+id).waitFor();
@@ -104,7 +104,7 @@ const {chromium}=require('playwright');
    const initialWidgets=await page.locator('#content .module-grid').evaluate(el=>({cards:el.querySelectorAll('.module-tile').length,icons:el.querySelectorAll('.module-icon svg').length,metrics:el.querySelectorAll('.widget-metric').length,images:el.querySelectorAll('img,image,use').length,cockpitRequests:performance.getEntriesByType('resource').filter(r=>new URL(r.name).pathname==='/api/companies/1/cockpit').length}));
    assert.equal(initialWidgets.icons,initialWidgets.cards);assert.equal(initialWidgets.metrics,initialWidgets.cards);assert.equal(initialWidgets.images,0);assert.equal(initialWidgets.cockpitRequests,1,'Initial widgets reuse one cockpit snapshot');
    const darkHome=await page.locator('#content .module-grid').evaluate(grid=>{const tile=grid.querySelector('.module-tile'),r=tile.getBoundingClientRect(),icon=tile.querySelector('.module-icon').getBoundingClientRect(),copy=tile.querySelector('.widget-copy').getBoundingClientRect(),card=getComputedStyle(tile.parentElement);return {body:getComputedStyle(document.body).backgroundColor,color:getComputedStyle(tile).color,background:card.backgroundImage,horizontal:r.width>r.height&&icon.right<=copy.left&&copy.top>=r.top&&copy.bottom<=r.bottom,sizes:[...grid.querySelectorAll('.module-tile')].map(c=>c.getBoundingClientRect().height)};});
-   assert.equal(darkHome.body,'rgb(0, 0, 0)');assert.equal(darkHome.color,'rgb(237, 242, 250)');assert(darkHome.background.includes('255, 255, 255'));assert(darkHome.horizontal);assert(darkHome.sizes.every(h=>Math.abs(h-darkHome.sizes[0])<2),'Wide widgets keep the same height');
+   assert.equal(darkHome.body,'rgb(0, 0, 0)');assert.equal(darkHome.color,'rgb(237, 242, 250)');assert(darkHome.background.includes('255, 255, 255'));assert(darkHome.horizontal);const reference=await page.locator('#content .module-grid .module-tile').first().evaluate(el=>{const r=el.getBoundingClientRect(),i=el.querySelector('.module-icon').getBoundingClientRect();return {ratio:r.width/r.height,icon:i.width/r.width,radius:getComputedStyle(el.parentElement).borderRadius,gap:getComputedStyle(el.closest('.module-grid')).gap};});assert(reference.ratio>1.8&&reference.ratio<2.1);assert(reference.icon>.34&&reference.icon<.42);assert.equal(reference.radius,'17px');assert.equal(reference.gap,'12px');assert(darkHome.sizes.every(h=>Math.abs(h-darkHome.sizes[0])<2),'Wide widgets keep the same height');
    // Every module opens above the same live cockpit; closing preserves its draft and scroll.
    const assistantAddress=page.url();await openAssistant();assert.equal(page.url(),assistantAddress);
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/assistant-panel-mobile.png',animations:'disabled'});

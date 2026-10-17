@@ -319,3 +319,5 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-search-launch:focus-visible{outline:2px solid #75a5ed;outline-offset:3px}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.module-grid[data-columns="2"]>.module-card,.module-grid .module-face{background:#292929!important}}
 @media(prefers-reduced-transparency:reduce){.module-grid[data-columns="2"]>.module-card,.module-grid .module-face{background:#292929!important}}
+
+.more-functions{border-style:solid;text-decoration:none}
