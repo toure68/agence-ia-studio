@@ -27,6 +27,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  Object.assign(labels,{'module-library':'Mes fonctions',scanner:'Documents & profil',document:'Vérifier le document'});
  ownerTabs.add('scanner');ownerTabs.add('document');
  Object.assign(labels,{social:'Publications','social-new':'Préparer une publication','social-post':'Vérifier la publication'});
+ labels['ai-usage']='Budget IA';ownerTabs.add('ai-usage');
  ['social','social-new','social-post'].forEach(key=>ownerTabs.add(key));
  const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material']);
  recordRoutes.add('document');recordRoutes.add('quote-sign');labels['quote-sign']='Signer le devis';
@@ -63,6 +64,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    else if(next==='social')await renderSocial();
    else if(next==='social-new')await renderSocialNew(recordId);
    else if(next==='social-post')await renderSocialPost(recordId);
+   else if(next==='ai-usage')await renderAiUsage();
    else if(next==='requests')renderRequests();
    else if(next==='tools')renderTools();
    else if(next==='treasury')await renderTreasury();

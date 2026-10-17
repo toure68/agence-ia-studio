@@ -158,6 +158,8 @@ def init_db():
     init_assistant_schema(db)
     from social_routes import init_schema as init_social_schema
     init_social_schema(db)
+    from ai_budget import init_schema as init_budget_schema
+    init_budget_schema(db)
 
 
 init_db()
@@ -184,6 +186,19 @@ from assistant_routes import install as install_assistant
 install_assistant(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow,secret=SECRET,throttle=lambda *a:throttle(*a))
 from social_routes import install as install_social
 install_social(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow)
+import ai_budget
+ai_budget.install(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a))
+
+@app.middleware('http')
+async def ai_call_scope(request:Request,call_next):
+    match=re.match(r'^/api/companies/(\d+)/',request.url.path)
+    cid=int(match.group(1)) if match else None
+    operation='email' if '/mail/' in request.url.path else 'connexion' if request.url.path.endswith('/connection') else 'assistant' if '/assistant/' in request.url.path else 'prospection plateforme'
+    try:uid=get_user(request)['id'] if request.url.path.startswith('/api/') else None
+    except HTTPException:uid=None
+    token=ai_budget.CONTEXT.set((db,cid,uid,operation))
+    try:return await call_next(request)
+    finally:ai_budget.CONTEXT.reset(token)
 
 
 @app.middleware('http')
@@ -657,8 +672,10 @@ async def generate_draft(pid:int, data:DraftRequest, req:Request):
                 'objectif':data.objective,'historique':history}
         try:
             async with httpx.AsyncClient(timeout=22) as client:
-                res=await client.post('https://api.openai.com/v1/responses',headers={'Authorization':'Bearer '+api_key},json={
+                usage_model=os.environ.get('OPENAI_MODEL','gpt-4.1-mini')
+                res=await ai_budget.post(client,'https://api.openai.com/v1/responses',model=usage_model,reservation=ai_budget.response_reserve(usage_model,prompt,'',900),headers={'Authorization':'Bearer '+api_key},json={
                     'model':os.environ.get('OPENAI_MODEL','gpt-4.1-mini'),
+                    'max_output_tokens':900,'store':False,
                     'instructions':('Tu es un assistant commercial B2B transparent, en français. Retourne UNIQUEMENT un JSON contenant subject et body. '
                       'Rédige un message naturel de 60 à 100 mots. Ne prétends pas avoir vérifié un site ou une absence de présence digitale sans preuve. '
                       'Ne promets ni gains ni résultats garantis. Ne mens pas sur ton identité. Pas de pression ni d\'envoi automatique.'),

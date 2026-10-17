@@ -36,6 +36,7 @@ function renderTools(){
  if(me.role==='owner')links.push(['drafts','Brouillons','✉️'],['team','Équipe','👥',company.id]);
  if(me.role==='owner')links.push(['scanner','Documents & profil','📷']);
  if(me.role==='owner')links.push(['social','Publications','📣']);
+ if(me.role==='owner')links.push(['ai-usage','Budget IA','💳']);
  links.push(['module-library','Plus de fonctions','＋']);
  $('#content').innerHTML='<div class="heading"><h1>Outils</h1></div>'+toolLinks(links);
 }

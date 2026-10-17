@@ -38,7 +38,7 @@ REQUIREMENTS = [
  ('QUOTE-01','Créer, retrouver, modifier et télécharger les devis','implemented','Devis internes, calculs serveur, historique, PDF et signature manuscrite après validation.','test_quotation_money_pdf_and_tenant_isolation'),
  ('SEC-01','Validation humaine, cloisonnement et absence d’envoi caché','implemented','Sessions, CSRF, droits par entreprise et utilisateur, protection contre le double envoi.','tests/test_office.py'),
  ('AUT-01','L’application prépare, l’entrepreneur vérifie et valide','partial','Priorités calculées par règles et import Gmail périodique après activation ; analyses IA, réponses commerciales, publications et devis encore déclenchés manuellement. Orchestration autonome globale à développer.','tests/test_mail_ai.py / tests/test_social.py'),
- ('COST-01','Suivi des consommations et plafond IA par entreprise','missing','Limites de fréquence et cache présents ; aucun compteur de coût par entreprise, quota mensuel commercial ni plafond monétaire. Ne pas activer une préparation IA massive sans ces protections.',''),
+ ('COST-01','Suivi des consommations et plafond IA par entreprise','partial','Journal des appels, tokens fournisseur, estimation USD, réservations atomiques, quota mensuel strict et plafond prévisionnel configurables ; incertitudes conservées et régularisation tracée. Ni facture fournisseur ni plafond monétaire absolu ; tarifs connus limités, aucun rétrocalcul historique. Orchestration massive encore à développer.','tests/test_ai_budget.py / tests/ui_navigation.cjs'),
 ]
 
 
