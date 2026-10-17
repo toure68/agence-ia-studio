@@ -17,8 +17,8 @@ const {chromium}=require('playwright');
  async function backHome(){
    for(let i=0;i<5;i++){
     if(await page.locator('#content .module-grid').count())return;
-    const before=new URL(page.url()).hash;await page.locator('#moduleBack [data-back]').click();
-    await page.waitForFunction(hash=>location.hash!==hash,before);
+    const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
+    await page.waitForFunction(route=>JSON.stringify(readRoute())!==route,before);
     await page.waitForFunction(()=>!document.querySelector('#content > [role="status"]'));
    }
    await page.locator('#content .module-grid').waitFor();
@@ -122,6 +122,13 @@ const {chromium}=require('playwright');
    await page.unroute('**/api/companies/1/clients');
    assert.equal(await page.locator('#assistantChat').getAttribute('data-identity'),'same-cockpit');
    assert.equal(await page.locator('#content .module-grid').count(),1);
+   // Back/forward and bottom close change only the floating panel, never the page URL.
+   const cockpitAddress=page.url();await goModule('clients');await page.locator('#contextPanel #content h1').waitFor();
+   assert.equal(page.url(),cockpitAddress);await page.goBack();await page.locator('#contextPanel').waitFor({state:'detached'});
+   assert.equal(await page.locator('#assistantChat').getAttribute('data-identity'),'same-cockpit');
+   await page.goForward();await page.locator('#contextPanel #content h1').waitFor();assert.equal(page.url(),cockpitAddress);
+   await page.locator('#closeContextBottom').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.waitForFunction(()=>readRoute().tab==='dashboard');
+   assert.equal(page.url(),cockpitAddress);
    await page.locator('#assistantMessage').fill('');
    const pressedTile=page.locator('#content .module-grid .module-tile').first();await pressedTile.scrollIntoViewIfNeeded();
    const pressedBox=await pressedTile.boundingBox();await page.mouse.move(pressedBox.x+20,pressedBox.y+20);await page.mouse.down();
@@ -212,9 +219,9 @@ const {chromium}=require('playwright');
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/tasks')),[]);
    assert.equal(await page.locator('#calendarTasks').count(),0);
    for(const [module,title] of [['requests','Demandes'],['treasury','Trésorerie'],['leads','Devis'],['prospects','Prospection'],['companies','Entreprises'],['calendar','Agenda'],['clients','Clients'],['activities','Activités'],['reports','Rapports'],['drafts','Brouillons'],['emails','E-mails']]){
-     await goModule(module);
+     const cockpitAddress=page.url();await goModule(module);
      await page.locator('#content h1').filter({hasText:title}).waitFor();
-     assert(page.url().includes('#/'+module));
+     assert.equal(page.url(),cockpitAddress);assert.equal(await page.locator('#cockpitContent .module-grid').count(),1);assert.equal(await page.locator('#closeContextBottom').count(),1);
      assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
      await backHome();
    }
@@ -225,7 +232,7 @@ const {chromium}=require('playwright');
      await page.reload({waitUntil:'networkidle'});
      await formVisible(form);
      await page.locator('#moduleBack [data-back]').click();
-     await page.waitForURL('**/#/'+module);
+     await page.waitForFunction(expected=>tab===expected,module);
      await page.locator(module==='prospects'?'#newProspect':module==='companies'?'#createCompany':module==='calendar'?'.task-list':module==='clients'?'#clientList':'#activityList').waitFor();
      await backHome();
    }

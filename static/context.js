@@ -13,13 +13,15 @@ async function prepareContext(next){
  if(!contextState){
   if(!$('#content .module-grid'))await zeroDashboard();
   const cockpit=$('#content'),back=$('#moduleBack');
-  contextState={cockpit,back,parent:back.parentNode,scroll:window.scrollY,focus:document.activeElement,cid:company.id,depth:history.state?.aiaDepth||0};
+  const hash=location.hash.replace(/^#\/?/,'');
+  const homeUrl=history.state?.aiaHomeUrl||(!hash||hash==='dashboard'?location.href:location.pathname+location.search+'#/dashboard');
+  contextState={cockpit,back,parent:back.parentNode,scroll:window.scrollY,focus:document.activeElement,cid:company.id,depth:history.state?.aiaCockpitDepth??history.state?.aiaDepth??0,homeUrl};
   cockpit.id='cockpitContent';
   const layer=document.createElement('div');layer.id='contextLayer';layer.className='context-layer';
-  layer.innerHTML='<section id="contextPanel" class="context-panel" role="dialog" aria-modal="true" aria-label="Détails de la fonction" tabindex="-1"><div class="sheet-handle" aria-label="Glisser vers le bas pour fermer"></div><header class="context-header"><span id="contextTitle"></span><button type="button" id="closeContext" class="back-circle" aria-label="Fermer le panneau">×</button></header><div class="context-scroll"><section id="content"></section></div></section>';
+  layer.innerHTML='<section id="contextPanel" class="context-panel" role="dialog" aria-modal="true" aria-label="Détails de la fonction" tabindex="-1"><div class="sheet-handle" aria-label="Glisser vers le bas pour fermer"></div><header class="context-header"><span id="contextTitle"></span><button type="button" id="closeContext" class="back-circle" aria-label="Fermer le panneau">×</button></header><div class="context-scroll"><section id="content"></section></div><footer class="context-footer"><button type="button" id="closeContextBottom" class="btn">Fermer et retrouver l’accueil</button></footer></section>';
   document.body.append(layer);$('#contextPanel .context-header').prepend(back);
   $('#content').addEventListener('click',handleContentClick);
-  layer.onclick=e=>{if(e.target===layer)closeContext();};$('#closeContext').onclick=closeContext;
+  layer.onclick=e=>{if(e.target===layer)closeContext();};$('#closeContext').onclick=closeContext;$('#closeContextBottom').onclick=closeContext;
   bindSheetGesture($('#contextPanel'),()=>closeContext());
   document.body.style.setProperty('--cockpit-scroll',`-${contextState.scroll}px`);
   document.body.classList.add('context-open');syncContextLayers();
@@ -37,9 +39,9 @@ function restoreCockpit(){
 }
 function closeContext(){
  if(!contextState)return;
- const depth=contextState.depth,steps=(history.state?.aiaDepth||0)-depth;
+ const homeUrl=contextState.homeUrl,depth=contextState.depth,steps=(history.state?.aiaDepth||0)-depth;
  restoreCockpit();tab='dashboard';$('#topLabel').textContent='';
- if(steps>0){navigationQueue=new Promise(resolve=>window.addEventListener('popstate',resolve,{once:true}));history.go(-steps);}else{navigationQueue=Promise.resolve();history.replaceState({aiaDepth:depth},'','#/dashboard');}
+ if(steps>0){navigationQueue=new Promise(resolve=>window.addEventListener('popstate',resolve,{once:true}));history.go(-steps);}else{navigationQueue=Promise.resolve();history.replaceState({aiaDepth:depth},'',homeUrl);}
  refreshCockpit().catch(err=>notify(err.message));
 }
 async function refreshCockpit(){

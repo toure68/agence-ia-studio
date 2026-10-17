@@ -41,17 +41,21 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  stopReading();cleanupAssistant(false);
  closeModal();
  if(contextState&&contextState.cid!==company.id){restoreCockpit();$('#content').replaceChildren();}
- if(next==='dashboard'&&(restoreCockpit()||$('#content .module-grid'))){tab='dashboard';$('#topLabel').textContent='';if(updateHistory)history.replaceState({aiaDepth:history.state?.aiaDepth||0},'','#/dashboard');await refreshCockpit();return;}
+ const cockpitUrl=contextState?.homeUrl||history.state?.aiaHomeUrl||location.href;
+ if(next==='dashboard'&&(restoreCockpit()||$('#content .module-grid'))){tab='dashboard';$('#topLabel').textContent='';if(updateHistory)history.replaceState({aiaDepth:history.state?.aiaDepth||0},'',cockpitUrl);await refreshCockpit();return;}
  await prepareContext(next);
  document.querySelector('.account-menu')?.removeAttribute('open');
  const previousTab=tab;
  tab=next;
  const id=next==='calendar'?taskId:['company-edit','team'].includes(next)?companyId:recordRoutes.has(next)?recordId:null;
- const route='#/'+next+(id?'/'+id:'');
- if(updateHistory&&location.hash!==route){
-   const depth=history.state?.aiaDepth||0;
-   if(replaceHistory)history.replaceState({aiaDepth:depth,aiaFrom:history.state?.aiaFrom||null},'',route);
-   else history.pushState({aiaDepth:depth+1,aiaFrom:previousTab},'',route);
+ // Internal panel navigation retains the cockpit address and document.
+ const panelRoute={tab:next,taskId:next==='calendar'?taskId:null,companyId:['company-edit','team'].includes(next)?companyId:null,recordId:recordRoutes.has(next)?recordId:null};
+ if(contextState){
+  const changed=JSON.stringify(history.state?.aiaPanel)!==JSON.stringify(panelRoute);
+  const push=updateHistory&&!replaceHistory&&changed;
+  const depth=history.state?.aiaDepth||0;
+  const state={aiaDepth:depth+(push?1:0),aiaFrom:push?previousTab:history.state?.aiaFrom||previousTab,aiaPanel:panelRoute,aiaHomeUrl:contextState.homeUrl,aiaCockpitDepth:contextState.depth};
+  if(push)history.pushState(state,'',contextState.homeUrl);else history.replaceState(state,'',contextState.homeUrl);
  }
  const active=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies',team:'companies'})[next]||next;
  document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));
@@ -108,6 +112,8 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  }catch(err){if(renderHost.isConnected&&renderHost===$('#content'))renderHost.innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
 }
 function readRoute(){
+ const panel=history.state?.aiaPanel,home=history.state?.aiaHomeUrl;
+ if(panel&&home&&new URL(home,location.href).href===location.href)return panel;
  const parts=location.hash.replace(/^#\/?/,'').split('/');
  const id=/^\d+$/.test(parts[1]||'')?Number(parts[1]):null;
  return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material','document','quote-sign','social-new','social-post'].includes(parts[0])?id:null};

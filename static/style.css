@@ -163,3 +163,8 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .module-copy .module-insight{font-size:12px;line-height:1.35;color:#526d5a;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .module-copy .module-insight:empty{display:none}
 .module-card:has(>.module-tile:is(:active,:focus-visible,[aria-current="page"])) .module-insight{color:#fff}
+
+/* The cockpit remains visibly present around every function panel. */
+.context-footer{padding:10px 20px max(10px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid #d3e2d3;flex-shrink:0;text-align:center}
+.context-footer .btn{min-height:44px;width:100%;max-width:360px}
+@media(max-width:750px){.context-layer{padding:0 8px max(8px,env(safe-area-inset-bottom))}.context-panel{max-height:84dvh;border-radius:24px;width:100%}.context-footer{padding:8px 14px}.context-header #closeContext{border-color:#bed4c4}}

@@ -160,3 +160,6 @@ Les fonctions s’ouvrent dans un panneau au-dessus du cockpit conservé et flou
 Fermer avec la croix, Échap, le fond extérieur ou un glissement vers le bas depuis la poignée (ou une zone non interactive lorsque le panneau est en haut). Les champs, lecteurs et la signature sont exclus du geste. Une boîte de dialogue secondaire se ferme avant le panneau principal. Le fond est inerte, le clavier reste dans le dialogue et les animations respectent la réduction de mouvement. Fermer ne valide ni n’enregistre une saisie.
 
 Chaque carte reste fermée par défaut et affiche uniquement son état ou un message court sur sa première priorité. Les informations détaillées, formulaires et validations apparaissent après clic dans le panneau contextuel, y compris pour les clients et les échéances. Aucun envoi ou signature aveugle n’est ajouté. Les vérifications métier et droits serveur restent appliqués.
+
+
+Navigation préservée : les boutons de fonction gardent l’adresse et le document de l’accueil. Le panneau possède une croix fixe en haut et un bouton de fermeture en bas ; le cockpit reste visible autour sur mobile. Les sous-vues restent dans ce panneau, y compris après rechargement, avec historique interne et fermeture extérieure/gestuelle conservés. Les liens directs existants restent interprétés puis affichés au-dessus du cockpit.
