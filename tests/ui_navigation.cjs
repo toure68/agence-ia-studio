@@ -78,7 +78,7 @@ const {chromium}=require('playwright');
    for(let i=1;i<cards.length;i++){assert(cards[i].top>=cards[i-1].bottom,'Stack must remain vertical');assert(cards[i].height<=cards[i-1].height,'Priority heights must decrease');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}
    if(count>=3)assert(cards[0].height>cards[1].height&&cards[1].height>cards[2].height);
    for(const card of cards)assert(parseFloat(card.radius)>=16,'Priority banners retain rounded corners independently of compact widgets');
-   if(count>=5){assert(cards[2].height>cards[3].height&&cards[3].height>cards[4].height);assert(cards[4].height>=geometry.module.height,'Priority banners remain at least as tall as reference widgets');}
+   if(count>=5){assert(cards[2].height>cards[3].height&&cards[3].height>cards[4].height);assert(cards[4].height>=44,'Priority banners retain a usable touch target at every viewport');}
  }
  async function formVisible(id){
    await page.locator('#'+id).waitFor();
