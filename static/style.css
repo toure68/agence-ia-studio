@@ -295,7 +295,7 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-grid:is([data-columns="2"],[data-columns="3"]){gap:12px;margin-bottom:24px}
 .module-grid:is([data-columns="2"],[data-columns="3"])>.module-card,.module-grid .module-face{background:linear-gradient(118deg,#ffffff30 0%,#ffffff12 45%,#ffffff20 100%)!important;border:1px solid #ffffff66;box-shadow:inset 0 1px 2px #ffffff50,inset 0 -1px 3px #ffffff22,0 4px 10px #0006;border-radius:10px}
 .module-grid:is([data-columns="2"],[data-columns="3"])>.module-card{container-type:inline-size}
-.module-grid:is([data-columns="2"],[data-columns="3"]) .module-tile{height:auto;min-height:0;aspect-ratio:1.95;padding:10px 7px;gap:7px;border-radius:9px;flex-direction:row;text-align:left;justify-content:flex-start}
+.module-grid:is([data-columns="2"],[data-columns="3"]) .module-tile{height:auto;min-height:0;aspect-ratio:1.95;padding:10px 7px;gap:7px;border-radius:9px;flex-direction:row;text-align:left;justify-content:flex-start;align-items:center}
 .module-grid:is([data-columns="2"],[data-columns="3"]) .module-icon{width:38cqw;flex:0 0 38cqw;max-width:78px}
 .module-grid:is([data-columns="2"],[data-columns="3"]) .module-chevron{display:none}
 .module-grid:is([data-columns="2"],[data-columns="3"]) .widget-copy{gap:3px;align-self:center}
