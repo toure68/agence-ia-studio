@@ -72,10 +72,10 @@ const {chromium}=require('playwright');
  }
  async function priorityLayout(count){
    assert.equal(await page.locator('.priority-card').count(),count);
-   assert.equal(await page.locator('#priorityBlock > .priority-panel').count(),1,'All priorities share one frame');
-   const group=await page.locator('.priority-panel').evaluate(el=>{const list=el.querySelector('ol'),r=el.getBoundingClientRect();return {numbers:[...list.querySelectorAll('.priority-number')].map(n=>n.textContent),height:list.getBoundingClientRect().height,items:[...list.querySelectorAll('.priority-tile')].map(n=>{const b=n.getBoundingClientRect();return {left:b.left,right:b.right,height:b.height};}),overflow:document.documentElement.scrollWidth>innerWidth,width:r.width};});
-   assert.deepEqual(group.numbers,Array.from({length:count},(_,i)=>`${i+1}.`));assert(!group.overflow);assert(group.height<=Math.min(page.viewportSize().height*.38,320)+1);
-   for(const row of group.items){assert(row.height>=44);assert(Math.abs(row.left-group.items[0].left)<2);assert(Math.abs(row.right-group.items[0].right)<2);}
+   assert.equal(await page.locator('#priorityBlock .priority-panel').count(),0,'Functions retain independent frames');
+   const cards=await page.locator('.priority-stack').evaluate(el=>[...el.children].map(c=>{const r=c.getBoundingClientRect();return {module:c.dataset.priorityModule,top:r.top,bottom:r.bottom,left:r.left,width:r.width,height:r.height};}));
+   assert.equal(new Set(cards.map(c=>c.module)).size,count,'One priority card per function');
+   for(let i=0;i<cards.length;i++){assert(cards[i].height>=104);if(i){assert(cards[i].top-cards[i-1].bottom>=10,'Independent cards stay spaced');assert(cards[i].height<=cards[i-1].height,'Original graduated heights remain');assert.equal(cards[i].left,cards[0].left);assert.equal(cards[i].width,cards[0].width);}}
  }
  async function dialogContained(){
    const boxes=await page.locator('#contextPanel,#modalLayer:not(.hide) .modal').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect(),v=visualViewport;return {inside:r.left>=(v?.offsetLeft||0)-1&&r.right<=(v?.offsetLeft||0)+(v?.width||innerWidth)+1&&r.top>=(v?.offsetTop||0)-1&&r.bottom<=(v?.offsetTop||0)+(v?.height||innerHeight)+1,overflow:el.scrollWidth>el.clientWidth+1};}));
@@ -455,19 +455,24 @@ const {chromium}=require('playwright');
        title:'Contrôle '+(i+1),description:'Vérifier le dossier.',first_due:due})});
      await renderPriorities();
    });
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===6);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1&&document.querySelector('.priority-group-count')?.textContent==='6 actions');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,6);
-   await priorityLayout(6);
+   await priorityLayout(1);
+   await page.locator('[data-priority-open]').click();await dialogContained();
+   assert.equal(await page.locator('[data-priority-item-open]').count(),6,'All same-function actions remain available');
+   const choice=page.locator('[data-priority-item-open]').last(),choiceTitle=await choice.locator('strong').innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
+   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
+
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
    await page.screenshot({path:'/tmp/ui-images/home-iphone.png',fullPage:true});
    await page.locator('[data-priority-dismiss]').first().click();
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1&&document.querySelector('.priority-group-count')?.textContent==='5 actions');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await page.reload({waitUntil:'networkidle'});
-   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===5);
+   await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1&&document.querySelector('.priority-group-count')?.textContent==='5 actions');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    for(const [name,width,height] of [['landscape',844,390],['tablet',1024,768],['desktop',1440,1000]]){
-    await page.setViewportSize({width,height});await layout();await priorityLayout(5);
+    await page.setViewportSize({width,height});await layout();await priorityLayout(1);
     const left=await page.locator('.main').evaluate(el=>el.getBoundingClientRect().left);assert.equal(left,0);
     await page.screenshot({path:'/tmp/ui-images/home-'+name+'.png',fullPage:true});
    }
@@ -500,7 +505,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    assert.equal(await page.locator('[data-priority-complete],.module-grid button').count(),0);
-   await page.locator('[data-priority-open]').first().click();await page.locator('#completeTask').waitFor();
+   await page.locator('[data-priority-open]').first().click();await page.locator('[data-priority-item-open]').first().click();await page.locator('#completeTask').waitFor();
    const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
    await page.locator('#completeTask').click();await completed;await backHome();
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
@@ -541,6 +546,9 @@ const {chromium}=require('playwright');
    const glow=await page.locator('#content .module-card').first().evaluate(el=>{const a=el.querySelector('.module-tile'),original=a.className,before=el.getBoundingClientRect();const result={};for(const state of ['danger','warning']){a.className='module-tile state-'+state;const c=getComputedStyle(el,'::after'),r=el.getBoundingClientRect();result[state]={color:c.borderTopColor,animation:c.animationName,stable:r.height===before.height&&r.width===before.width,pointer:c.pointerEvents};}a.className=original;return result;});
    assert.equal(glow.danger.color,'rgb(240, 101, 105)');assert.equal(glow.warning.color,'rgb(239, 165, 68)');for(const state of Object.values(glow)){assert.equal(state.animation,'alert-glimmer');assert(state.stable);assert.equal(state.pointer,'none');}
    await page.emulateMedia({reducedMotion:'reduce'});const staticGlow=await page.locator('#content .module-card').first().evaluate(el=>{const a=el.querySelector('.module-tile'),original=a.className;a.className='module-tile state-danger';const animation=getComputedStyle(el,'::after').animationName;a.className=original;return animation;});assert.equal(staticGlow,'none');await page.emulateMedia({reducedMotion:'no-preference'});
+   const grouping=await page.evaluate(()=>{const cards=[{key:'a',rank:0,action:{type:'client',id:1}},{key:'b',rank:1,action:{type:'client',id:2}},{key:'c',rank:1,action:{type:'equipment',id:3}},{key:'d',rank:1,action:{type:'material',id:4}},{key:'e',rank:2,action:{type:'quote',id:5}}],before=JSON.stringify(cards),groups=groupPriorityCards([...cards,cards[0]]);return {modules:groups.map(g=>g.module),counts:groups.map(g=>g.members.length),keys:groups.flatMap(g=>g.members.map(c=>c.key)),unchanged:JSON.stringify(cards)===before};});
+   assert.deepEqual(grouping.modules,['clients','equipment','leads']);assert.deepEqual(grouping.counts,[2,2,1]);assert.deepEqual(grouping.keys,['a','b','c','d','e']);assert(grouping.unchanged);
+   await priorityLayout(await page.locator('.priority-card').count());
    // Filling is derived from the authorized catalog and never alters saved preferences.
    const fillCases=await page.evaluate(async()=>{
      const source=await api('/api/companies/1/workspace');

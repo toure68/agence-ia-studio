@@ -10,15 +10,26 @@ function priorityPresentation(c){
  if(c.action.type==='activity')return tileState('info','À faire');
  return tileState('neutral',c.fallback?'À préparer':'À faire');
 }
+const priorityModules={activity:'activities','activity-new':'activities',task:'calendar',client:'clients',document:'scanner',quote:'leads',email:'emails',equipment:'equipment',material:'equipment',risk:'risks',social:'social',prospect:'prospects',lead:'requests'};
+function groupPriorityCards(cards){
+ const groups=new Map(),seen=new Set();
+ for(const card of cards){
+  if(seen.has(card.key))continue;seen.add(card.key);
+  const module=priorityModules[card.action.type]||card.action.type;
+  if(!groups.has(module))groups.set(module,{...card,module,members:[]});
+  groups.get(module).members.push(card);
+ }
+ return [...groups.values()];
+}
 function priorityMarkup(cards){
  if(!cards.length)return '';
- return `<section class="priority-panel" aria-label="Actions prioritaires"><header class="priority-panel-header"><strong>${cards.every(c=>c.fallback)?"Prochaine action":"Actions à traiter"}</strong><span>${cards.length}</span></header><ol class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
+ return `<div class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
   const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
   const importance=c.importance||({client:'À valider',document:'À vérifier',quote:'À finaliser'})[c.action.type]||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
   const icon=moduleIcon(({activity:'activities',task:'calendar',client:'clients',document:'scanner',quote:'leads',email:'emails',equipment:'equipment',material:'equipment',risk:'risks',social:'social',prospect:'prospects'})[c.action.type]||'requests');
   const presentation=priorityPresentation(c);
-  return `<li class="priority-card ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}"><button class="module-tile priority-tile tone-${moduleTone(({task:'calendar',client:'clients',document:'scanner',activity:'activities',quote:'leads',email:'emails',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment'})[c.action.type])} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="priority-number" aria-hidden="true">${i+1}.</span><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(presentation.label)}</span>${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</li>`;
- }).join('')}</ol></section>`;
+  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button class="module-tile priority-tile tone-${moduleTone(({task:'calendar',client:'clients',document:'scanner',activity:'activities',quote:'leads',email:'emails',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment'})[c.action.type])} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+ }).join('')}</div>`;
 }
 'use strict';
 let priorityCards = [];
@@ -38,9 +49,26 @@ async function renderPriorities(initial={}) {
   refreshHomeWidgets(cockpit);
   priorityCards = cards;
   refreshHomeMessages(cards,cockpit);
-  host.innerHTML = priorityMarkup(cards);
+  const displayCards=groupPriorityCards(cards);
+  host.innerHTML = priorityMarkup(displayCards);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
-    const card = cards[Number(btn.dataset.priorityOpen)];
+    const group=displayCards[Number(btn.dataset.priorityOpen)];
+    if(group.members.length===1)return openPriorityAction(group.members[0]);
+    openPriorityGroup(group,cid);
+  });
+  host.querySelectorAll('[data-priority-dismiss]').forEach(btn => btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      const card=displayCards[Number(btn.dataset.priorityDismiss)];
+      if(card.example){completeExample(card.action.id);await renderPriorities();return;}
+      await api(`/api/companies/${cid}/priorities/dismiss`, {method:'POST', body:JSON.stringify({key:card.key})});
+      await renderPriorities();
+      notify('Priorité masquée.');
+    } catch(e) { btn.disabled = false; notify(e.message); }
+  });
+}
+
+async function openPriorityAction(card){
     try {
       if (card.action.type === 'example') return await openTab('priority-example',{recordId:card.action.id});
       if (card.action.type === 'client') return await openTab('client-edit',{recordId:card.action.id});
@@ -61,17 +89,16 @@ async function renderPriorities(initial={}) {
       await openTab('incoming');
       leadDetail(card.action.id);
     } catch (e) { notify(e.message); }
-  });
-  host.querySelectorAll('[data-priority-dismiss]').forEach(btn => btn.onclick = async () => {
-    btn.disabled = true;
-    try {
-      const card=cards[Number(btn.dataset.priorityDismiss)];
-      if(card.example){completeExample(card.action.id);await renderPriorities();return;}
-      await api(`/api/companies/${cid}/priorities/dismiss`, {method:'POST', body:JSON.stringify({key:cards[Number(btn.dataset.priorityDismiss)].key})});
-      await renderPriorities();
-      notify('Priorité masquée.');
-    } catch(e) { btn.disabled = false; notify(e.message); }
-  });
+
+}
+function openPriorityGroup(group,cid){
+ const names={activities:'Activités',calendar:'Agenda',clients:'Clients',scanner:'Documents',leads:'Devis',emails:'E-mails',equipment:'Matériel',risks:'Prévention',social:'Publications',prospects:'Prospection',requests:'Demandes'};
+ openModal(`<h2>${clean(names[group.module]||'Actions à traiter')}</h2><p class="sub">${group.members.length} actions à traiter</p><div class="task-list priority-group-list">${group.members.map((card,i)=>`<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}</small></span><span aria-hidden="true">›</span></button>`).join('')}</div><button type="button" class="btn" id="closePriorityGroup">Fermer et retrouver l’accueil</button>`);
+ $('#closePriorityGroup').onclick=closeModal;
+ $('#modalLayer').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=async()=>{
+  if(company?.id!==cid){closeModal();return;}
+  const card=group.members[Number(btn.dataset.priorityItemOpen)];closeModal();await openPriorityAction(card);
+ });
 }
 
 function renderCalendarPage(html) {
