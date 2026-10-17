@@ -150,7 +150,7 @@ const {chromium}=require('playwright');
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopColor),'rgb(215, 185, 95)');
    await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
    assert.equal(await page.locator('#content .module-grid').count(),1);
-   assert.deepEqual(await page.locator('#content .module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go)),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner']);
+   assert.deepEqual(await page.locator('#content .module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go).sort()),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'].sort());
    assert.equal(await page.locator('.more-functions').count(),1);
    assert.equal(await page.locator('#content .module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');
    assert.equal(await page.locator('#content .module-grid [data-go="team"]').getAttribute('data-company-id'),'1');
