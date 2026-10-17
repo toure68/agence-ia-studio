@@ -9,7 +9,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
  for(const [key,count] of Object.entries(badges)){
   const tile=document.querySelector(`.module-grid [data-go="${key}"]`);if(!tile)continue;
   tile.querySelector('.module-count')?.remove();
-  if(count){const badge=document.createElement('span');badge.className='module-count';badge.textContent=String(count);badge.setAttribute('aria-label',count+' élément(s) à traiter');tile.append(badge);}
+  if(count){const badge=document.createElement('span');badge.className='module-count';badge.textContent=String(count);badge.setAttribute('aria-label',count+' élément(s) à traiter');(tile.querySelector('.module-face')||tile).append(badge);}
  }
  document.querySelectorAll('.module-grid [data-go]').forEach(tile=>{
   const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});

@@ -1,5 +1,6 @@
 """Personal home modules: hiding a shortcut never changes data or access rights."""
 import json
+import time
 from typing import Literal, Optional
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
@@ -24,6 +25,7 @@ class Preferences(BaseModel):
     visible:list[str]=Field(max_length=100)
     version:int=Field(ge=0)
     columns:Optional[Literal[2,3,4]]=None
+    dynamic:Optional[bool]=None
 
 class Domain(BaseModel):
     domain:str=Field(max_length=40)
@@ -37,6 +39,10 @@ def init_schema(db):
           PRIMARY KEY(user_id,company_id))''')
         if 'columns' not in {r[1] for r in con.execute('PRAGMA table_info(workspace_preferences)')}:
             con.execute('ALTER TABLE workspace_preferences ADD COLUMN columns INTEGER NOT NULL DEFAULT 2')
+        if 'dynamic' not in {r[1] for r in con.execute('PRAGMA table_info(workspace_preferences)')}:
+            con.execute('ALTER TABLE workspace_preferences ADD COLUMN dynamic INTEGER NOT NULL DEFAULT 1')
+        con.execute('CREATE TABLE IF NOT EXISTS workspace_tracking(user_id INTEGER NOT NULL,company_id INTEGER NOT NULL,started REAL NOT NULL,PRIMARY KEY(user_id,company_id))')
+        con.execute('CREATE TABLE IF NOT EXISTS workspace_usage(user_id INTEGER NOT NULL,company_id INTEGER NOT NULL,module TEXT NOT NULL,last_used REAL NOT NULL,PRIMARY KEY(user_id,company_id,module))')
 
 def install(app,db,require,own_company):
     def catalog(user):
@@ -49,12 +55,26 @@ def install(app,db,require,own_company):
             own_company(con,cid)
             row=con.execute('SELECT * FROM workspace_preferences WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
             business=con.execute('SELECT domain FROM company_activity_domains WHERE company_id=?',(cid,)).fetchone()
+            now=time.time()
+            con.execute('INSERT OR IGNORE INTO workspace_tracking VALUES (?,?,?)',(user['id'],cid,now))
+            started=con.execute('SELECT started FROM workspace_tracking WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()['started']
+            usage={r['module']:r['last_used'] for r in con.execute('SELECT module,last_used FROM workspace_usage WHERE user_id=? AND company_id=?',(user['id'],cid))}
         modules=catalog(user);allowed={m['key'] for m in modules}
         domain=row['domain'] if row else business['domain'] if business else 'general'
         return {'modules':modules,'domains':DOMAINS,'domain':domain,'configured':bool(row),
           'visible':[k for k in json.loads(row['visible']) if k in allowed] if row else [m['key'] for m in modules if m['key']!='social' and (not business or domain=='general' or not m['domains'] or domain in m['domains'])],
           'suggested':[m['key'] for m in modules if domain=='general' or not m['domains'] or domain in m['domains']],
-          'version':row['version'] if row else 0,'columns':row['columns'] if row else 2}
+          'version':row['version'] if row else 0,'columns':row['columns'] if row else 2,'dynamic':bool(row['dynamic']) if row else True,
+          'last_used':{key:usage.get(key,started) for key in allowed},'inactive':[key for key in allowed if now-usage.get(key,started)>=10*86400]}
+
+    @app.post('/api/companies/{cid}/workspace/usage/{key}')
+    def use_module(cid:int,key:str,req:Request):
+        user=require(req,tenant_id=cid,write=True)
+        if key not in {m['key'] for m in catalog(user)}:raise HTTPException(403,'Fonction non autorisée.')
+        with db() as con:
+            own_company(con,cid)
+            con.execute('INSERT INTO workspace_usage VALUES (?,?,?,?) ON CONFLICT(user_id,company_id,module) DO UPDATE SET last_used=excluded.last_used',(user['id'],cid,key,time.time()))
+        return {'ok':True}
 
     @app.put('/api/companies/{cid}/activity-domain')
     def business_domain(cid:int,data:Domain,req:Request):
@@ -74,11 +94,12 @@ def install(app,db,require,own_company):
         if len(set(data.visible))!=len(data.visible):raise HTTPException(422,'Fonction sélectionnée deux fois')
         with db() as con:
             own_company(con,cid);con.execute('BEGIN IMMEDIATE')
-            row=con.execute('SELECT version,columns FROM workspace_preferences WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
+            row=con.execute('SELECT version,columns,dynamic FROM workspace_preferences WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
             version=row['version'] if row else 0
             if version!=data.version:raise HTTPException(409,'La personnalisation a changé sur un autre écran. Rechargez cette page.')
             columns=data.columns if data.columns is not None else row['columns'] if row else 2
-            con.execute('INSERT INTO workspace_preferences(user_id,company_id,domain,visible,version,columns) VALUES (?,?,?,?,?,?) ON CONFLICT(user_id,company_id) DO UPDATE SET domain=excluded.domain,visible=excluded.visible,version=excluded.version,columns=excluded.columns',
-              (user['id'],cid,data.domain,json.dumps(data.visible),version+1,columns))
+            dynamic=int(data.dynamic if data.dynamic is not None else bool(row['dynamic']) if row else True)
+            con.execute('INSERT INTO workspace_preferences(user_id,company_id,domain,visible,version,columns,dynamic) VALUES (?,?,?,?,?,?,?) ON CONFLICT(user_id,company_id) DO UPDATE SET domain=excluded.domain,visible=excluded.visible,version=excluded.version,columns=excluded.columns,dynamic=excluded.dynamic',
+              (user['id'],cid,data.domain,json.dumps(data.visible),version+1,columns,dynamic))
             con.execute('COMMIT')
         return {'ok':True,'version':version+1}

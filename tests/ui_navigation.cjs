@@ -509,7 +509,7 @@ const {chromium}=require('playwright');
    await page.locator('[data-risk]').waitFor();assert((await page.locator('[data-risk]').innerText()).includes('Vérifié'));
    assert.equal((await page.evaluate(()=>api('/api/companies/1/risks')))[0].completed,1);await backHome();
    await goModule('conformity');await page.locator('.compliance-list').waitFor();assert.equal(await page.locator('.compliance-list article').count(),35);assert((await page.locator('.compliance-list').innerText()).includes('COST-01'));await backHome();
-   await page.locator('.more-functions').click();await page.locator('#activityDomain').selectOption('agriculture');
+   await page.locator('.more-functions').click();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
    await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
    await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===1);
@@ -525,12 +525,21 @@ const {chromium}=require('playwright');
    const fillCases=await page.evaluate(async()=>{
      const source=await api('/api/companies/1/workspace');
      return [3,4].map(columns=>{
-       const input={...source,columns,visible:['clients']},before=JSON.stringify(input),filled=homeGridModules(input);
+       const input={...source,dynamic:false,columns,visible:['clients']},before=JSON.stringify(input),filled=homeGridModules(input);
        const none=homeGridModules({...input,visible:[]}),full=homeGridModules({...input,visible:source.modules.map(m=>m.key)});
        return {columns,count:filled.modules.length,keys:filled.modules.map(m=>m.key),automatic:filled.modules.filter(m=>m.automatic).length,unchanged:JSON.stringify(input)===before,empty:none.modules.length,allowed:filled.modules.every(m=>source.modules.some(a=>a.key===m.key)),fullCount:full.modules.length};
      });
    });
-   for(const result of fillCases){assert.equal(result.count,result.columns);assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,17);}
+   for(const result of fillCases){assert.equal(result.count,result.columns);assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,Math.floor(17/result.columns)*result.columns);}
+   const dynamics=await page.evaluate(async()=>{
+     const source=await api('/api/companies/1/workspace'),inactive=source.modules.map(m=>m.key).filter(k=>!['clients','calendar','reports'].includes(k));
+     const input={...source,dynamic:true,columns:3,visible:['reports','equipment','clients'],inactive};
+     const urgent=homeGridModules(input,{module_states:{calendar:{state:'danger'}}}).modules.map(m=>m.key);
+     const quiet=homeGridModules({...input,inactive:source.modules.map(m=>m.key)}).modules;
+     const manual=homeGridModules({...input,dynamic:false}).modules.map(m=>m.key);
+     return {urgent,quiet:quiet.length,manual};
+   });
+   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,3);assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
    // Column choice survives closing the panel and reload without changing modules.
    for(const columns of [3,4]){
      await page.locator('.more-functions').click();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();
@@ -538,8 +547,8 @@ const {chromium}=require('playwright');
      await page.reload({waitUntil:'networkidle'});
      for(const width of [320,390,844,1280]){
        await page.setViewportSize({width,height:844});
-       const geometry=await page.locator('#content .module-grid').evaluate(el=>({columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect(),label=c.querySelector('strong');return r.width>=44&&c.scrollWidth<=c.clientWidth&&r.height<=r.width*1.25&&getComputedStyle(label).whiteSpace==='nowrap';}),closedRow:Math.abs(el.lastElementChild.getBoundingClientRect().right-el.getBoundingClientRect().right)<2,prioritiesAbove:document.querySelector('#priorityBlock').getBoundingClientRect().bottom<=el.getBoundingClientRect().top}));
-       assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert(geometry.cards.every(Boolean),'Dense cards remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
+       const geometry=await page.locator('#content .module-grid').evaluate(el=>({columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect(),face=c.querySelector('.module-face').getBoundingClientRect(),label=c.querySelector('.module-copy').getBoundingClientRect();return r.width>=44&&c.scrollWidth<=c.clientWidth&&Math.abs(face.height-face.width)<2&&label.top>=face.bottom;}),sizes:[...el.querySelectorAll('.module-face')].map(c=>({width:c.getBoundingClientRect().width,height:c.getBoundingClientRect().height})),count:el.children.length,closedRow:Math.abs(el.lastElementChild.getBoundingClientRect().right-el.getBoundingClientRect().right)<2,prioritiesAbove:document.querySelector('#priorityBlock').getBoundingClientRect().bottom<=el.getBoundingClientRect().top}));
+       assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert.equal(geometry.count%columns,0);for(const size of geometry.sizes){assert(Math.abs(size.width-geometry.sizes[0].width)<2&&Math.abs(size.height-geometry.sizes[0].height)<2,'Every icon card has the same dimensions');}assert(geometry.cards.every(Boolean),'Dense cards remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
        if(width===390)await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
      }
      await page.setViewportSize({width:390,height:844});await goModule('clients');await page.locator('#contextPanel').waitFor();await backHome();
@@ -548,6 +557,8 @@ const {chromium}=require('playwright');
    }
    await page.locator('.more-functions').click();await page.locator('#homeColumns').selectOption('2');await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('#content .module-grid')?.dataset.columns==='2');await layout();
+   await page.locator('.more-functions').click();await page.locator('#dynamicHome').check();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/workspace'))).dynamic,true);
    await goModule('scanner');
    await page.locator('#scanKind').waitFor();
    assert.equal(await page.locator('#scanKind option').count(),10);

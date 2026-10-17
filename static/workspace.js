@@ -8,31 +8,51 @@ function moduleTone(key){return moduleTones[key]||'green';}
 const tileStates=new Set(['neutral','info','success','warning','danger']);
 function tileState(state,label){return {state:tileStates.has(state)?state:'neutral',label:label||'Normal'};}
 function modulePresentation(key,state){const p=state.module_states?.[key];return p?tileState(p.state,p.label):tileState((state.badges?.[key]||0)>0?'warning':'neutral',(state.badges?.[key]||0)>0?'À traiter':'Normal');}
-function homeGridModules(workspace){
+function homeGridModules(workspace,state={}){
  const columns=[2,3,4].includes(workspace.columns)?workspace.columns:2;
  const byKey=new Map(workspace.modules.map(m=>[m.key,m]));
  const selected=[...new Set(workspace.visible)].filter(key=>byKey.has(key));
- const keys=[...selected];
- if(columns>2&&keys.length&&keys.length%columns){
-  const reserve=workspace.modules.filter(m=>!keys.includes(m.key));
-  reserve.sort((a,b)=>Number(workspace.suggested?.includes(b.key)||false)-Number(workspace.suggested?.includes(a.key)||false));
+ const dynamic=workspace.dynamic!==false,inactive=new Set(workspace.inactive||[]);
+ const weight=key=>({danger:4,warning:3,info:2})[state.module_states?.[key]?.state]||0;
+ const urgent=key=>weight(key)>=3;
+ const recent=key=>workspace.last_used?.[key]||0;
+ let keys=dynamic?[...new Set([...workspace.modules.filter(m=>urgent(m.key)).map(m=>m.key),...selected.filter(key=>!inactive.has(key)||urgent(key))])]:[...selected];
+ if(dynamic)keys.sort((a,b)=>weight(b)-weight(a)||recent(b)-recent(a));
+ if(keys.length&&keys.length%columns&&(dynamic||columns>2)){
+  const reserve=workspace.modules.filter(m=>!keys.includes(m.key)&&(!dynamic||!inactive.has(m.key)||urgent(m.key)));
+  reserve.sort((a,b)=>weight(b.key)-weight(a.key)||Number(workspace.suggested?.includes(b.key)||false)-Number(workspace.suggested?.includes(a.key)||false)||recent(b.key)-recent(a.key));
   keys.push(...reserve.slice(0,columns-keys.length%columns).map(m=>m.key));
+  // Overflow modules remain in the reserve; every displayed row has equal cells.
+  keys=keys.slice(0,Math.floor(keys.length/columns)*columns);
  }
- return {columns,modules:keys.map(key=>({...byKey.get(key),automatic:!selected.includes(key)})),remainder:keys.length%columns};
+ return {columns,modules:keys.map(key=>({...byKey.get(key),automatic:!selected.includes(key)}))};
 }
 function homeModulesMarkup(workspace,state){
- const grid=homeGridModules(workspace),shortLabels={prospects:'Prospects','company-edit':'Identité',scanner:'Documents'};
+ const grid=homeGridModules(workspace,state),shortLabels={prospects:'Prospects','company-edit':'Identité',scanner:'Documents'};
  const counts={...state.badges,equipment:state.risk_cards.filter(c=>['equipment','material'].includes(c.action.type)).length,risks:state.risk_cards.filter(c=>c.action.type==='risk').length};
- return `<nav class="module-grid" data-columns="${grid.columns}" aria-label="Fonctions de l’entreprise">${grid.modules.map((m,index)=>{
+ return `<nav class="module-grid" data-columns="${grid.columns}" aria-label="Fonctions de l’entreprise">${grid.modules.map(m=>{
   const id=['company-edit','team'].includes(m.key)?company.id:null,n=counts[m.key]||0,p=modulePresentation(m.key,state);
-  const span=grid.columns>2&&grid.remainder&&index===grid.modules.length-1?grid.columns-grid.remainder+1:1;
-  return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}${span>1?` style="grid-column:span ${span}" data-grid-span="${span}"`:''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${m.icon}</span><span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>${n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:''}<span class="module-chevron" aria-hidden="true">›</span></a></article>`;
+  const icon=`<span class="module-icon" aria-hidden="true">${m.icon}</span>`,count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
+  const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
+  return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns>2?`<span class="module-face">${icon}${count}</span>${label}`:`${icon}${label}${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
  }).join('')}</nav><a class="btn more-functions" data-go="module-library" href="#/module-library">＋ Plus de fonctions</a>`;
+}
+function updateHomeGrid(workspace,state){
+ const current=$('#content .module-grid');if(!current)return;
+ const fragment=document.createElement('div');fragment.innerHTML=homeModulesMarkup(workspace,state);
+ const next=fragment.querySelector('.module-grid'),keys=grid=>[...grid.children].map(node=>node.dataset.module).join('|');
+ if(current.dataset.columns!==next.dataset.columns||keys(current)!==keys(next))current.replaceWith(next);
+}
+function trackModuleUse(route){
+ const key=({'client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities','quote-new':'leads','quote-edit':'leads',quote:'leads','quote-sign':'leads',email:'emails','task-new':'calendar','prospect-new':'prospects','company-new':'companies',incoming:'requests',draft:'drafts',document:'scanner',material:'equipment','social-new':'social','social-post':'social'})[route]||route;
+ if(!Object.hasOwn(moduleTones,key)&&key!=='social')return;
+ // A successful panel visit records use; no business action is triggered.
+ return api(`/api/companies/${company.id}/workspace/usage/${key}`,{method:'POST',keepAfterPanelClose:true}).catch(()=>{});
 }
 
 async function renderModuleLibrary(){
  const cid=company.id,state=await api(`/api/companies/${cid}/workspace`);let selected=new Set(state.visible),domain=state.domain;
- $('#content').innerHTML=`<section class="form-page"><h1>Mes fonctions</h1><p class="tiny sub">Afficher ou masquer un bouton conserve ses données.</p><p class="tiny sub">En 3 ou 4 colonnes, des raccourcis de la réserve complètent automatiquement la dernière ligne, sans modifier votre sélection.</p><div class="field"><label for="activityDomain">Mon domaine d’activité</label><select id="activityDomain">${selectMap(state.domains,domain)}</select></div><div class="field"><label for="homeColumns">Colonnes sur l’accueil</label><select id="homeColumns">${[2,3,4].map(n=>`<option value="${n}" ${n===(state.columns||2)?'selected':''}>${n} colonnes${n===2?' (par défaut)':''}</option>`).join('')}</select></div><div class="list-filters"><input id="moduleSearch" class="control" type="search" aria-label="Rechercher une fonction" placeholder="Rechercher une fonction"><select id="moduleScope" class="control" aria-label="Fonctions proposées"><option value="all">Tous les domaines</option><option value="suggested">Adaptées à mon activité</option></select></div><div class="row library-controls"><button class="btn" id="suggestModules">Proposer selon mon activité</button><button class="btn" id="selectAllModules">Tout afficher</button><button class="btn" id="clearModules">Tout masquer</button></div><div id="moduleLibrary" class="module-library"></div><button class="btn primary library-save" id="saveModules">Enregistrer mon accueil</button></section>`;
+ $('#content').innerHTML=`<section class="form-page"><h1>Mes fonctions</h1><p class="tiny sub">Afficher ou masquer un bouton conserve ses données.</p><p class="tiny sub">Le mode dynamique remonte les alertes et range les fonctions inactives depuis dix jours. Les modules restent accessibles dans la réserve.</p><div class="field"><label for="activityDomain">Mon domaine d’activité</label><select id="activityDomain">${selectMap(state.domains,domain)}</select></div><label class="check"><input type="checkbox" id="dynamicHome" ${state.dynamic!==false?'checked':''}> Mode dynamique (recommandé)</label><div class="field"><label for="homeColumns">Colonnes sur l’accueil</label><select id="homeColumns">${[2,3,4].map(n=>`<option value="${n}" ${n===(state.columns||2)?'selected':''}>${n} colonnes${n===2?' (par défaut)':''}</option>`).join('')}</select></div><div class="list-filters"><input id="moduleSearch" class="control" type="search" aria-label="Rechercher une fonction" placeholder="Rechercher une fonction"><select id="moduleScope" class="control" aria-label="Fonctions proposées"><option value="all">Tous les domaines</option><option value="suggested">Adaptées à mon activité</option></select></div><div class="row library-controls"><button class="btn" id="suggestModules">Proposer selon mon activité</button><button class="btn" id="selectAllModules">Tout afficher</button><button class="btn" id="clearModules">Tout masquer</button></div><div id="moduleLibrary" class="module-library"></div><button class="btn primary library-save" id="saveModules">Enregistrer mon accueil</button></section>`;
  function recommended(m){return domain==='general'||!m.domains.length||m.domains.includes(domain);}
  function draw(){
   const query=$('#moduleSearch').value.toLocaleLowerCase('fr'),only=$('#moduleScope').value==='suggested';
@@ -43,7 +63,7 @@ async function renderModuleLibrary(){
  $('#activityDomain').onchange=e=>{domain=e.target.value;draw();};$('#moduleScope').onchange=draw;$('#moduleSearch').oninput=draw;
  $('#suggestModules').onclick=()=>{selected=new Set(state.modules.filter(recommended).map(m=>m.key));draw();};
  $('#selectAllModules').onclick=()=>{selected=new Set(state.modules.map(m=>m.key));draw();};$('#clearModules').onclick=()=>{selected.clear();draw();};
- $('#saveModules').onclick=async e=>{e.currentTarget.disabled=true;try{await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain,visible:state.modules.filter(m=>selected.has(m.key)).map(m=>m.key),version:state.version,columns:Number($('#homeColumns').value)})});await finishForm('dashboard');notify('Votre accueil est enregistré.');}catch(err){if($('#saveModules'))$('#saveModules').disabled=false;notify(err.message);}};draw();
+ $('#saveModules').onclick=async e=>{e.currentTarget.disabled=true;try{await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain,visible:state.modules.filter(m=>selected.has(m.key)).map(m=>m.key),version:state.version,columns:Number($('#homeColumns').value),dynamic:$('#dynamicHome').checked})});await finishForm('dashboard');notify('Votre accueil est enregistré.');}catch(err){if($('#saveModules'))$('#saveModules').disabled=false;notify(err.message);}};draw();
 }
 
 function profileFields(fields,prefix='profile',keys=Object.keys(profileLabels)){

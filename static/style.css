@@ -179,17 +179,20 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .module-grid[data-columns="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
 .module-grid[data-columns="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
 .module-grid[data-columns="3"]>.module-card,.module-grid[data-columns="4"]>.module-card{min-width:0}
-/* Dense cards scale with their own width, on mobile and desktop. */
-.module-grid:is([data-columns="3"],[data-columns="4"]){gap:10px}
-.module-grid:is([data-columns="3"],[data-columns="4"])>.module-card{container-type:inline-size;align-self:stretch}
-.module-grid:is([data-columns="3"],[data-columns="4"]) .module-tile{aspect-ratio:1.15;min-height:60px;height:100%;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 5px;text-align:center}
-.module-grid:is([data-columns="3"],[data-columns="4"]) [data-grid-span] .module-tile{aspect-ratio:auto}
-.module-grid:is([data-columns="3"],[data-columns="4"]) .module-icon{flex-basis:auto;width:clamp(22px,28cqw,42px);height:clamp(24px,30cqw,44px);font-size:clamp(20px,26cqw,34px)}
-.module-grid:is([data-columns="3"],[data-columns="4"]) .module-copy{width:100%;gap:0}
-.module-grid:is([data-columns="3"],[data-columns="4"]) .module-copy strong{font-size:clamp(9px,12cqw,15px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;line-height:1.3}
+/* Equal icon cards with labels below, independent of label length. */
+.module-grid:is([data-columns="3"],[data-columns="4"]){gap:14px 10px}
+.module-grid:is([data-columns="3"],[data-columns="4"])>.module-card{container-type:inline-size;align-self:stretch;border:0;background:none!important;overflow:visible}
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-tile{min-height:0;height:100%;border:0;background:none!important;box-shadow:none;padding:0;display:flex;flex-direction:column;gap:7px;align-items:stretch;justify-content:flex-start;text-align:center;border-radius:18px}
+.module-face{position:relative;width:100%;aspect-ratio:1;display:grid;place-items:center;border:1px solid #cfdfcf;border-top:5px solid #3b8056;border-radius:22px;background:linear-gradient(130deg,#fff,#f1f8ef);box-shadow:inset 0 1px 0 #fff,0 3px 0 #24472f0c,0 5px 12px #24472f08}
+.tone-blue .module-face{background:linear-gradient(130deg,#f0f9fb,#fff);border-top-color:#65a2ad}.tone-gold .module-face{background:linear-gradient(130deg,#fff8e9,#fff);border-top-color:#d1ac51}.tone-purple .module-face{background:linear-gradient(130deg,#f7f2fc,#fff);border-top-color:#a18bbd}
+.state-warning .module-face{border-top-color:#d1ac51}.state-danger .module-face{border-top-color:#aa3532}.state-info .module-face{border-top-color:#65a2ad}.state-success .module-face{border-top-color:#3b8056}
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-tile:is(:active,:focus-visible,[aria-current="page"]) .module-face{background:linear-gradient(125deg,#174a37,#2d7453);border-top-color:#d7b95f}
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-icon{flex-basis:auto;width:clamp(26px,40cqw,56px);height:clamp(28px,42cqw,58px);font-size:clamp(24px,35cqw,44px);filter:drop-shadow(0 2px 1px #17352320)}
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-copy{width:100%;height:2.6em;gap:0;font-size:clamp(10px,13cqw,14px);color:#204631}
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-copy strong{font-size:inherit;line-height:1.3;white-space:normal;overflow-wrap:normal;word-break:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .module-grid:is([data-columns="3"],[data-columns="4"]) .module-chevron,.module-grid:is([data-columns="3"],[data-columns="4"]) .module-insight{display:none}
 .module-grid:is([data-columns="3"],[data-columns="4"]) .module-count{top:5px;right:5px;min-width:18px;height:18px;font-size:10px}
-@media(max-width:750px){.module-grid:is([data-columns="3"],[data-columns="4"]){gap:8px}}
+@media(max-width:750px){.module-grid:is([data-columns="3"],[data-columns="4"]){gap:14px 8px}.module-face{border-radius:18px}}
 /* Action priorities retain pastel surfaces, with a raised, luminous urgency band. */
 .priority-tile:is(.state-warning,.state-danger){box-shadow:inset 0 1px 0 #fff,0 4px 0 #24472f18,0 9px 20px #24472f14}
 .priority-tile.state-warning{outline:1px solid #d1ac5160;outline-offset:1px;filter:drop-shadow(0 -2px 3px #d1ac5130)}

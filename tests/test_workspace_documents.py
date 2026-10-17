@@ -185,3 +185,29 @@ def test_home_columns_migration_preserves_existing_personal_home(env):
     env.init_db()
     state=c.get(path).json()
     assert state['columns']==2 and state['domain']=='agriculture' and state['visible']==['clients','equipment'] and state['version']==1
+
+
+def test_dynamic_home_usage_ten_day_boundary_and_isolation(env,monkeypatch):
+    import workspace_routes
+    from types import SimpleNamespace
+    clock=[1800000000.0];monkeypatch.setattr(workspace_routes,'time',SimpleNamespace(time=lambda:clock[0]))
+    c,h=owner(env);path='/api/companies/1/workspace';state=c.get(path).json()
+    assert state['dynamic'] is True and not state['inactive']
+    assert c.post(path+'/usage/clients').status_code==403
+    assert c.post(path+'/usage/unknown',headers=h).status_code==403
+    clock[0]+=10*86400-1;assert not c.get(path).json()['inactive']
+    clock[0]+=1;assert 'clients' in c.get(path).json()['inactive']
+    assert c.post(path+'/usage/clients',headers=h).status_code==200
+    state=c.get(path).json();assert 'clients' not in state['inactive'] and 'equipment' in state['inactive']
+    assert c.put(path,headers=h,json={'domain':state['domain'],'visible':state['visible'],'version':state['version'],'dynamic':False}).status_code==200
+    state=c.get(path).json();assert state['dynamic'] is False
+    assert c.put(path,headers=h,json={'domain':state['domain'],'visible':state['visible'],'version':state['version']}).status_code==200
+    assert c.get(path).json()['dynamic'] is False
+    c.post('/api/companies/1/users',headers=h,json={'email':'usage@demo.test','password':'usage-password-very-long'})
+    m=TestClient(env.app);mh=auth(m,'usage@demo.test','usage-password-very-long')
+    assert m.get(path).json()['dynamic'] is True and not m.get(path).json()['inactive']
+    assert m.post(path+'/usage/social',headers=mh).status_code==403
+    cid=c.post('/api/companies',headers=h,json={'name':'Usage séparé','city':'Paris','headline':'Test usage'}).json()['id']
+    assert m.post(f'/api/companies/{cid}/workspace/usage/clients',headers=mh).status_code==403
+    assert not c.get(f'/api/companies/{cid}/workspace').json()['inactive']
+    env.init_db();assert c.get(path).json()['dynamic'] is False and 'clients' not in c.get(path).json()['inactive']

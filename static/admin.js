@@ -111,6 +111,8 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    else if(next==='drafts')await renderDrafts();
    else if(next==='draft')await renderDrafts(recordId);
    else if(next==='priority-example')await renderPriorityExample(recordId);
+   await trackModuleUse(next);
+   if(!renderHost.isConnected||renderHost!==$('#content'))return;
    if($('#contextPanel')){$('#contextPanel .context-scroll').scrollTop=0;$('#contextPanel').focus({preventScroll:true});}else window.scrollTo(0,0);
  }catch(err){if(renderHost.isConnected&&renderHost===$('#content'))renderHost.innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
 }

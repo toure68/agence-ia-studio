@@ -8,3 +8,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Preserve approved pastel colors and urgency top bands, responsive layouts, module visibility preferences, and access restrictions.
 - Preserve existing business workflows, explicit validation, signature consent, and company/user isolation. Never send real messages or use paid provider calls during tests.
 - Check affected workflows and navigation regressions before shipping. Inspect the final change for unrelated behavior changes. Verify deployment SUCCESS and live asset version before reporting the change online.
+
+- Grid cards must always have identical dimensions; never span or stretch a last card. Use complete rows and keep overflow in the reserve. Dense grids put icon cards above their labels. Dynamic home is enabled by default: ten days of inactivity moves a module into reserve unless an actionable alert requires it; only an explicit user setting disables this behavior.
