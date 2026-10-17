@@ -463,5 +463,5 @@ body:has(#assistantDock){background:var(--bg-obsidienne)}
 body:has(#assistantDock)>.shell>.main>.top{position:relative;z-index:11}
 body:has(#content .module-grid):not(.has-floating-layer)::before,
 body:has(#content .module-grid):not(.has-floating-layer)::after{content:"";position:fixed;left:0;right:0;z-index:10;pointer-events:none}
-body:has(#content .module-grid):not(.has-floating-layer)::before{top:0;height:36px;background:linear-gradient(to bottom,var(--bg-obsidienne) 0%,rgba(13,14,18,0) 100%)}
-body:has(#content .module-grid):not(.has-floating-layer)::after{bottom:0;height:48px;background:linear-gradient(to top,var(--bg-obsidienne) 0%,rgba(13,14,18,0) 100%)}
+body:has(#content .module-grid):not(.has-floating-layer)::before{top:0;height:72px;background:linear-gradient(to bottom,var(--bg-obsidienne) 0%,rgba(13,14,18,0) 100%)}
+body:has(#content .module-grid):not(.has-floating-layer)::after{bottom:0;height:96px;background:linear-gradient(to top,var(--bg-obsidienne) 0%,rgba(13,14,18,0) 100%)}
