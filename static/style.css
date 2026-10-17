@@ -153,3 +153,11 @@ body{background:linear-gradient(150deg,#edf5e8 0%,#e2eddd 100%);background-attac
 .module-inline{padding:0 16px 14px}.module-insight{font-size:12px;color:#526d5a;margin:3px 0 9px;overflow-wrap:anywhere}.module-inline-action:empty{display:none}
 .module-inline-action .btn{width:100%;min-height:44px}.inline-client-facts{margin:0 0 12px;font-size:12px;overflow-wrap:anywhere}.inline-client-facts dt{font-weight:700}.inline-client-facts dd{margin:0 0 6px;white-space:pre-wrap}
 @media(max-width:750px){.module-inline{padding:0 12px 12px}.module-inline-action .btn{padding:7px;font-size:12px}}
+
+.module-card.tone-green{background:linear-gradient(130deg,#fff,#f1f8ef)}
+.module-card.tone-blue{background:linear-gradient(130deg,#f0f9fb,#fff)}
+.module-card.tone-gold{background:linear-gradient(130deg,#fff8e9,#fff)}
+.module-card.tone-purple{background:linear-gradient(130deg,#f7f2fc,#fff)}
+.module-card>.module-tile:not(:active,:focus-visible,[aria-current="page"]){background:transparent}
+.module-card:has(>.module-tile:is(:active,:focus-visible,[aria-current="page"])){background:linear-gradient(125deg,#174a37,#2d7453)}
+.module-card:has(>.module-tile:is(:active,:focus-visible,[aria-current="page"])) .module-insight{color:#fff}
