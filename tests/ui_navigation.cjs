@@ -452,6 +452,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#accountAudit:visible').count(),1);
    await page.locator('.account-menu summary').click();
    await goModule('activities');
+   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');
    await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
@@ -541,7 +542,7 @@ const {chromium}=require('playwright');
    assert.deepEqual(errors,[]);
    console.log('PASS: clean home, four main modules, dynamic badges, keyboard input, cashbook, logistics and explicit compliance gaps, quotation creation/edit/PDF, always-present useful priority, mail settings, speech controls and no integrated dictation, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
  }catch(error){
-   console.error('UI details',JSON.stringify({errors,body:await page.locator('body').innerText()}));
+   console.error('UI details',JSON.stringify({url:page.url(),errors,body:await page.locator('body').innerText()}));
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
    await page.screenshot({path:'/tmp/ui-images/failure.png',fullPage:true});
    throw error;
