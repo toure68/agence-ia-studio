@@ -403,3 +403,8 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 /* Independent priority cards; one card per function, original spacing and graduated heights. */
 .priority-group-count{font-size:11px;color:#d9e2f1;border:1px solid #ffffff22;border-radius:9px;padding:3px 7px}
 .priority-group-list{margin-bottom:18px}
+
+/* A steady 1px state outline on the small app badge; glyph and outer beam stay unchanged. */
+.module-grid .module-tile.state-danger .module-icon,.priority-tile.state-danger .module-icon{border-color:#f06569}
+.module-grid .module-tile.state-warning .module-icon,.priority-tile.state-warning .module-icon{border-color:#efa544}
+.module-grid .module-tile.state-info .module-icon,.priority-tile.state-info .module-icon{border-color:#75a5ed}
