@@ -446,3 +446,12 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
  .priority-tier-3{--priority-card-height:132px}
  .priority-tier-4{--priority-card-height:116px}
 }
+
+/* A slow rainbow reflection under the assistant pill, matching the supplied reference. */
+.assistant-dock{--assistant-rainbow:linear-gradient(90deg,#59d9ff,#a383ff,#f18bc6,#f4cf73,#95e6a4,#59d9ff);isolation:isolate;overflow:visible}
+.assistant-dock::before,.assistant-dock::after{content:"";position:absolute;left:12px;right:12px;pointer-events:none;background:var(--assistant-rainbow);background-size:200% 100%;animation:assistant-rainbow-drift 6s linear infinite;z-index:0}
+.assistant-dock::before{bottom:-6px;height:10px;filter:blur(8px);opacity:.55;border-radius:50%}
+.assistant-dock::after{bottom:-1px;height:1px;border-radius:50%;opacity:.9}
+.assistant-dock>span,.assistant-dock>strong{position:relative;z-index:1}
+@keyframes assistant-rainbow-drift{from{background-position:0% 50%}to{background-position:200% 50%}}
+@media(prefers-reduced-motion:reduce){.assistant-dock::before,.assistant-dock::after{animation:none;background-position:50% 50%}}
