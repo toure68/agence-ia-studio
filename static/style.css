@@ -401,3 +401,5 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 @keyframes dialog-appear{from{opacity:.65}to{opacity:1}}
 .module-grid:is([data-columns="2"],[data-columns="3"],[data-columns="4"]) .module-tile:is(.state-danger,.state-warning){box-shadow:none;border-top-color:transparent}
 @media(prefers-reduced-motion:reduce){.context-panel,.modal{animation:none}}
+
+.module-grid>.module-card{border-radius:10px}

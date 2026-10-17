@@ -13,10 +13,10 @@ Preserve working behavior and approved design. A request to add a feature does n
 
 - Home widgets use inline SVG and CSS with a factual metric from the shared cockpit snapshot; no bitmap assets, per-card requests, invented figures or mixed-currency totals. Preserve equal cards, dynamic priorities and contextual navigation.
 
-- All grid modes, including manual two-column homes, must have complete rows. Two-column widgets are horizontal with name and metric inside; four-column compact squares keep their labels below. Do not invent new alert-color rules or detailed backgrounds during visual refinements.
+- All grid modes, including manual two-column homes, must have complete rows. Two-column widgets are horizontal with name and metric inside; four-column compact squares keep their labels below. Alert colors follow the explicit red danger/orange warning rule below; do not change unrelated detailed backgrounds.
 
-- Two-column visual reference uses equal 1.95:1 graphite glass cards, fine bright rims, large glass-backed colored SVG glyphs, uppercase names and wrapped factual metrics. Keep greeting, assistant, urgency banners and all workflows. Home search opens the existing searchable module reserve.
+- Two-column visual reference uses equal horizontal graphite glass cards, fine bright rims, large glass-backed colored SVG glyphs, uppercase names and wrapped factual metrics. Keep greeting, assistant, urgency banners and all workflows. Home search opens the existing searchable module reserve.
 
-- Outer grid card corners are lightly rounded (10px). Three columns now retain the 1.95:1 horizontal rectangle with smaller icons and inline labels/data; four-column layout remains unchanged except outer corner radius. Preserve colors.
+- Outer grid card corners are lightly rounded (10px). Three columns use smaller icons and inline labels/data; four columns keep labels below. Card heights now follow the common stable-height rule below. Preserve colors except the explicitly specified red/orange alert liseré.
 
 - Current ergonomics: one priority panel contains numbered actionable rows (not separate oversized banners). Rows keep open, dismiss and speech actions. All grid tiles share a stable 88px mobile /112px desktop height across 2/3/4 columns. Priority glow is red for danger and orange for warning, opacity-only, static under reduced motion. Every first-level/nested dialog must stay within the visual viewport including the keyboard; table scrolling stays local.
