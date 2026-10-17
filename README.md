@@ -166,3 +166,8 @@ Navigation préservée : les boutons de fonction gardent l’adresse et le docum
 
 
 L’assistant est fermé par défaut derrière un bouton compact « Assistant IA · Parler ou poser une question » juste sous le message Bonjour. Un appui ouvre la conversation existante dans le panneau contextuel, à adresse inchangée. La croix, le bouton inférieur, le fond extérieur et le geste ferment le panneau ; l’échange, le brouillon et les pièces jointes non envoyées restent conservés. La fermeture arrête le micro et met les aperçus média en pause. La clé API, les envois, les formats, les quotas et les droits existants sont conservés.
+
+
+## Nombre de colonnes de l’accueil
+
+Plus de fonctions → Colonnes sur l’accueil : choix de 2, 3 ou 4 colonnes, enregistré avec les fonctions visibles pour chaque compte et entreprise. Deux reste le défaut, y compris pour les anciens comptes. Les priorités conservent leur pile verticale et les fonctions s’ouvrent dans le même panneau contextuel.

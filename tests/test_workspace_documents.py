@@ -153,3 +153,35 @@ def test_identity_save_encryption_and_quote_privacy(env,monkeypatch):
     with env.db() as con:assert b'ABC123456' not in con.execute('SELECT payload FROM company_profiles WHERE company_id=1').fetchone()['payload']
     q=c.post('/api/companies/1/quotations',headers=h,json={'customer_name':'Client test','title':'Devis test identité','lines':[{'description':'Prestation','quantity':1,'unit_price':'10'}]}).json()
     assert 'document_number' not in q['issuer'] and 'personal_address' not in q['issuer'] and 'last_name' not in q['issuer']
+
+
+def test_home_columns_persist_scope_validation_and_legacy_save(env):
+    c,h=owner(env);path='/api/companies/1/workspace';state=c.get(path).json()
+    assert state['columns']==2
+    payload={'domain':state['domain'],'visible':state['visible'],'version':state['version'],'columns':3}
+    assert c.put(path,json=payload).status_code==403
+    assert c.put(path,headers=h,json={**payload,'columns':5}).status_code==422
+    assert c.put(path,headers=h,json=payload).status_code==200
+    saved=c.get(path).json();assert saved['columns']==3 and saved['visible']==state['visible']
+    assert c.put(path,headers=h,json={**payload,'columns':4}).status_code==409
+    # A client from before this feature may omit columns without resetting the choice.
+    assert c.put(path,headers=h,json={'domain':saved['domain'],'visible':saved['visible'],'version':saved['version']}).status_code==200
+    assert c.get(path).json()['columns']==3
+    c.post('/api/companies/1/users',headers=h,json={'email':'columns@demo.test','password':'columns-password-very-long'})
+    m=TestClient(env.app);mh=auth(m,'columns@demo.test','columns-password-very-long');other=m.get(path).json()
+    assert other['columns']==2
+    assert m.put(path,headers=mh,json={'domain':other['domain'],'visible':other['visible'],'version':other['version'],'columns':4}).status_code==200
+    assert c.get(path).json()['columns']==3
+    cid=c.post('/api/companies',headers=h,json={'name':'Autre grille','city':'Paris','headline':'Test isolation'}).json()['id']
+    assert c.get(f'/api/companies/{cid}/workspace').json()['columns']==2
+    assert m.get(f'/api/companies/{cid}/workspace').status_code==403
+    env.init_db();assert c.get(path).json()['columns']==3 and m.get(path).json()['columns']==4
+
+
+def test_home_columns_migration_preserves_existing_personal_home(env):
+    c,h=owner(env);path='/api/companies/1/workspace'
+    assert c.put(path,headers=h,json={'domain':'agriculture','visible':['clients','equipment'],'version':0}).status_code==200
+    with env.db() as con:con.execute('ALTER TABLE workspace_preferences DROP COLUMN columns')
+    env.init_db()
+    state=c.get(path).json()
+    assert state['columns']==2 and state['domain']=='agriculture' and state['visible']==['clients','equipment'] and state['version']==1

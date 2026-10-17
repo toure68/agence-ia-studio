@@ -53,6 +53,7 @@ async function refreshCockpit(){
  const current=host.querySelector('.module-grid'),next=fragment.querySelector('.module-grid');
  const keys=grid=>[...grid.children].map(node=>node.dataset.module).join('|');
  if(current&&keys(current)!==keys(next))current.replaceWith(next);
+ else if(current)current.dataset.columns=next.dataset.columns;
  await renderPriorities();
 }
 function bindSheetGesture(panel,close){
