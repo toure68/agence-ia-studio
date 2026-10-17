@@ -408,3 +408,11 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .module-grid .module-tile.state-danger .module-icon,.priority-tile.state-danger .module-icon{border-color:#f06569}
 .module-grid .module-tile.state-warning .module-icon,.priority-tile.state-warning .module-icon{border-color:#efa544}
 .module-grid .module-tile.state-info .module-icon,.priority-tile.state-info .module-icon{border-color:#75a5ed}
+
+/* Three-column widgets shrink in height as well as width relative to the two-column layout. */
+.module-grid[data-columns="3"]{--module-height:calc(112px * 2 / 3)}
+@media(max-width:750px){.module-grid[data-columns="3"]{--module-height:calc(88px * 2 / 3)}}
+.command-date-field{margin-top:14px}
+.command-inline-error{margin:12px 0;padding:10px 12px;border:1px solid #d8aa81;border-radius:10px;background:#fff4e8;color:#79431f;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.command-inline-error:focus{outline:2px solid #b47740;outline-offset:2px}
+#commandDateHint{font-size:12px;font-weight:400;color:#657985}

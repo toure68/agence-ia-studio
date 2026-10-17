@@ -55,10 +55,10 @@ function dateFromCommand(text,required=false){
  if(iso)return iso[0];if(fr)return `${fr[3]}-${fr[2].padStart(2,'0')}-${fr[1].padStart(2,'0')}`;
  const d=new Date();if(/\bdemain\b/i.test(text))d.setDate(d.getDate()+1);
  if(/\bdemain\b|aujourd/i.test(text))return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
- if(required)throw Error('Indiquez une date : demain, aujourd’hui ou 24/10/2026.');
+ if(required){const error=Error('Choisissez une date ci-dessus, ou indiquez « demain », « aujourd’hui » ou une date dans votre consigne.');error.code='date_required';throw error;}
  return null;
 }
-function interpretCommand(text,context='auto'){
+function interpretCommand(text,context='auto',selectedDate=''){
  text=text.trim();if(text.length<3)throw Error('Écrivez une consigne.');
  const normalized=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();let type=context;
  if(type==='auto')type=/\bprospect\b/.test(normalized)?'prospect':/\b(entree|sortie|depense|encaissement)\b/.test(normalized)?'movement':/\b(materiel|equipement)\b/.test(normalized)?'equipment':/\b(assurance|habilitation|epi|consommable|revision)\b/.test(normalized)?'risk':/\b(echeance|rappel|agenda)\b/.test(normalized)?'task':'activity';
@@ -66,7 +66,7 @@ function interpretCommand(text,context='auto'){
  if(title.length<2)throw Error('Précisez le nom ou l’action à réaliser.');
  if(!operationsEnabled&&['equipment','risk'].includes(type))throw Error('Le matériel et la prévention seront disponibles après validation de la prochaine étape.');
  if(type==='prospect')return {type,title:'Créer le prospect',path:'/api/prospects',payload:{name:title,sector:'À préciser',diagnosis:text}};
- if(type==='task')return {type,title:'Créer l’échéance',path:`/api/companies/${company.id}/tasks`,payload:{title,description:text,first_due:dateFromCommand(text,true),monthly:/chaque mois|mensuel/i.test(text)}};
+ if(type==='task')return {type,title:'Créer l’échéance',path:`/api/companies/${company.id}/tasks`,payload:{title,description:text,first_due:selectedDate||dateFromCommand(text,true),monthly:/chaque mois|mensuel/i.test(text)}};
  if(type==='movement'){
   const amount=text.match(/(\d+(?:[.,]\d{1,2})?)\s*(€|euros?|EUR|FCFA|XOF|USD|dollars?)/i);if(!amount)throw Error('Précisez le montant et la devise, par exemple : entrée 120 euros client Dupont.');
   const direction=/\b(entree|encaissement)\b/.test(normalized)?'in':/\b(sortie|depense)\b/.test(normalized)?'out':null;if(!direction)throw Error('Précisez entrée ou sortie.');
@@ -79,16 +79,18 @@ function interpretCommand(text,context='auto'){
  }
  if(type==='risk'){
   const kind=/assurance|decennale|rc pro/.test(normalized)?'insurance':/habilitation/.test(normalized)?'qualification':/\bepi\b/.test(normalized)?'epi':/consommable/.test(normalized)?'consumable':/vehicule|revision/.test(normalized)?'vehicle':'other';
-  return {type,title:'Enregistrer le rappel de prévention',path:`/api/companies/${company.id}/risks`,payload:{title,kind,due:dateFromCommand(text,true),responsible:'',completed:false}};
+  return {type,title:'Enregistrer le rappel de prévention',path:`/api/companies/${company.id}/risks`,payload:{title,kind,due:selectedDate||dateFromCommand(text,true),responsible:'',completed:false}};
  }
  return {type:'activity',title:'Créer l’activité',path:`/api/companies/${company.id}/activities`,payload:{title,description:text,priority:/urgent/.test(normalized)?'urgent':'normal',due:dateFromCommand(text)}};
 }
 function openCommand(context='auto'){
  stopReading();
- openModal(`<h1>Votre consigne</h1><p class="tiny sub">Commande structurée, sans IA externe. Vérifiez la proposition avant enregistrement.</p><div class="field"><label for="commandText">Que faut-il faire ?</label><textarea id="commandText" maxlength="3000" rows="4" placeholder="Par exemple : ajoute une échéance assurance demain"></textarea></div><div class="row"><button class="btn" id="previewCommand">Préparer</button></div><div id="commandPreview" aria-live="polite"></div>`);
+ openModal(`<h1>Votre consigne</h1><p class="tiny sub">Commande structurée, sans IA externe. Vérifiez la proposition avant enregistrement.</p><div class="field"><label for="commandText">Que faut-il faire ?</label><textarea id="commandText" maxlength="3000" rows="4" placeholder="Par exemple : ajoute une échéance assurance demain"></textarea></div><div id="commandDateField" class="field command-date-field ${['task','risk'].includes(context)?'':'hide'}"><label for="commandDate">Date de l’événement ou de l’échéance</label><input id="commandDate" type="date" aria-describedby="commandDateHint commandError"><small id="commandDateHint">Choisissez une date ici, ou indiquez-la dans votre consigne.</small></div><p id="commandError" class="command-inline-error hide" role="alert" tabindex="-1"></p><div class="row"><button class="btn" id="previewCommand">Préparer</button></div><div id="commandPreview" aria-live="polite"></div>`);
  let proposal=null,operationId=crypto.randomUUID();
- $('#commandText').oninput=()=>{proposal=null;$('#commandPreview').replaceChildren();};
- $('#previewCommand').onclick=()=>{try{proposal=interpretCommand($('#commandText').value,context);$('#commandPreview').innerHTML=`<article class="task-detail"><h2>${clean(proposal.title)}</h2><dl class="report-lines">${Object.entries(proposal.payload).map(([k,v])=>`<div><dt>${clean(({title:'Action',name:'Nom',description:'Consigne',sector:'Secteur à vérifier',diagnosis:'Consigne',first_due:'Date',due:'Date',monthly:'Chaque mois',priority:'Importance',direction:'Sens',amount:'Montant',currency:'Devise',date:'Date',label:'Libellé',quantity:'Quantité',condition:'État',maintenance_due:'Révision',kind:'Type',responsible:'Responsable',completed:'Terminé'})[k]||k)}</dt><dd>${clean(v===null?'—':v===true?'Oui':v===false?'Non':v)}</dd></div>`).join('')}</dl><button class="btn primary" id="confirmCommand">Confirmer l’enregistrement</button></article>`;$('#confirmCommand').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{const body={...proposal.payload};if(proposal.type==='movement')body.operation_id=operationId;await api(proposal.path,{method:'POST',body:JSON.stringify(body)});const target=({task:'calendar',prospect:'prospects',movement:'treasury',equipment:'equipment',risk:'risks',activity:'activities'})[proposal.type];closeModal();await openTab(target);notify('Enregistrement confirmé.');}catch(err){b.disabled=false;notify(err.message);}};}catch(e){notify(e.message);}};
+ const resetProposal=()=>{proposal=null;$('#commandPreview').replaceChildren();$('#commandError').classList.add('hide');$('#commandDate').removeAttribute('aria-invalid');};
+ $('#commandText').oninput=resetProposal;$('#commandDate').oninput=resetProposal;
+ const showCommandError=error=>{const field=$('#commandDateField');if(error.code==='date_required'){field.classList.remove('hide');$('#commandDate').setAttribute('aria-invalid','true');}const message=$('#commandError');message.textContent=error.message;message.classList.remove('hide');message.focus({preventScroll:true});message.scrollIntoView({block:'nearest'});};
+ $('#previewCommand').onclick=()=>{try{$('#commandError').classList.add('hide');proposal=interpretCommand($('#commandText').value,context,$('#commandDate').value);$('#commandPreview').innerHTML=`<article class="task-detail"><h2>${clean(proposal.title)}</h2><dl class="report-lines">${Object.entries(proposal.payload).map(([k,v])=>`<div><dt>${clean(({title:'Action',name:'Nom',description:'Consigne',sector:'Secteur à vérifier',diagnosis:'Consigne',first_due:'Date',due:'Date',monthly:'Chaque mois',priority:'Importance',direction:'Sens',amount:'Montant',currency:'Devise',date:'Date',label:'Libellé',quantity:'Quantité',condition:'État',maintenance_due:'Révision',kind:'Type',responsible:'Responsable',completed:'Terminé'})[k]||k)}</dt><dd>${clean(v===null?'—':v===true?'Oui':v===false?'Non':v)}</dd></div>`).join('')}</dl><button class="btn primary" id="confirmCommand">Confirmer l’enregistrement</button></article>`;$('#confirmCommand').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{const body={...proposal.payload};if(proposal.type==='movement')body.operation_id=operationId;await api(proposal.path,{method:'POST',body:JSON.stringify(body)});const target=({task:'calendar',prospect:'prospects',movement:'treasury',equipment:'equipment',risk:'risks',activity:'activities'})[proposal.type];closeModal();await openTab(target);notify('Enregistrement confirmé.');}catch(err){b.disabled=false;showCommandError(err);}};}catch(e){showCommandError(e);}};
  $('#commandText').focus();
 }
 
