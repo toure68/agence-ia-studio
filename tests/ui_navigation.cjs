@@ -567,7 +567,7 @@ const {chromium}=require('playwright');
        const metrics=await page.locator('#content .module-grid').evaluate(el=>[...el.querySelectorAll('.module-tile')].every(c=>{const f=c.querySelector('.module-face').getBoundingClientRect(),m=c.querySelector('.widget-metric').getBoundingClientRect(),icon=c.querySelector('.module-icon').getBoundingClientRect();return c.querySelector('.module-icon svg')&&getComputedStyle(c.querySelector('.module-icon')).borderRadius==='25%'&&m.top>=f.top&&m.bottom<=f.bottom&&m.width>0&&icon.width>=f.width*.4&&icon.width<=f.width*.51;}));
        assert(metrics,'Dense widgets retain SVG and visible data within equal cards');
        if(width===390){
-         await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
+         await page.locator("#content .module-grid").screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,animations:"disabled"});
          const frames=await page.evaluate(()=>new Promise(resolve=>{const samples=[],saved=scrollY;window.scrollTo(0,Math.max(0,Math.min(document.querySelector('.module-grid').offsetTop,document.documentElement.scrollHeight-innerHeight)-240));let previous;function step(now){if(previous!==undefined)samples.push(now-previous);previous=now;window.scrollBy(0,8);if(samples.length<30)requestAnimationFrame(step);else{window.scrollTo(0,saved);samples.sort((a,b)=>a-b);resolve({medianMs:samples[15],p95Ms:samples[28]});}}requestAnimationFrame(step);}));
          console.log('Scroll frame sample (CI browser)',JSON.stringify({columns,...frames}));
        }

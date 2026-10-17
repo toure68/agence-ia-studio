@@ -321,3 +321,5 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 @media(prefers-reduced-transparency:reduce){.module-grid[data-columns="2"]>.module-card,.module-grid .module-face{background:#292929!important}}
 
 .more-functions{border-style:solid;text-decoration:none}
+/* A flat black underlay needs no per-cell blur; avoid offscreen GPU blanking in dense grids. */
+.module-grid:is([data-columns="3"],[data-columns="4"]) .module-face{backdrop-filter:none;-webkit-backdrop-filter:none}
