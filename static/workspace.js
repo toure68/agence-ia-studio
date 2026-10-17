@@ -81,7 +81,29 @@ function homeGridModules(workspace,state={}){
  }
  return {columns,modules:keys.map(key=>({...byKey.get(key),automatic:!selected.includes(key)}))};
 }
+// Measure the real two-column reference, including gaps, before scaling dense cards.
+// One observer is reused; detached home grids are released on the next render.
+let homeGridObserver;
+const measuredHomeGrids=new Set();
+function sizeHomeGrid(grid){
+ const width=grid.getBoundingClientRect().width;
+ if(!width)return;
+ const reference=(width-12)/2,cell=(width-16)/3,scale=cell/reference;
+ grid.style.setProperty('--module-reference-width',`${reference-2}px`);
+ grid.style.setProperty('--module-scale',String(scale));
+ if(grid.dataset.columns==='3')grid.style.setProperty('--module-height',`${(matchMedia('(max-width:750px)').matches?88:112)*scale}px`);
+ else grid.style.removeProperty('--module-height');
+}
+function observeHomeGrids(){
+ if(!homeGridObserver)homeGridObserver=new ResizeObserver(entries=>entries.forEach(({target})=>sizeHomeGrid(target)));
+ for(const grid of measuredHomeGrids)if(!grid.isConnected){homeGridObserver.unobserve(grid);measuredHomeGrids.delete(grid);}
+ document.querySelectorAll('.module-grid').forEach(grid=>{
+  sizeHomeGrid(grid);
+  if(!measuredHomeGrids.has(grid)){measuredHomeGrids.add(grid);homeGridObserver.observe(grid);}
+ });
+}
 function homeModulesMarkup(workspace,state){
+ requestAnimationFrame(observeHomeGrids);
  const grid=homeGridModules(workspace,state),shortLabels={prospects:'Prospects','company-edit':'Identité',scanner:'Documents'};
  const counts={...state.badges,equipment:state.risk_cards.filter(c=>['equipment','material'].includes(c.action.type)).length,risks:state.risk_cards.filter(c=>c.action.type==='risk').length};
  return `<nav class="module-grid" data-columns="${grid.columns}" aria-label="Fonctions de l’entreprise">${grid.modules.map(m=>{

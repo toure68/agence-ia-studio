@@ -416,3 +416,17 @@ body:has(#assistantDock){background:#000;background-attachment:fixed}
 .command-inline-error{margin:12px 0;padding:10px 12px;border:1px solid #d8aa81;border-radius:10px;background:#fff4e8;color:#79431f;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
 .command-inline-error:focus{outline:2px solid #b47740;outline-offset:2px}
 #commandDateHint{font-size:12px;font-weight:400;color:#657985}
+
+/* Scale the complete three-column widget from the actual two-column reference.
+   A shared factor keeps the outer ratio, icon, text and all four insets aligned. */
+.module-grid:is([data-columns="2"],[data-columns="3"]) .module-tile{height:calc(var(--module-height) - 2px);max-height:calc(var(--module-height) - 2px)}
+.module-grid[data-columns="3"]{--module-scale:.666667;--module-reference-width:230px;row-gap:calc(12px * var(--module-scale))}
+.module-grid[data-columns="3"] .module-tile{padding:calc(10px * var(--module-scale)) calc(7px * var(--module-scale));gap:calc(7px * var(--module-scale))}
+.module-grid[data-columns="3"] .module-icon{width:calc(min(var(--module-reference-width) * .32,64px) * var(--module-scale));height:calc(min(var(--module-reference-width) * .32,64px) * var(--module-scale));flex-basis:calc(min(var(--module-reference-width) * .32,64px) * var(--module-scale));max-height:none}
+.module-grid[data-columns="3"] .widget-copy{gap:calc(3px * var(--module-scale));min-width:0}
+.module-grid[data-columns="3"] .module-copy{height:auto;width:auto}
+.module-grid[data-columns="3"] .module-copy strong{font-size:calc(clamp(10px,var(--module-reference-width) * .07,17px) * var(--module-scale));line-height:1.15;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.module-grid[data-columns="3"] .widget-metric{width:auto;text-align:left;font-size:calc(clamp(11px,var(--module-reference-width) * .08,18px) * var(--module-scale));line-height:1.18;max-height:3.54em}
+.module-grid[data-columns="3"] .widget-value{font-size:inherit}
+.module-grid[data-columns="3"] .widget-caption{display:inline;font-size:inherit}
+.module-grid[data-columns="3"] .module-count{top:calc(11px * var(--module-scale));right:calc(11px * var(--module-scale));min-width:calc(23px * var(--module-scale));height:calc(23px * var(--module-scale));font-size:calc(11px * var(--module-scale));padding:0 calc(5px * var(--module-scale))}
