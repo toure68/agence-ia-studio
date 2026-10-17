@@ -521,6 +521,16 @@ const {chromium}=require('playwright');
    await page.locator('.more-functions').click();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
    await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();assert.equal(await page.locator('[data-module-key="social"]').isChecked(),true);await page.locator('[data-module-key="social"]').uncheck();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();await layout();
+   // Filling is derived from the authorized catalog and never alters saved preferences.
+   const fillCases=await page.evaluate(async()=>{
+     const source=await api('/api/companies/1/workspace');
+     return [3,4].map(columns=>{
+       const input={...source,columns,visible:['clients']},before=JSON.stringify(input),filled=homeGridModules(input);
+       const none=homeGridModules({...input,visible:[]}),full=homeGridModules({...input,visible:source.modules.map(m=>m.key)});
+       return {columns,count:filled.modules.length,keys:filled.modules.map(m=>m.key),automatic:filled.modules.filter(m=>m.automatic).length,unchanged:JSON.stringify(input)===before,empty:none.modules.length,allowed:filled.modules.every(m=>source.modules.some(a=>a.key===m.key)),fullCount:full.modules.length};
+     });
+   });
+   for(const result of fillCases){assert.equal(result.count,result.columns);assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,17);}
    // Column choice survives closing the panel and reload without changing modules.
    for(const columns of [3,4]){
      await page.locator('.more-functions').click();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();
@@ -528,8 +538,8 @@ const {chromium}=require('playwright');
      await page.reload({waitUntil:'networkidle'});
      for(const width of [320,390,844,1280]){
        await page.setViewportSize({width,height:844});
-       const geometry=await page.locator('#content .module-grid').evaluate(el=>({columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect();return r.width>=44&&c.scrollWidth<=c.clientWidth;})}));
-       assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert(geometry.cards.every(Boolean),'Dense cards remain contained and tappable');
+       const geometry=await page.locator('#content .module-grid').evaluate(el=>({columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,cards:[...el.querySelectorAll('.module-tile')].map(c=>{const r=c.getBoundingClientRect(),label=c.querySelector('strong');return r.width>=44&&c.scrollWidth<=c.clientWidth&&r.height<=r.width*1.25&&getComputedStyle(label).whiteSpace==='nowrap';}),closedRow:Math.abs(el.lastElementChild.getBoundingClientRect().right-el.getBoundingClientRect().right)<2,prioritiesAbove:document.querySelector('#priorityBlock').getBoundingClientRect().bottom<=el.getBoundingClientRect().top}));
+       assert.equal(geometry.columns,columns);assert(!geometry.overflow);assert(geometry.cards.every(Boolean),'Dense cards remain proportionate, contained and tappable');assert(geometry.closedRow&&geometry.prioritiesAbove,'Rows are filled and priorities remain above the grid');
        if(width===390)await page.screenshot({path:`/tmp/ui-images/home-${columns}-columns-mobile.png`,fullPage:true});
      }
      await page.setViewportSize({width:390,height:844});await goModule('clients');await page.locator('#contextPanel').waitFor();await backHome();

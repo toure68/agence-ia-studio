@@ -15,7 +15,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
   const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});
   for(const state of tileStates)tile.classList.toggle('state-'+state,state===p.state);
   tile.dataset.state=p.state;
-  tile.setAttribute('aria-label',tile.querySelector('strong').textContent+' · '+p.label);
+  tile.setAttribute('aria-label',(tile.dataset.moduleLabel||tile.querySelector('strong').textContent)+' · '+p.label);
  });
 }
 

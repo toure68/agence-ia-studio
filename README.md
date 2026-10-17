@@ -171,3 +171,6 @@ L’assistant est fermé par défaut derrière un bouton compact « Assistant IA
 ## Nombre de colonnes de l’accueil
 
 Plus de fonctions → Colonnes sur l’accueil : choix de 2, 3 ou 4 colonnes, enregistré avec les fonctions visibles pour chaque compte et entreprise. Deux reste le défaut, y compris pour les anciens comptes. Les priorités conservent leur pile verticale et les fonctions s’ouvrent dans le même panneau contextuel.
+
+
+Grilles compactes : en 3 ou 4 colonnes, cartes proportionnelles et libellés courts sur une ligne (nom complet conservé pour l’accessibilité). La dernière ligne emprunte des raccourcis autorisés à la réserve, en privilégiant les suggestions du domaine, sans modifier les préférences enregistrées. Si la réserve ne contient pas assez de modules, la dernière carte s’élargit pour combler la ligne ; aucun module fictif ni doublon n’est créé. Un accueil volontairement vide reste vide. Les priorités restent indépendantes de la grille et de la réserve, avec relief et liseré lumineux pour les états à traiter.
