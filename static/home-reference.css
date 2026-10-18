@@ -42,16 +42,16 @@ body:has(.reference-home) .main-body{padding:12px 20px max(110px,env(safe-area-i
 .reference-home .priority-stack{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:0}
 .reference-home .priority-card{display:block;height:auto;min-height:0;padding:0;border:1px solid var(--home-border);border-radius:24px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08;overflow:hidden;flex:none}
 .reference-home .priority-card::after{border-radius:24px}
-.reference-home .priority-card .priority-tile{display:flex;flex-direction:column;align-items:stretch;gap:16px;min-height:0;height:auto;max-height:none;width:100%;margin:0;padding:20px;border:0;border-radius:24px;background:transparent;box-shadow:none;text-align:left;transform:none;color:var(--home-text)}
-.priority-top{display:flex;align-items:center;gap:14px;padding-right:24px;min-width:0}
-.reference-home .priority-copy{min-width:0;display:grid;gap:6px}
-.reference-home .priority-copy strong{font-size:17px;font-weight:800;line-height:1.35;-webkit-line-clamp:unset;max-height:none;white-space:normal;overflow-wrap:anywhere}
+ .reference-home .priority-card .priority-tile{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-height:0;height:auto;max-height:none;width:100%;margin:0;padding:14px;border:0;border-radius:24px;background:transparent;box-shadow:none;text-align:left;transform:none;color:var(--home-text)}
+.priority-top{display:flex;align-items:center;gap:10px;padding-right:24px;min-width:0}
+.reference-home .priority-copy{min-width:0;display:grid;gap:4px}
+.reference-home .priority-copy strong{font-size:16px;font-weight:800;line-height:1.35;-webkit-line-clamp:unset;max-height:none;white-space:normal;overflow-wrap:anywhere}
 .reference-home .priority-labels{display:flex;flex-wrap:wrap;gap:6px}
 .reference-home .priority-labels .importance{display:inline-block;width:auto;background:#e2b04a20;color:var(--home-gold);border:0;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800}
-.reference-home .priority-description{display:block;color:var(--home-muted);font-size:14px;line-height:1.5;white-space:normal}
+.reference-home .priority-description{display:block;color:var(--home-muted);font-size:14px;line-height:1.4;white-space:normal}
 .priority-cta{display:flex;justify-content:center;align-items:center;width:100%;min-height:48px;padding:12px 14px;background:var(--home-green);color:#082b16;border-radius:14px;font-size:15px;font-weight:800;text-align:center}
 .reference-home .priority-dismiss{position:absolute;top:6px;right:6px;width:44px;height:44px;min-width:44px;min-height:44px;display:grid;place-items:center;background:transparent;border:0;color:var(--home-muted);font-size:23px;z-index:3}
-.reference-home .priority-card>.voice-button{position:relative;right:auto;bottom:auto;float:none;margin:0 0 12px 20px;min-height:44px;min-width:44px;color:var(--home-muted)}
+.reference-home .priority-card>.voice-button{position:relative;right:auto;bottom:auto;float:none;margin:0 0 6px 14px;min-height:44px;min-width:44px;color:var(--home-muted)}
 .reference-home .home-all-actions{width:100%;margin:12px 0 0}
 .reference-home .home-sector{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .reference-home .home-sector>div{flex:1;min-width:130px}
@@ -126,3 +126,5 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 .home-column-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-width:0}
 .home-column-controls select{min-height:44px;min-width:0}
 .home-column-controls .btn{min-height:44px;white-space:nowrap;padding:10px 12px}
+
+.reference-home .priority-tile .module-icon{width:40px;height:40px;flex-basis:40px;border-radius:13px}
