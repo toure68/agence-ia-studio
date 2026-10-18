@@ -3,7 +3,7 @@
 Preserve working behavior and approved design. A request to add a feature does not authorize replacing, removing, redesigning, or changing an existing feature. Change an established behavior only when the user explicitly requests that particular change. Keep unrelated work out of the change.
 
 - Function buttons open a floating panel over the mounted cockpit. Keep the home address and document; do not turn module clicks into separate screens. Preserve cockpit scroll, assistant text and attachments. Keep an immediately available close cross and bottom close button.
-- The assistant stays collapsed behind a compact full-width bar (48px, 16px corners, centered label) just below the home greeting by default; opening/closing moves the existing chat into/out of the contextual panel while preserving history, draft and unsent attachments.
+- The assistant stays collapsed behind a compact bar (48px, 16px corners, centered label) just above the function grid, on the same row as the grid chooser button (user request 2026-10-18); opening/closing moves the existing chat into/out of the contextual panel while preserving history, draft and unsent attachments.
 - Home cards stay closed by default with only a short action/status message. Details, fields and validation appear after a click in the panel.
 - Preserve the approved dark translucent glass surfaces on a black cockpit background, colorful SVG app badges and discreet urgency indicators, responsive layouts, module visibility preferences, and access restrictions.
 - Preserve existing business workflows, explicit validation, signature consent, and company/user isolation. Never send real messages or use paid provider calls during tests.
@@ -32,3 +32,4 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Home order: greeting, assistant, treasury, priorities, function grid, then the "＋ Réserve de fonctions" button attached to the grid. Veille métier is a regular function (key "veille"), in the reserve by default; it rises on the grid like any function when it needs action. No fixed Veille card on home.
 - Bank logos are user-uploaded per bank (private to the company, re-encoded server-side as 128px PNG). Never ship third-party bank logos in the code or the public demo.
 - Action (priority) cards: the speaker button sits in the top-right corner next to the close cross; the green action button spans the full card width, centered.
+- Home greeting is centered; under it the date and the status are two chips: green "À jour" when nothing is pending, orange "N action(s) à traiter" otherwise.

@@ -60,8 +60,12 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#assistantChat').count(),1);
    assert.equal(await page.locator('#assistantParking').evaluate(el=>el.hidden),true);
    assert.equal(await page.locator('#assistantMessage').isVisible(),false);
-   const pill=await page.locator('#assistantDock').evaluate(el=>{const r=el.getBoundingClientRect(),heading=document.querySelector('.home-heading').getBoundingClientRect(),priorities=document.querySelector('#priorityBlock').getBoundingClientRect();return {height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right,headingBottom:heading.bottom,priorityTop:priorities.top,position:getComputedStyle(el).position,width:innerWidth};});
-   assert(pill.height>=44&&pill.height<=90&&pill.top>=pill.headingBottom&&pill.bottom<=pill.priorityTop&&pill.left>=0&&pill.right<=pill.width,'Assistant stays compact between greeting and priorities');assert.equal(pill.position,'relative');
+   // Assistant bar sits just above the function grid, aligned with the grid chooser on the same row.
+   const pill=await page.locator('#assistantDock').evaluate(el=>{const r=el.getBoundingClientRect(),priorities=document.querySelector('#priorityBlock').getBoundingClientRect(),grid=document.querySelector('#content .module-grid').getBoundingClientRect(),toggle=document.querySelector('[data-columns-toggle]').getBoundingClientRect();return {height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right,priorityBottom:priorities.bottom,gridTop:grid.top,toggleMid:(toggle.top+toggle.bottom)/2,mid:(r.top+r.bottom)/2,toggleLeft:toggle.left,position:getComputedStyle(el).position,width:innerWidth};});
+   assert(pill.height>=44&&pill.height<=90&&pill.top>=pill.priorityBottom&&pill.bottom<=pill.gridTop&&pill.left>=0&&pill.right<=pill.toggleLeft&&Math.abs(pill.mid-pill.toggleMid)<3,'Assistant sits above the grid, aligned with the grid button: '+JSON.stringify(pill));assert.equal(pill.position,'relative');
+   // Greeting centered; date and status as distinct chips, status green when up to date or orange with actions.
+   const head=await page.evaluate(()=>({align:getComputedStyle(document.querySelector('.home-heading')).textAlign,date:!!document.querySelector('#homeDay .home-date'),status:document.querySelector('#homeDay .home-status')?.className||'',text:document.querySelector('#homeDay .home-status')?.textContent||''}));
+   assert.equal(head.align,'center');assert(head.date);assert(/is-(ok|todo)/.test(head.status));assert(head.status.includes('is-ok')?head.text==='À jour':/\d+ actions? à traiter/.test(head.text),'Status chip text matches its color: '+JSON.stringify(head));
    assert.equal(await page.locator('#assistantMessage').getAttribute('placeholder'),'Posez une question ou ajoutez un document…');
 
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
