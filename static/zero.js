@@ -23,6 +23,7 @@ async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
  $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Votre secteur cette semaine</h2><p>Votre veille métier reste à configurer.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
+ $('#homeTreasury').addEventListener('click',e=>{const button=e.target.closest('[data-treasury-mode]');if(!button)return;e.preventDefault();try{localStorage.setItem(homeTreasuryDemoKey(),showHomeTreasuryDemo()?'real':'demo');const host=$('#homeTreasury');host.innerHTML=homeTreasuryMarkup(host.treasuryState||state);}catch{notify('Impossible de mémoriser ce choix sur cet appareil.');}});
  $('#homeSectorInfo').onclick=()=>{openModal('<h2>Votre veille métier</h2><p>La veille sectorielle n’est pas encore connectée. Aucune actualité n’est inventée.</p><button class="btn" id="closeSectorInfo">Fermer</button>');$('#closeSectorInfo').onclick=closeModal;};
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
@@ -112,13 +113,20 @@ async function renderMaterial(id){
 }
 
 
+// Display-only scenario: never inserted into the company's cashbook.
+const homeTreasuryDemo={currency:'EUR',balance:2485000,receivable:1280000,payable:435000};
+function homeTreasuryDemoKey(){return 'aia-treasury-demo-'+me.id+'-'+company.id;}
+function showHomeTreasuryDemo(){try{return localStorage.getItem(homeTreasuryDemoKey())!=='real';}catch{return true;}}
 function homeTreasuryMarkup(state){
- const balances=Object.entries(state.widgets?.treasury?.balances_minor||{});
+ const demo=showHomeTreasuryDemo(),scenario=homeTreasuryDemo;
+ const balances=demo?[[scenario.currency,scenario.balance]]:Object.entries(state.widgets?.treasury?.balances_minor||{});
  const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):'<strong class="home-no-balance">Aucun mouvement</strong>';
- return `<a class="home-treasury" data-go="treasury" href="#/treasury" aria-label="Ouvrir la trésorerie"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2><div class="home-balances">${amounts}</div><small>Solde enregistré · livre interne</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>Non renseigné</b></div><div><span>À payer</span><b>Non renseigné</b></div></div></a>`;
+ const receivable=demo?clean(quoteMoney(scenario.receivable,scenario.currency)):'Non renseigné';
+ const payable=demo?clean(quoteMoney(scenario.payable,scenario.currency)):'Non renseigné';
+ return `<a class="home-treasury" data-go="treasury" href="#/treasury" aria-label="Ouvrir les mouvements réels de la trésorerie"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}<div class="home-balances">${amounts}</div><small>${demo?'Solde disponible · exemple':'Solde enregistré · livre interne'}</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>${receivable}</b></div><div><span>À payer</span><b>${payable}</b></div></div>${demo?'<p class="home-demo-note">Aperçu fictif. Touchez la carte pour ouvrir vos mouvements réels.</p>':''}</a><button type="button" class="btn home-cash-mode" data-treasury-mode aria-pressed="${demo}">${demo?'Voir mes chiffres réels':'Afficher les chiffres de démonstration'}</button>`;
 }
 function refreshHomeSummary(state,cards){
  const grid=document.querySelector('#content .module-grid'),setting=document.querySelector('.home-modules-heading [data-go="module-library"]');if(grid&&setting)setting.textContent='Grille · '+grid.dataset.columns;
- const host=document.querySelector('#homeTreasury');if(host)host.innerHTML=homeTreasuryMarkup(state);
+ const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}
  const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.textContent=date.charAt(0).toUpperCase()+date.slice(1)+' · '+(count?count+' action'+(count>1?'s':'')+' à traiter':'Vos priorités sont à jour');}
 }

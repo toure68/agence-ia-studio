@@ -105,3 +105,9 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 .reference-home .module-grid :is(.module-tile,.module-copy,.widget-value,.module-face){color:var(--home-text)!important}
 .reference-home .home-treasury small,.reference-home .priority-labels .importance,.reference-home .module-grid[data-columns="4"] .module-count{font-size:14px}
 @media(min-width:751px){.reference-home .module-grid:is([data-columns="2"],[data-columns="3"],[data-columns="4"]) .module-tile{height:130px;max-height:130px}}
+
+.reference-home .home-demo-badge{display:inline-block;margin:5px 0 7px;padding:4px 8px;border:1px solid #e2b04a55;border-radius:9px;color:var(--home-gold);background:#e2b04a12;font-size:14px;font-weight:800;line-height:1.35}
+.reference-home .home-demo-note{font-size:14px;color:var(--home-muted);line-height:1.45;margin:14px 0 0}
+.reference-home .home-cash-mode{width:100%;margin:-6px 0 20px;min-height:44px}
+.reference-home .home-cash-details b{font-size:20px;line-height:1.3}
+@media(max-width:359px){.reference-home .home-cash-details>div{padding:12px 8px}.reference-home .home-cash-details b{font-size:18px}}
