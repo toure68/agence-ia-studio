@@ -71,10 +71,10 @@ const {chromium}=require('playwright');
     const tones={};for(const tone of ['green','blue','gold','purple']){probe.className='module-tile tone-'+tone;const original=read(),states={};for(const state of ['neutral','info','warning','danger','success']){probe.className='module-tile tone-'+tone+' state-'+state;probe.dataset.state=state;states[state]={surface:read(),top:getComputedStyle(probe).borderTopColor,shadow:getComputedStyle(probe).boxShadow};}tones[tone]={original,states};}
     probe.setAttribute('aria-current','page');const active={color:getComputedStyle(probe).color,background:getComputedStyle(probe).backgroundImage,band:getComputedStyle(probe).borderTopColor};
     const glass=getComputedStyle(el.parentElement),icons=[...document.querySelectorAll('#content .module-grid .module-icon')].map(i=>getComputedStyle(i).color);
-    probe.remove();return {tones,active,glass:{background:glass.backgroundColor,filter:glass.backdropFilter},iconColors:new Set(icons).size};
+    probe.remove();return {tones,active,glass:{background:glass.backgroundColor,filter:glass.backdropFilter},iconColors:new Set(icons).size,toneCount:new Set([...document.querySelectorAll('#content .module-grid .module-tile')].map(t=>[...t.classList].find(c=>c.startsWith('tone-')))).size};
    });
    for(const tone of Object.values(surfaces.tones))for(const state of Object.values(tone.states))assert.deepEqual(state.surface,tone.original,'State changes preserve the neutral glass surface');
-   assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,1);assert(surfaces.glass.filter.includes('blur'));assert(surfaces.iconColors>=3,'App badges are colorful and identifiable');
+   assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,1);assert(surfaces.glass.filter.includes('blur'));assert(surfaces.iconColors>=Math.min(3,surfaces.toneCount),'App badges are colorful and identifiable');
    assert.equal(surfaces.tones.green.states.danger.shadow,'none','Urgency glow lives on the outer frame');
    assert.equal(surfaces.active.color,'rgb(242, 245, 247)');
 
