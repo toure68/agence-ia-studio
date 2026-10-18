@@ -542,6 +542,7 @@ const {chromium}=require('playwright');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
    await layout();
    await goModule('calendar');await page.locator('#content [data-go="task-new"]').click();await page.locator('#commandText').fill('Rendez-vous date choisie test');await page.locator('#commandDate').fill('2027-06-18');await page.locator('#previewCommand').click();await page.locator('#confirmCommand').click();await page.locator('.task-list').waitFor();
+   await page.waitForFunction(async()=>(await api('/api/companies/1/tasks')).some(t=>t.title==='Rendez-vous date choisie test'));
    const dateEvent=await page.evaluate(async()=>(await api('/api/companies/1/tasks')).find(t=>t.title==='Rendez-vous date choisie test'));assert.equal(dateEvent.first_due,'2027-06-18');assert.equal(dateEvent.description,'Rendez-vous date choisie test');await page.evaluate(id=>api('/api/companies/1/tasks/'+id+'/complete',{method:'POST',body:JSON.stringify({occurrence:'2027-06-18'})}),dateEvent.id);await backHome();
    await goModule('equipment');await page.locator('#addAsset').click();
    await page.locator('#commandText').fill('matériel Perceuse quantité 2 en panne');
