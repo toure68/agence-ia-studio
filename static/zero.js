@@ -158,23 +158,12 @@ function mountColumnChooser(button,workspace,state){
  const chooser=document.createElement('div');chooser.id='homeColumnChooser';chooser.className='column-chooser';chooser.setAttribute('role','group');chooser.setAttribute('aria-label','Disposition de l’accueil');chooser.hidden=true;
  chooser.innerHTML=`<div class="column-choices" role="group" aria-label="Nombre de colonnes">${[2,3,4].map(n=>`<button type="button" class="column-choice" data-set-columns="${n}" aria-pressed="${n===(workspace.columns||2)}" aria-label="${n} colonnes" title="${n} colonnes">${square(n)}<span>${n}</span></button>`).join('')}</div><div class="row-stepper" role="group" aria-label="Nombre de rangées"><span class="row-stepper-label">Rangées</span><button type="button" class="row-step" data-rows-step="-1" aria-label="Une rangée de moins">−</button><output class="row-value" id="homeRowsValue" aria-live="polite">${rows()}</output><button type="button" class="row-step" data-rows-step="1" aria-label="Une rangée de plus">＋</button></div>`;
  button.before(chooser);
- const open=show=>{chooser.hidden=!show;button.setAttribute('aria-expanded',String(show));button.closest('.home-modules-heading')?.classList.toggle('is-choosing',show);};
- let saving=Promise.resolve(),pending=0;
- const save=()=>{
-  const layout={columns:workspace.columns||2,rows:workspace.rows};
-  if(document.body.dataset.publicDemo==='true')return;
-  pending++;
-  saving=saving.then(async()=>{
-   const cid=company.id,fresh=await api(`/api/companies/${cid}/workspace`);
-   const payload={domain:fresh.domain,visible:fresh.visible,version:fresh.version,columns:layout.columns,dynamic:fresh.dynamic!==false};
-   if(layout.rows)payload.rows=layout.rows;
-   await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify(payload)});
-  }).catch(error=>notify(error.message)).then(()=>{if(--pending===0)return refreshCockpit().catch(()=>{});});
- };
- const apply=()=>{updateHomeGrid(workspace,state);chooser.querySelector('#homeRowsValue').textContent=String(rows());save();};
+ const open=show=>{if(show&&homeLayout.workspace){workspace={...homeLayout.workspace};chooser.querySelector('#homeRowsValue').textContent=String(rows());chooser.querySelectorAll('[data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===(workspace.columns||2))));}chooser.hidden=!show;button.setAttribute('aria-expanded',String(show));button.closest('.home-modules-heading')?.classList.toggle('is-choosing',show);};
+ const apply=()=>{homeLayout.workspace=workspace;updateHomeGrid(workspace,homeLayout.state||state);chooser.querySelector('#homeRowsValue').textContent=String(rows());homeLayoutSave();};
  button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();open(chooser.hidden);});
  chooser.addEventListener('click',e=>{
   const choice=e.target.closest('[data-set-columns]'),step=e.target.closest('[data-rows-step]');if(!choice&&!step)return;e.preventDefault();e.stopPropagation();
+  if(homeLayout.workspace)workspace={...homeLayout.workspace};
   if(choice){
    const columns=Number(choice.dataset.setColumns);if(columns===(workspace.columns||2))return;
    chooser.querySelectorAll('[data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(b===choice)));

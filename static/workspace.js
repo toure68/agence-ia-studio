@@ -80,15 +80,7 @@ function homeGridModules(workspace,state={}){
  const urgentKeys=keys.filter(urgent),calm=keys.filter(key=>!urgent(key));
  const kept=new Set([...urgentKeys,...calm.slice(0,Math.max(0,cap-urgentKeys.length))]);
  keys=keys.filter(key=>kept.has(key));
- if(keys.length&&keys.length%columns){
-  // Fill the last row from the reserve; this never goes past the cap unless urgent modules already did.
-  const others=workspace.modules.filter(m=>!keys.includes(m.key)&&!calm.includes(m.key)&&(!dynamic||!inactive.has(m.key)||urgent(m.key)));
-  others.sort((a,b)=>weight(b.key)-weight(a.key)||Number(workspace.suggested?.includes(b.key)||false)-Number(workspace.suggested?.includes(a.key)||false)||recent(b.key)-recent(a.key));
-  const pool=[...calm.filter(key=>!kept.has(key)),...others.map(m=>m.key)];
-  keys.push(...pool.slice(0,columns-keys.length%columns));
-  // Every displayed row has equal cells: drop calm modules rather than leave a gap.
-  while(keys.length%columns&&keys.some(key=>!urgent(key))){const i=keys.map(urgent).lastIndexOf(false);keys.splice(i,1);}
- }
+ // The home shows exactly the checked functions (plus urgent ones); a last row may stay incomplete.
  return {columns,modules:keys.map(key=>({...byKey.get(key),automatic:!selected.includes(key)}))};
 }
 // Measure the real two-column reference, including gaps, before scaling dense cards.
@@ -120,6 +112,7 @@ function observeHomeGrids(){
  });
 }
 function homeModulesMarkup(workspace,state){
+ homeLayout.workspace=workspace;homeLayout.state=state;
  requestAnimationFrame(observeHomeGrids);
  const grid=homeGridModules(workspace,state),shortLabels={prospects:'Prospects','company-edit':'Identité',scanner:'Documents'};
  const counts=state.action_counts||{};
@@ -128,13 +121,14 @@ function homeModulesMarkup(workspace,state){
   const icon=`<span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>`,widget=widgetMarkup(moduleWidget(m.key,state)),count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
   const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
   return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns===4?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
- }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Tous les modules</a><a class="module-reserve-launch" data-go="module-reserve" href="#/module-reserve"><span class="module-reserve-plus" aria-hidden="true">＋</span><span>Réserve de fonctions</span></a>`;
+ }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Tous les modules</a><button type="button" class="module-reserve-launch" data-reserve-toggle aria-expanded="false" aria-controls="homeReserve"><span class="module-reserve-plus" aria-hidden="true">＋</span><span>Réserve de fonctions</span><span class="module-reserve-chevron" aria-hidden="true">⌄</span></button><section id="homeReserve" class="module-reserve-inline" aria-label="Réserve de fonctions" hidden></section>`;
 }
 function updateHomeGrid(workspace,state){
  const current=$('#content .module-grid');if(!current)return;
  const fragment=document.createElement('div');fragment.innerHTML=homeModulesMarkup(workspace,state);
  const next=fragment.querySelector('.module-grid'),keys=grid=>[...grid.children].map(node=>node.dataset.module).join('|');
  if(current.dataset.columns!==next.dataset.columns||keys(current)!==keys(next))current.replaceWith(next);
+ homeReserveRender();
 }
 function trackModuleUse(route){
  const key=({'client-new':'clients','client-edit':'clients','activity-new':'activities','activity-edit':'activities',activity:'activities','quote-new':'leads','quote-edit':'leads',quote:'leads','quote-sign':'leads',email:'emails','task-new':'calendar','prospect-new':'prospects','company-new':'companies',incoming:'requests',draft:'drafts',document:'scanner',material:'equipment','social-new':'social','social-post':'social'})[route]||route;
@@ -219,3 +213,47 @@ function addTariffPicker(catalog){
  };
 }
 
+
+// Inline reserve: a container under the grid listing every function as a home-style card with a check.
+// Checked = on home, unchecked = in the reserve. Each tap saves at once; no page, no panel.
+const homeLayout={workspace:null,state:null,saving:Promise.resolve(),pending:0};
+function homeShownKeys(){return new Set(homeGridModules(homeLayout.workspace,homeLayout.state).modules.map(m=>m.key));}
+function homeReserveMarkup(){
+ const {workspace,state}=homeLayout,shown=homeShownKeys(),columns=[2,3,4].includes(workspace.columns)?workspace.columns:2;
+ const weight=key=>({danger:4,warning:3})[state.module_states?.[key]?.state]||0;
+ const ordered=[...workspace.modules].sort((a,b)=>Number(shown.has(b.key))-Number(shown.has(a.key)));
+ return `<p class="module-reserve-hint">Cochez pour afficher sur l’accueil, décochez pour ranger.</p><div class="module-grid module-reserve-grid-inline" data-columns="${columns}">${ordered.map(m=>{
+  const on=shown.has(m.key),locked=on&&weight(m.key)>=3&&!workspace.visible.includes(m.key),p=modulePresentation(m.key,state);
+  return `<article class="module-card tone-${moduleTone(m.key)}" data-reserve-card="${m.key}"><button type="button" class="module-tile reserve-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-reserve-key="${m.key}" role="checkbox" aria-checked="${on}" aria-label="${clean(m.label)}${locked?' · reste affichée : action à faire':''}"><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span><span class="module-copy"><strong>${clean(m.label)}</strong>${locked?'<p class="module-insight">Action à faire</p>':''}</span><span class="reserve-check" aria-hidden="true">${on?'✓':''}</span></button></article>`;
+ }).join('')}</div>`;
+}
+function homeReserveRender(){const host=document.querySelector('#homeReserve');if(host&&!host.hidden&&homeLayout.workspace){host.innerHTML=homeReserveMarkup();requestAnimationFrame(observeHomeGrids);}}
+function homeLayoutSave(){
+ if(document.body.dataset.publicDemo==='true')return;
+ const layout={visible:[...homeLayout.workspace.visible],rows:homeLayout.workspace.rows,columns:homeLayout.workspace.columns||2};homeLayout.pending++;
+ homeLayout.saving=homeLayout.saving.then(async()=>{
+  const cid=company.id,fresh=await api(`/api/companies/${cid}/workspace`);
+  const payload={domain:fresh.domain,visible:layout.visible,version:fresh.version,columns:layout.columns,dynamic:fresh.dynamic!==false};
+  if(layout.rows)payload.rows=layout.rows;
+  await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify(payload)});
+ }).catch(error=>notify(error.message)).then(()=>{if(--homeLayout.pending===0)return refreshCockpit().catch(()=>{});});
+}
+function homeReserveToggle(key){
+ const workspace={...homeLayout.workspace},shown=homeShownKeys(),columns=[2,3,4].includes(workspace.columns)?workspace.columns:2;
+ if(shown.has(key)){workspace.visible=workspace.visible.filter(k=>k!==key);}
+ else{
+  workspace.visible=[key,...workspace.visible.filter(k=>k!==key)];
+  workspace.inactive=(workspace.inactive||[]).filter(k=>k!==key);workspace.last_used={...workspace.last_used,[key]:Date.now()/1000};
+  // Make room: grow the row count so a newly checked function always appears.
+  const rows=Number.isInteger(workspace.rows)?workspace.rows:({2:3,3:3,4:2})[columns];
+  const needed=Math.min(10,Math.ceil((shown.size+1)/columns));if(needed>rows)workspace.rows=needed;
+  if(document.body.dataset.publicDemo!=='true')api(`/api/companies/${company.id}/workspace/usage/${key}`,{method:'POST'}).catch(()=>{});
+ }
+ homeLayout.workspace=workspace;updateHomeGrid(workspace,homeLayout.state);homeReserveRender();homeLayoutSave();
+}
+document.addEventListener('click',e=>{
+ const toggle=e.target.closest('[data-reserve-toggle]'),pick=e.target.closest('[data-reserve-key]');
+ if(!toggle&&!pick)return;e.preventDefault();e.stopPropagation();
+ if(toggle){const host=document.querySelector('#homeReserve');const open=host.hidden;host.hidden=!open;toggle.setAttribute('aria-expanded',String(open));toggle.classList.toggle('is-open',open);if(open)homeReserveRender();return;}
+ homeReserveToggle(pick.dataset.reserveKey);
+});
