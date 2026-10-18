@@ -239,3 +239,4 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .row-step{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:1px solid var(--home-border);border-radius:12px;background:var(--home-surface);color:var(--home-text);font-size:20px;line-height:1;cursor:pointer}
 .reference-home .row-step:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
 .reference-home .row-value{min-width:26px;text-align:center;color:var(--home-text);font-size:17px;font-weight:800}
+.reference-home .module-reserve-launch~.home-sector{margin:24px 0 20px}
