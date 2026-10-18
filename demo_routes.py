@@ -10,7 +10,7 @@ def install(app, base: Path):
     @app.get('/demo/', include_in_schema=False)
     def demo_home():
         html = (base / 'static/admin.html').read_text()
-        html = html.replace('</head>', '<meta name="robots" content="noindex,nofollow"><script src="/static/demo.js?v=review-1" defer></script><script src="/static/demo-treasury.js?v=dark-squares-6" defer></script><link rel="stylesheet" href="/static/demo-home.css?v=center-1"></head>')
+        html = html.replace('</head>', '<meta name="robots" content="noindex,nofollow"><script src="/static/demo.js?v=review-1" defer></script><script src="/static/demo-treasury.js?v=dark-squares-6" defer></script><link rel="stylesheet" href="/static/demo-home.css?v=center-2"></head>')
         html = html.replace('<body>', '<body data-public-demo="true"><aside class="demo-notice" role="note">Démonstration publique · Données fictives · Lecture seule</aside>')
         return HTMLResponse(html, headers={'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow'})
 

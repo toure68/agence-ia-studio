@@ -1,15 +1,11 @@
 /* Demo home alignment only; preserve the existing palette and card dimensions. */
 body[data-public-demo] .reference-home,
 body[data-public-demo] .reference-home .home-heading,
-body[data-public-demo] .reference-home .home-day,
-body[data-public-demo] .reference-home .home-section-title{text-align:center}
+body[data-public-demo] .reference-home .home-day{text-align:center}
+body[data-public-demo] .reference-home .home-section-title{text-align:left}
 body[data-public-demo] .reference-home .assistant-dock{justify-content:center;text-align:center}
 body[data-public-demo] .reference-home .assistant-dock .assistant-dock-hint{flex:0 1 auto;min-width:0;text-align:center}
 body[data-public-demo] .reference-home .assistant-spark{margin-right:0}
-body[data-public-demo] .reference-home .priority-card .priority-tile{text-align:center}
-body[data-public-demo] .reference-home .priority-top{justify-content:center;padding-left:24px}
-body[data-public-demo] .reference-home .priority-labels{justify-content:center}
-body[data-public-demo] .reference-home .priority-copy{text-align:center}
 body[data-public-demo] .reference-home .home-sector{justify-content:center}
 body[data-public-demo] .reference-home .home-sector>div{text-align:center}
 body[data-public-demo] .reference-home .home-modules-heading{position:relative;justify-content:center;min-height:44px;padding:0 48px}

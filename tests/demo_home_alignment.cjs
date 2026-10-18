@@ -4,9 +4,10 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
  for(const width of [320,390,768]){
   const page=await browser.newPage({viewport:{width,height:844}});
   await page.goto('http://127.0.0.1:8125/demo');await page.locator('.module-grid').waitFor();
-  for(const selector of ['.home-heading','.home-day','.assistant-dock','.assistant-dock-hint','.priority-tile','.module-copy']){
+  for(const selector of ['.home-heading','.home-day','.assistant-dock','.assistant-dock-hint','.module-copy']){
    assert.equal(await page.locator(selector).first().evaluate(e=>getComputedStyle(e).textAlign),'center',selector);
   }
+  for(const selector of ['.home-section-title','.priority-tile','.priority-description'])assert.equal(await page.locator(selector).first().evaluate(e=>getComputedStyle(e).textAlign),'left',selector);
   assert.equal(await page.locator('.assistant-dock').evaluate(e=>getComputedStyle(e).justifyContent),'center');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   if(width===390)await page.screenshot({path:process.env.HOME_PREVIEW_DIR+'/demo-accueil-centre.png',fullPage:true});
