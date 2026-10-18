@@ -13,6 +13,11 @@ const {chromium}=require('playwright');
   await page.getByRole('button',{name:'Se connecter'}).click();
   await page.locator('#content .module-grid .module-tile').first().waitFor();
   const url=page.url();
+  // Action cards: speaker in the top-right corner, green button centered across the card.
+  await page.waitForFunction(()=>document.querySelector('.priority-card>.voice-button'));
+  const cards=await page.locator('.priority-card').evaluateAll(cs=>cs.filter(c=>c.querySelector('.voice-button')&&c.querySelector('.priority-cta')).map(c=>{const card=c.getBoundingClientRect(),voice=c.querySelector('.voice-button').getBoundingClientRect(),cta=c.querySelector('.priority-cta').getBoundingClientRect(),dismiss=c.querySelector('.priority-dismiss')?.getBoundingClientRect();return {topGap:voice.top-card.top,rightGap:card.right-voice.right,above:voice.bottom<=cta.top,centered:Math.abs((cta.left-card.left)-(card.right-cta.right)),overlapDismiss:dismiss?!(voice.right<=dismiss.left+1||voice.left>=dismiss.right-1):false,size:[voice.width,voice.height]};}));
+  assert(cards.length>0,'Action cards with a speaker are shown');
+  for(const c of cards){assert(c.topGap<20&&c.rightGap<60&&c.above,'Speaker sits in the top-right corner: '+JSON.stringify(c));assert(c.centered<3,'Green button centered: '+JSON.stringify(c));assert(!c.overlapDismiss,'Speaker does not cover the close cross');assert(c.size[0]>=44&&c.size[1]>=44);}
   // "Tous les modules" text link is replaced by the Réserve button below the grid.
   assert.equal(await page.locator('.more-functions').isVisible(),false);
   const toggle=page.locator('[data-columns-toggle]'),chooser=page.locator('#homeColumnChooser');
