@@ -32,42 +32,40 @@ if(document.body.dataset.publicDemo==='true'){
  const latest=b=>b.data.transactions.map((t,i)=>({...t,i})).sort((a,c)=>c.date.localeCompare(a.date)||a.i-c.i);
  const rows=items=>items.map(t=>`<div class="demo-bank-row" data-demo-movement><time datetime="${t.date}">${shortDate(t.date)}</time><span title="${clean(t.label)}">${clean(t.label)}</span><b class="${t.amount<0?'demo-negative':'demo-positive'}">${signed(t.amount)}</b></div>`).join('');
  const css=document.createElement('style');css.textContent=`
- #homeTreasury .demo-multibank{background:#fff;border-color:#d5e7de;color:#173d30;box-shadow:0 2px 12px #001f140a}
  #homeTreasury .home-treasury-top{gap:10px}
  #homeTreasury .home-treasury-top>div{flex:1}
- #homeTreasury .home-treasury-top h2{color:#456757;font-size:11px;line-height:14px;letter-spacing:.02em;text-transform:none;display:flex;justify-content:space-between;gap:6px}
+ #homeTreasury .home-treasury-top h2{color:var(--home-muted);font-size:11px;line-height:14px;letter-spacing:.02em;text-transform:none;display:flex;justify-content:space-between;gap:6px}
  #homeTreasury .demo-total{display:block;font-size:clamp(20px,5.3vw,22px);font-weight:800;line-height:1.05;letter-spacing:-.03em;white-space:nowrap;margin-top:1px}
- #homeTreasury .demo-multibank .module-icon{color:#14765a;border-color:#b8d9c8;background:#edf7f1}
  #homeTreasury .demo-bank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #homeTreasury .home-cash-details{margin-top:12px;gap:8px}
- #homeTreasury .home-flow{background:#f1f7f3;border-color:#e0ece5;min-height:58px;padding:8px 10px}
- #homeTreasury .home-flow span{color:#456757;font-size:12px}
+ #homeTreasury .home-flow{background:#07090d8a;border-color:#ffffff08;min-height:58px;padding:8px 10px}
+ #homeTreasury .home-flow span{color:var(--home-muted);font-size:12px}
  #homeTreasury .home-flow b{font-size:clamp(15px,4vw,18px)}
  #homeTreasury .demo-bank-pills{display:flex;gap:12px;overflow-x:auto;padding:6px 4px;margin:8px 0 0;scrollbar-width:thin;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
- #homeTreasury .demo-bank-pill{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;flex:0 0 44px;scroll-snap-align:start;border:1px solid #d4e2da;border-radius:50%;background:var(--bank-color,#eef5f0);color:#fff;padding:0;font:700 15px Manrope,sans-serif;cursor:pointer;box-sizing:border-box}
- #homeTreasury .demo-bank-pill[data-demo-bank=all]{color:#14765a}
+ #homeTreasury .demo-bank-pill{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;flex:0 0 44px;scroll-snap-align:start;border:1px solid #ffffff26;border-radius:13px;background:var(--bank-color,#171d22);color:#fff;padding:0;font:700 15px Manrope,sans-serif;cursor:pointer;box-sizing:border-box}
+ #homeTreasury .demo-bank-pill[data-demo-bank=all]{color:var(--home-gold)}
  #homeTreasury .demo-bank-pill[aria-pressed=true]{outline:2px solid #16975b;outline-offset:2px}
- #homeTreasury .demo-bank-dot{position:absolute;right:-1px;top:-1px;width:9px;height:9px;border-radius:50%;background:#d33847;border:2px solid #fff;box-sizing:content-box}
+ #homeTreasury .demo-bank-dot{position:absolute;right:-1px;top:-1px;width:9px;height:9px;border-radius:50%;background:#d33847;border:2px solid #101318;box-sizing:content-box}
  #homeTreasury .demo-bank-dot[hidden]{display:none}
- #homeTreasury .demo-global-alert{display:flex;align-items:center;gap:6px;width:100%;background:none;border:0;padding:8px 0 0;color:#b72b3c;text-align:left;font:600 12px/1.5 Manrope,sans-serif;cursor:pointer;min-height:36px}
+ #homeTreasury .demo-global-alert{display:flex;align-items:center;gap:6px;width:100%;background:none;border:0;padding:8px 0 0;color:#ef8a8e;text-align:left;font:600 12px/1.5 Manrope,sans-serif;cursor:pointer;min-height:36px}
  #homeTreasury .demo-global-alert span{min-width:0}
- #homeTreasury button:focus-visible,#homeTreasury .demo-bank-scroll:focus-visible{outline:2px solid #137747;outline-offset:3px}
+ #homeTreasury button:focus-visible,#homeTreasury .demo-bank-scroll:focus-visible{outline:2px solid #e0e6ec;outline-offset:3px}
  #homeTreasury .demo-bank-detail[hidden]{display:none}
- #homeTreasury .demo-detail-heading{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-top:6px;color:#456757}
- #homeTreasury .demo-fold{display:flex;align-items:center;justify-content:center;flex:0 0 44px;height:36px;border:0;background:none;color:#14765a;cursor:pointer;touch-action:none}
+ #homeTreasury .demo-detail-heading{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-top:6px;color:var(--home-muted)}
+ #homeTreasury .demo-fold{display:flex;align-items:center;justify-content:center;flex:0 0 44px;height:36px;border:0;background:none;color:var(--home-text);cursor:pointer;touch-action:none}
  #homeTreasury .demo-bank-scroll{max-height:126px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
- #homeTreasury .demo-bank-row{display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:39px;border-top:1px solid #e5eee8;font-size:12px}
- #homeTreasury .demo-bank-row time{color:#526b5d;flex:0 0 34px;font-size:11px}
+ #homeTreasury .demo-bank-row{display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:39px;border-top:1px solid #ffffff0b;font-size:12px}
+ #homeTreasury .demo-bank-row time{color:var(--home-muted);flex:0 0 34px;font-size:11px}
  #homeTreasury .demo-bank-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
  #homeTreasury .demo-bank-row b{font-size:12px;white-space:nowrap}
- #homeTreasury .demo-bank-alert{background:#fff3f3;border:1px solid #ecc6cd;border-radius:12px;padding:10px;margin-top:10px;color:#9d2032}
+ #homeTreasury .demo-bank-alert{background:#e46e7208;border:1px solid #e46e7270;border-radius:12px;padding:10px;margin-top:10px;color:#ef8a8e}
  #homeTreasury .demo-bank-alert p{font-size:12px;line-height:1.5;margin:0 0 6px}
- #homeTreasury .demo-rebalance{width:100%;min-height:44px;padding:9px;border:1px solid #b8d9c8;border-radius:9px;background:#fff;color:#145c3e;font:600 12px/1.5 Manrope,sans-serif;cursor:pointer;text-align:left}
- #homeTreasury .demo-bank-note{font-size:11px;color:#526b5d;margin:6px 0 0}
- #homeTreasury .demo-bank-status{font-size:12px;color:#147047;margin:8px 0;line-height:1.5}
- #homeTreasury .demo-view-all{display:block;color:#146d46;font:600 12px Manrope,sans-serif;padding:10px 0;border:0;background:none;cursor:pointer;min-height:36px}
- #homeTreasury .demo-positive{color:#14804c!important}
- #homeTreasury .demo-negative{color:#bd2b3c!important}
+ #homeTreasury .demo-rebalance{width:100%;min-height:44px;padding:9px;border:1px solid #ffffff26;border-radius:9px;background:#ffffff04;color:var(--home-text);font:600 12px/1.5 Manrope,sans-serif;cursor:pointer;text-align:left}
+ #homeTreasury .demo-bank-note{font-size:11px;color:var(--home-muted);margin:6px 0 0}
+ #homeTreasury .demo-bank-status{font-size:12px;color:var(--home-green);margin:8px 0;line-height:1.5}
+ #homeTreasury .demo-view-all{display:block;color:var(--home-green);font:600 12px Manrope,sans-serif;padding:10px 0;border:0;background:none;cursor:pointer;min-height:36px}
+ #homeTreasury .demo-positive{color:#50ca89!important}
+ #homeTreasury .demo-negative{color:#ef8a8e!important}
  .demo-transactions .demo-bank-row{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff15;font-size:13px}
  .demo-transactions .demo-bank-row>span{flex:1}.demo-transactions time{min-width:38px}.demo-transactions .demo-positive{color:#50ca89}.demo-transactions .demo-negative{color:#ef8a8e}
  `;document.head.append(css);
@@ -85,7 +83,7 @@ if(document.body.dataset.publicDemo==='true'){
  }
  function mount(){
   const host=document.querySelector('#homeTreasury');if(!host||host.querySelector('.demo-multibank'))return;
-  selected='all';feedback='';host.innerHTML=`<article class="home-treasury demo-multibank"><div class="home-treasury-top"><span class="module-icon" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2><span>Trésorerie · <span data-demo-name></span></span><span>${period}</span></h2><strong class="demo-total" data-demo-balance aria-label="Solde disponible"></strong></div></div><div class="home-cash-details"><div class="home-flow"><span>↓ Entrées du mois</span><b class="demo-positive" data-demo-incoming></b></div><div class="home-flow"><span>↑ Sorties du mois</span><b class="demo-negative" data-demo-outgoing></b></div></div><div class="demo-global-alerts"></div><div class="demo-bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="demo-bank-pill" data-demo-bank="all" aria-label="Toutes les banques" title="Toutes les banques">${svg('<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/>')}</button>${banks.map(b=>`<button type="button" class="demo-bank-pill" data-demo-bank="${b.id}" style="--bank-color:${b.color}" title="${clean(b.name)}" aria-controls="demoBankDetail">${b.logo||`<span aria-hidden="true">${clean(initial(b))}</span>`}<span class="demo-bank-dot" hidden aria-hidden="true"></span></button>`).join('')}</div><div id="demoBankDetail" class="demo-bank-detail" hidden></div></article>`;update(host);
+  selected='all';feedback='';host.innerHTML=`<article class="home-treasury demo-multibank"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2><span>Trésorerie · <span data-demo-name></span></span><span>${period}</span></h2><strong class="demo-total" data-demo-balance aria-label="Solde disponible"></strong></div></div><div class="home-cash-details"><div class="home-flow"><span>↓ Entrées du mois</span><b class="demo-positive" data-demo-incoming></b></div><div class="home-flow"><span>↑ Sorties du mois</span><b class="demo-negative" data-demo-outgoing></b></div></div><div class="demo-global-alerts"></div><div class="demo-bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="demo-bank-pill" data-demo-bank="all" aria-label="Toutes les banques" title="Toutes les banques">${svg('<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/>')}</button>${banks.map(b=>`<button type="button" class="demo-bank-pill" data-demo-bank="${b.id}" style="--bank-color:${b.color}" title="${clean(b.name)}" aria-controls="demoBankDetail">${b.logo||`<span aria-hidden="true">${clean(initial(b))}</span>`}<span class="demo-bank-dot" hidden aria-hidden="true"></span></button>`).join('')}</div><div id="demoBankDetail" class="demo-bank-detail" hidden></div></article>`;update(host);
  }
  function close(host,focus=false){selected='all';feedback='';update(host);if(focus)host.querySelector('[data-demo-bank="all"]').focus({preventScroll:true});}
  document.addEventListener('click',e=>{

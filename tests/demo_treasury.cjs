@@ -16,9 +16,9 @@ const amount=text=>Math.round(Number(text.replace(/[^\d,−-]/g,'').replace('−
   assert.equal(await page.locator('.demo-bank-dot:visible').count(),1);
   assert.equal(await page.locator('[data-demo-bank="atlas"]').innerText(),'A');
   for(const pill of await page.locator('.demo-bank-pill').all()){
-   const box=await pill.boundingBox();assert.equal(box.width,44);assert.equal(box.height,44);assert(await pill.getAttribute('aria-label'));
+   const box=await pill.boundingBox();assert.equal(box.width,44);assert.equal(box.height,44);assert(await pill.getAttribute('aria-label'));assert.equal(await pill.evaluate(e=>getComputedStyle(e).borderRadius),'13px');
   }
-  assert.equal(await page.locator('.demo-multibank').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
+  assert(await page.locator('.demo-multibank').evaluate(e=>getComputedStyle(e).backgroundImage.includes('linear-gradient')));
   if(width===390)await page.locator('#homeTreasury').screenshot({path:process.env.HOME_PREVIEW_DIR+'/demo-tresorerie-logos.png'});
   const sums={balance:0,incoming:0,outgoing:0};
   for(const id of ['horizon','rivage','atlas']){
@@ -65,6 +65,6 @@ const amount=text=>Math.round(Number(text.replace(/[^\d,−-]/g,'').replace('−
  assert(await extra.locator('.demo-bank-pills').evaluate(e=>e.scrollWidth>e.clientWidth));
  await extra.locator('[data-demo-bank="extra7"]').click();assert.equal(await extra.locator('[data-demo-name]').innerText(),'Exemple 7');
  assert(await extra.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await extra.close();
- console.log('Logo treasury verified at 320/390/768px: global sum equals all banks, monthly scoped flows, 44px logos/fallback, persistent alerts, 5 dated transactions and full history, toggle/reset, simulated transfer only, scoped white/green theme; bank configuration addition/reorder and horizontal overflow verified.');
+ console.log('Logo treasury verified at 320/390/768px: rounded-square 44px logos, original dark card, global/bank totals, alerts, 5 transactions, history, simulated transfer, configurable bank list and horizontal overflow.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
