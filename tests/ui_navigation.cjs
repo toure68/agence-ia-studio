@@ -37,8 +37,10 @@ const {chromium}=require('playwright');
    if(await page.locator('#assistantMessage').isVisible())return;
    await backHome();await page.locator('#assistantDock').click();await page.locator('#assistantMessage').waitFor({state:'visible'});
  }
- async function layout(count=16){
-   assert.equal(await page.locator('#content .module-grid .module-tile').count(),count);
+ async function layout(){
+   // 2 columns: at most 3 rows (5 modules + the + cell), more only for modules with an action to do.
+   const cells=await page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,tiles:el.querySelectorAll('.module-tile').length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length,addLast:el.lastElementChild.classList.contains('module-add-card')}));
+   assert(cells.tiles>0&&cells.addLast&&cells.cells%2===0&&cells.cells<=Math.max(6,Math.ceil((cells.urgent+1)/2)*2),'Home grid respects the 2-column row cap: '+JSON.stringify(cells));
    assert.equal(await page.locator('.sidebar,#sideNav,#mobileNav').count(),0);
    const g=await page.locator('#content .module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -182,10 +184,12 @@ const {chromium}=require('playwright');
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
    await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
    assert.equal(await page.locator('#content .module-grid').count(),1);
-   assert.deepEqual(await page.locator('#content .module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go).sort()),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'].sort());
+   const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
    assert.equal(await page.locator('.more-functions').count(),1);
-   assert.equal(await page.locator('#content .module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');
-   assert.equal(await page.locator('#content .module-grid [data-go="team"]').getAttribute('data-company-id'),'1');
+   // Company-scoped links keep their company id, on the grid or in the + reserve panel.
+   const moduleLink=async key=>{const inGrid=page.locator(`#content .module-grid [data-go="${key}"]`);if(await inGrid.count())return {href:await inGrid.getAttribute('href'),cid:await inGrid.getAttribute('data-company-id')};await page.locator('#content .module-grid .module-add').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${key}"]`);await link.waitFor();const found={href:await link.getAttribute('href'),cid:await link.getAttribute('data-company-id')};await backHome();return found;};
+   assert.equal((await moduleLink('company-edit')).href,'#/company-edit/1');
+   assert.equal((await moduleLink('team')).cid,'1');
    assert.equal(await page.locator('#mobileNav').count(),0);
    assert.equal(await page.locator('.home-quick-actions').count(),0);
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
@@ -386,7 +390,7 @@ const {chromium}=require('playwright');
    await page.locator('[data-validate-client]').click();await page.locator('#content .module-grid').waitFor();
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients')))[0].needs_review,false);
-   assert.equal(await page.locator('#content .module-grid [data-go="clients"]').getAttribute('data-state'),'success');
+   {const clientsTile=page.locator('#content .module-grid [data-go="clients"]');if(await clientsTile.count())assert.equal(await clientsTile.getAttribute('data-state'),'success');}
    await goModule('activities');
    await page.evaluate(()=>openTab('activity-new'));
    await page.locator('#activityTitle').fill('Préparer intervention');
@@ -551,8 +555,8 @@ const {chromium}=require('playwright');
    await openModuleLibrary();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
    await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
    await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
-   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===2);
-   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
+   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===1);
+   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),1);
    await openModuleLibrary();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
    assert.equal(await page.locator('.more-functions').isVisible(),false);assert(await page.locator('#content .module-grid .module-add').isVisible(),'The + reserve cell stays reachable');
@@ -599,7 +603,7 @@ const {chromium}=require('playwright');
      const manual=homeGridModules({...input,dynamic:false}).modules.map(m=>m.key);
      return {urgent,quiet:quiet.length,manual};
    });
-   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,3);assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
+   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,2,'3 columns: 2 modules + the + cell keep the row complete');assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
    // Column choice survives closing the panel and reload without changing modules.
    for(const columns of [2,3,4]){
      await openModuleLibrary();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();

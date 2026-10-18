@@ -56,7 +56,7 @@ function moduleWidget(key,state){
 }
 function widgetMarkup(widget){return `<span class="widget-metric" title="${clean(widget.detail)}"><b class="widget-value">${clean(widget.value)}</b><span class="widget-caption">${clean(widget.label)}</span></span>`;}
 function refreshHomeWidgets(state){
- document.querySelectorAll('#content .module-grid [data-go]').forEach(tile=>{
+ document.querySelectorAll('#content .module-grid .module-tile[data-go]').forEach(tile=>{
   const widget=moduleWidget(tile.dataset.go,state),host=tile.querySelector('.widget-metric');
   if(host){const value=host.querySelector('.widget-value'),label=host.querySelector('.widget-caption');if(value.textContent!==widget.value)value.textContent=widget.value;if(label.textContent!==widget.label)label.textContent=widget.label;host.title=widget.detail;}
   tile.setAttribute('aria-label',tile.dataset.moduleLabel+' · '+widget.detail+' · '+modulePresentation(tile.dataset.go,state).label);
