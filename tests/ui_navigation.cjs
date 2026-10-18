@@ -519,6 +519,8 @@ const {chromium}=require('playwright');
     const before=(await page.evaluate(path=>api(path),path)).length;
     await page.locator('#commandText').fill(command);await page.locator('#previewCommand').click();await page.locator('#confirmCommand').click();
     await page.locator('#content h1').filter({hasText:title}).waitFor();
+    // The panel title can already match before the save lands; wait for the record itself.
+    await page.waitForFunction(async([path,count])=>(await api(path)).length===count,[path,before+1]);
     assert.equal((await page.evaluate(path=>api(path),path)).length,before+1);await backHome();
    }
    await page.locator('.account-menu summary').click();
