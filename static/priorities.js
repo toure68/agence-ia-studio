@@ -1,6 +1,6 @@
 function priorityPresentation(c){
  if(c.state)return tileState(c.state,c.state_label);
- if(c.action.type==='social')return tileState('success','Prêt à valider');
+ if(c.action.type==='social')return tileState('warning','À valider');
  if(c.rank===0)return tileState('danger','Urgent');
  if(c.rank<=2)return tileState('warning',c.action.type==='document'?'À vérifier':'Important');
  if(['client','quote','document','email'].includes(c.action.type))return tileState('warning',({client:'À valider',quote:'À finaliser',document:'À vérifier',email:'À relire'})[c.action.type]);
@@ -21,13 +21,20 @@ function groupPriorityCards(cards){
  }
  return [...groups.values()];
 }
+function homePriorityCopy(c){
+ const generic=new Set(['Vérifiez les infos lues sur le document','Nouvelle fiche ou informations modifiées : vérifiez puis validez les coordonnées.']);
+ const title=c.home_title||c.title.replace(/^(?:Remplacer : |Vérifier la fiche client : )/,'');
+ const description=c.home_detail??(generic.has(c.description)?'':(c.description||''));
+ return {title,description:description.replace(/^(\d+) à remplacer$/,'Quantité : $1')};
+}
 function priorityMarkup(cards){
  const visible=cards.slice(0,3);
  return `<h2 class="home-section-title">À faire maintenant</h2><div class="priority-stack" aria-label="Priorités par importance">${visible.map((c,i)=>{
   const presentation=priorityPresentation(c),key=priorityModules[c.action.type]||'requests';
-  const tone=semanticTone(key,presentation);
+  const tone=['equipment','material','risk'].includes(c.action.type)?'red':c.action.type==='quote'?'green':c.action.type==='document'?'gold':'blue';
+  const copy=homePriorityCopy(c);
   const action=c.members.length>1?'Voir les '+c.members.length+' actions':c.action_label||'Ouvrir le dossier';
-  return `<article class="priority-card priority-tier-${i+1} tone-${tone} ${c.fallback?'routine-card':''} ${c.example?'example-card':''}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button type="button" class="module-tile priority-tile tone-${tone} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}"><span class="priority-top"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}</span></span></span><span class="priority-description">${clean(c.description||'Ouvrez le dossier pour vérifier les informations et continuer.')}</span><span class="priority-cta">${clean(action)}</span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+  return `<article class="priority-card priority-tier-${i+1} tone-${tone} ${c.fallback?'routine-card':''} ${c.example?'example-card':''}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button type="button" class="module-tile priority-tile tone-${tone} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}"><span class="priority-top"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="priority-copy"><strong>${clean(copy.title)}</strong><span class="priority-labels"><span class="importance">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}</span></span></span>${copy.description?`<span class="priority-description">${clean(copy.description)}</span>`:''}<span class="priority-cta">${clean(action)}</span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>${cards.length>3?`<button class="btn home-all-actions" id="homeAllActions">Toutes les actions · ${cards.reduce((n,c)=>n+c.members.length,0)}</button>`:''}`;
 }
 'use strict';

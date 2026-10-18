@@ -118,6 +118,8 @@ def install(app, db, require, own_company, utcnow):
             add('quote','quote-'+str(quote['id']),quote['updated']+quote['payload'],'Devis '+person_name(data['customer_name'])+', '+money(quote['total_minor'],data.get('currency','EUR'))+' : à finaliser',
                 'Devis pour '+data['customer_name']+' : vérifier le contenu et son état.',
                 {'type':'quote','id':quote['id']},'Vérifier le devis',1 if due and due<=today.isoformat() else 2,due)
+            cards[-1]['home_title']='Devis · '+person_name(data['customer_name'])
+            cards[-1]['home_detail']=money(quote['total_minor'],data.get('currency','EUR'))+' · À finaliser'+(' · Échéance : '+due if due else '')
 
         for row in con.execute("SELECT id,subject,revision,send_status FROM mail_messages WHERE company_id=? AND user_id=? AND send_status IN ('draft','uncertain')",(cid,user['id'])):
             mail=dict(row);uncertain=mail['send_status']=='uncertain'
@@ -137,6 +139,7 @@ def install(app, db, require, own_company, utcnow):
                 add('document','document-'+str(doc['id']),doc['kind'],'Vérifier un document reçu',
                     'Vérifiez les infos lues sur le document',
                     {'type':'document','id':doc['id']},'Vérifier le document',2)
+                cards[-1]['home_title']=doc['filename']
 
         if user['role'] == 'owner':
             for row in con.execute('SELECT * FROM prospects'):

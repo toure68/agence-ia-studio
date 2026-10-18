@@ -16,7 +16,6 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
   const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});
   for(const state of tileStates)tile.classList.toggle('state-'+state,state===p.state);
   tile.dataset.state=p.state;
-  const tone=semanticTone(key,p);for(const name of ['blue','green','gold','red','purple']){tile.classList.toggle('tone-'+name,name===tone);tile.closest('.module-card').classList.toggle('tone-'+name,name===tone);}
   tile.setAttribute('aria-label',(tile.dataset.moduleLabel||tile.querySelector('strong').textContent)+' · '+p.label);
  });
 }
@@ -24,7 +23,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
 async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
- $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Votre secteur cette semaine</h2><p>Votre veille métier reste à configurer.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
+ $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Veille métier</h2><p>Veille non connectée.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
  $('#homeTreasury').addEventListener('click',e=>{if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
  const greeting=$('.home-heading h1');greeting.textContent=greeting.textContent.replace(/Bonjour (\p{L})/u,(_,letter)=>'Bonjour '+letter.toLocaleUpperCase('fr'));
  $('#homeSectorInfo').textContent='Choisir mon métier';
@@ -133,7 +132,7 @@ function homeTreasuryMarkup(state){
  const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):'<strong class="home-no-balance">Aucun mouvement</strong>';
  const receivable=demo?clean(quoteMoney(scenario.receivable,scenario.currency)):'Non renseigné';
  const payable=demo?clean(quoteMoney(scenario.payable,scenario.currency)):'Non renseigné';
- return `<article class="home-treasury"><div class="home-treasury-top"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}<div class="home-balances">${amounts}</div><small>${demo?'Solde disponible':'Solde enregistré · livre interne'}</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>${receivable}</b></div><div><span>À payer</span><b>${payable}</b></div></div></article><button type="button" class="btn home-cash-mode" data-treasury-mode>Voir mes chiffres réels</button>`;
+ return `<article class="home-treasury"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}<div class="home-balances">${amounts}</div><small>${demo?'Solde disponible':'Solde enregistré · livre interne'}</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>${receivable}</b></div><div><span>À payer</span><b>${payable}</b></div></div></article><button type="button" class="btn home-cash-mode" data-treasury-mode>Voir mes chiffres réels</button>`;
 }
 function refreshHomeSummary(state,cards){
  const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}

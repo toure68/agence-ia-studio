@@ -50,9 +50,10 @@ function speechButton(getText,label='Lire à voix haute'){
  const b=document.createElement('button');b.type='button';b.className='voice-button';b.setAttribute('aria-label',label);b.title=label;b.setAttribute('aria-pressed','false');b.innerHTML=speakerIcon;b.onclick=()=>readAloud(getText(),b);return b;
 }
 function enhanceVoice(){
- document.querySelectorAll('.priority-card').forEach(card=>{if(card.querySelector('.voice-button'))return;const title=card.querySelector('.priority-copy strong')?.textContent||'';const importance=card.querySelector('.importance')?.textContent||'';card.append(speechButton(()=>title+'. '+importance,'Écouter cette priorité'));});
+ document.querySelectorAll('.priority-card').forEach(card=>{if(card.querySelector('.voice-button'))return;const title=card.querySelector('.priority-copy strong')?.textContent||'';const importance=card.querySelector('.importance')?.textContent||'';const detail=card.querySelector('.priority-description')?.textContent||'';card.append(speechButton(()=>[title,importance,detail].filter(Boolean).join('. '),'Écouter cette priorité'));});
  const back=document.querySelector('#moduleBack');if(back&&!back.querySelector('.voice-button'))back.append(speechButton(()=>document.querySelector('#content')?.innerText||'','Lire cette page'));
  const toast=document.querySelector('#toast');if(toast&&!toast.classList.contains('hide')&&!toast.querySelector('.voice-button')){const text=toast.textContent;toast.append(speechButton(()=>text,'Écouter cette notification'));}
 }
 window.addEventListener('DOMContentLoaded',()=>{new MutationObserver(()=>enhanceVoice()).observe(document.querySelector('#shell'),{childList:true,subtree:true});new MutationObserver(()=>enhanceVoice()).observe(document.querySelector('#toast'),{childList:true,attributes:true,attributeFilter:['class']});enhanceVoice();});
 window.addEventListener('pagehide',()=>{stopReading();});
+

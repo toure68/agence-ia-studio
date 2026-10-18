@@ -8,7 +8,6 @@ function moduleTone(key){return moduleTones[key]||'green';}
 const tileStates=new Set(['neutral','info','success','warning','danger']);
 function tileState(state,label){return {state:tileStates.has(state)?state:'neutral',label:label||'Normal'};}
 function modulePresentation(key,state){const p=state.module_states?.[key];return p?tileState(p.state,p.label):tileState('neutral','Normal');}
-function semanticTone(key,p){return p.state==='danger'||key==='equipment'&&p.state==='warning'?'red':p.state==='success'&&/valider/i.test(p.label)?'green':p.state==='warning'&&!['calendar','requests','reports'].includes(key)?'gold':'blue';}
 const widgetIconPaths={
  requests:'<path d="M4 4h16v16H4zM4 13h5l2 3h2l2-3h5M12 2v8m-3-3 3 3 3-3"/>',
  clients:'<circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',
@@ -118,7 +117,7 @@ function homeModulesMarkup(workspace,state){
   const id=['company-edit','team'].includes(m.key)?company.id:null,n=counts[m.key]||0,p=modulePresentation(m.key,state);
   const icon=`<span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>`,widget=widgetMarkup(moduleWidget(m.key,state)),count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
   const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
-  return `<article class="module-card tone-${semanticTone(m.key,p)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${semanticTone(m.key,p)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns===4?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
+  return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns===4?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
  }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Tous les modules</a>`;
 }
 function updateHomeGrid(workspace,state){
