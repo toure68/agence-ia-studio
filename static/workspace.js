@@ -72,12 +72,20 @@ function homeGridModules(workspace,state={}){
  const recent=key=>workspace.last_used?.[key]||0;
  let keys=dynamic?[...new Set([...workspace.modules.filter(m=>urgent(m.key)).map(m=>m.key),...selected.filter(key=>!inactive.has(key)||urgent(key))])]:[...selected];
  if(dynamic)keys.sort((a,b)=>weight(b)-weight(a)||recent(b)-recent(a));
- if(keys.length&&keys.length%columns){
-  const reserve=workspace.modules.filter(m=>!keys.includes(m.key)&&(!dynamic||!inactive.has(m.key)||urgent(m.key)));
-  reserve.sort((a,b)=>weight(b.key)-weight(a.key)||Number(workspace.suggested?.includes(b.key)||false)-Number(workspace.suggested?.includes(a.key)||false)||recent(b.key)-recent(a.key));
-  keys.push(...reserve.slice(0,columns-keys.length%columns).map(m=>m.key));
-  // Overflow modules remain in the reserve; every displayed row has equal cells.
-  keys=keys.slice(0,Math.floor(keys.length/columns)*columns);
+ // Row cap per layout (2 cols → 3 rows, 3 → 3, 4 → 2); the last cell is the "+" reserve tile.
+ // Modules with an action to do (urgent) always show, adding rows if needed; the rest stays in the reserve.
+ const cap=({2:3,3:3,4:2})[columns]*columns-1;
+ const urgentKeys=keys.filter(urgent),calm=keys.filter(key=>!urgent(key));
+ const kept=new Set([...urgentKeys,...calm.slice(0,Math.max(0,cap-urgentKeys.length))]);
+ keys=keys.filter(key=>kept.has(key));
+ if(keys.length&&(keys.length+1)%columns){
+  // Fill the last row from the reserve; this never goes past the cap unless urgent modules already did.
+  const others=workspace.modules.filter(m=>!keys.includes(m.key)&&!calm.includes(m.key)&&(!dynamic||!inactive.has(m.key)||urgent(m.key)));
+  others.sort((a,b)=>weight(b.key)-weight(a.key)||Number(workspace.suggested?.includes(b.key)||false)-Number(workspace.suggested?.includes(a.key)||false)||recent(b.key)-recent(a.key));
+  const pool=[...calm.filter(key=>!kept.has(key)),...others.map(m=>m.key)];
+  keys.push(...pool.slice(0,columns-(keys.length+1)%columns));
+  // Every displayed row has equal cells: drop calm modules rather than leave a gap.
+  while((keys.length+1)%columns&&keys.some(key=>!urgent(key))){const i=keys.map(urgent).lastIndexOf(false);keys.splice(i,1);}
  }
  return {columns,modules:keys.map(key=>({...byKey.get(key),automatic:!selected.includes(key)}))};
 }
@@ -118,7 +126,7 @@ function homeModulesMarkup(workspace,state){
   const icon=`<span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>`,widget=widgetMarkup(moduleWidget(m.key,state)),count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
   const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
   return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns===4?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
- }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Tous les modules</a>`;
+ }).join('')}<article class="module-card module-add-card"><a class="module-add" data-go="module-reserve" href="#/module-reserve" aria-label="Ajouter une fonction depuis la réserve" title="Réserve"><span aria-hidden="true">＋</span></a></article></nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Tous les modules</a>`;
 }
 function updateHomeGrid(workspace,state){
  const current=$('#content .module-grid');if(!current)return;
@@ -133,6 +141,12 @@ function trackModuleUse(route){
  return api(`/api/companies/${company.id}/workspace/usage/${key}`,{method:'POST',keepAfterPanelClose:true}).catch(()=>{});
 }
 
+async function renderModuleReserve(){
+ const cid=company.id,[workspace,state]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);
+ const shown=new Set(homeGridModules(workspace,state).modules.map(m=>m.key));
+ const reserve=workspace.modules.filter(m=>!shown.has(m.key));
+ $('#content').innerHTML=`<section class="module-reserve"><p class="tiny sub">Fonctions rangées hors de l’accueil. Une fonction utilisée récemment ou avec une action à faire remonte toute seule.</p><div class="module-reserve-grid">${reserve.map(m=>{const id=['company-edit','team'].includes(m.key)?cid:null,p=modulePresentation(m.key,state);return `<a class="module-reserve-item tone-${moduleTone(m.key)}" data-go="${m.key}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span><span><strong>${clean(m.label)}</strong>${p.label&&p.label!=='Normal'?`<small>${clean(p.label)}</small>`:''}</span></a>`;}).join('')||'<p class="empty">Toutes vos fonctions sont déjà sur l’accueil.</p>'}</div><a class="btn module-reserve-manage" data-go="module-library" href="#/module-library">Gérer mes fonctions</a></section>`;
+}
 async function renderModuleLibrary(){
  const cid=company.id,state=await api(`/api/companies/${cid}/workspace`);let selected=new Set(state.visible),domain=state.domain;
  $('#content').innerHTML=`<section class="form-page"><h1>Mes fonctions</h1><p class="tiny sub">Afficher ou masquer un bouton conserve ses données.</p><p class="tiny sub">Le mode dynamique remonte les alertes et range les fonctions inactives depuis dix jours. Les modules restent accessibles dans la réserve.</p><div class="field"><label for="activityDomain">Mon domaine d’activité</label><select id="activityDomain">${selectMap(state.domains,domain)}</select></div><label class="check"><input type="checkbox" id="dynamicHome" ${state.dynamic!==false?'checked':''}> Mode dynamique (recommandé)</label><div class="field"><label for="homeColumns">Colonnes sur l’accueil</label><div class="home-column-controls"><select id="homeColumns">${[2,3,4].map(n=>`<option value="${n}" ${n===(state.columns||2)?'selected':''}>${n} colonnes${n===2?' (par défaut)':''}</option>`).join('')}</select><button type="button" class="btn primary" id="saveModules">Enregistrer</button></div></div><div class="list-filters"><input id="moduleSearch" class="control" type="search" aria-label="Rechercher une fonction" placeholder="Rechercher une fonction"><select id="moduleScope" class="control" aria-label="Fonctions proposées"><option value="all">Tous les domaines</option><option value="suggested">Adaptées à mon activité</option></select></div><div class="row library-controls"><button class="btn" id="suggestModules">Proposer selon mon activité</button><button class="btn" id="selectAllModules">Tout afficher</button><button class="btn" id="clearModules">Tout masquer</button></div><div id="moduleLibrary" class="module-library"></div><button class="btn primary library-save" id="saveModulesBottom">Enregistrer mon accueil</button></section>`;
