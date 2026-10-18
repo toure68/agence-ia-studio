@@ -31,6 +31,10 @@ const {chromium}=require('playwright');
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
    if(await tile.count())await tile.click();
+   else if(await page.locator('#content .module-grid .module-add').count()&&(await page.evaluate(async r=>{const cid=company.id,[w,c]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);return w.modules.some(m=>m.key===r);},route))){
+     // Modules beyond the row cap are opened from the + reserve panel.
+     await page.locator('#content .module-grid .module-add').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${route}"]`);await link.waitFor();await link.click();
+   }
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
  }
  async function openAssistant(){
@@ -135,7 +139,7 @@ const {chromium}=require('playwright');
    await page.locator('.chat-file button').click();await backHome();
    await page.evaluate(()=>{document.querySelector('#assistantChat').dataset.identity='same-cockpit';});
    await page.locator('#content [data-go="clients"]').click();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
-   assert.equal(await page.locator('#cockpitContent .module-grid .module-card').count(),16);
+   assert((await page.locator('#cockpitContent .module-grid .module-card').count())>=2,'Cockpit grid stays mounted behind the panel');
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/panel-mobile.png',animations:'disabled'});
    await page.setViewportSize({width:1280,height:900});assert.equal(await page.locator('#contextPanel').count(),1);await page.screenshot({path:'/tmp/ui-images/panel-desktop.png',animations:'disabled'});await page.setViewportSize({width:390,height:844});
    assert.equal(await page.locator('#shell').evaluate(el=>el.inert),true);
@@ -461,7 +465,7 @@ const {chromium}=require('playwright');
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.routine-card)').length===0);
    // The normal Add action opens the voice composer, not the legacy form.
-   await page.locator('#content [data-go="calendar"]').click();
+   await goModule('calendar');
    await page.locator('#content [data-go="task-new"]').click();
    await page.locator('#commandText').waitFor();
    await page.locator('#closeModal').click();
