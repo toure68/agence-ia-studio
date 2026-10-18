@@ -15,7 +15,7 @@ def upload(c,h,kind,raw,name='exemple.pdf',cid=1):
 
 def test_personal_modules_empty_home_domains_and_scope(env):
     c,h=owner(env);path='/api/companies/1/workspace';state=c.get(path).json()
-    assert len(state['modules'])==17 and len(state['visible'])==16 and state['version']==0
+    assert len(state['modules'])==18 and len(state['visible'])==16 and 'veille' not in state['visible'] and state['version']==0
     assert c.put(path,json={'domain':'agriculture','visible':[],'version':0}).status_code==403
     assert c.put(path,headers=h,json={'domain':'agriculture','visible':[],'version':0}).status_code==200
     state=c.get(path).json();assert state['visible']==[] and 'equipment' in state['suggested'] and 'prospects' not in state['suggested']
@@ -226,3 +226,10 @@ def test_home_rows_free_choice_persist_and_survive_other_saves(env):
     # Changing columns or saving from the settings page keeps the chosen rows.
     assert c.put(path,headers=h,json={**base,'version':saved['version'],'columns':3}).status_code==200
     again=c.get(path).json();assert again['rows']==5 and again['columns']==3
+
+def test_veille_is_a_reserve_function_with_widget(env):
+    c,h=owner(env);state=c.get('/api/companies/1/workspace').json()
+    veille=[m for m in state['modules'] if m['key']=='veille']
+    assert veille and veille[0]['label']=='Veille métier' and 'veille' not in state['visible']
+    assert c.post('/api/companies/1/workspace/usage/veille',headers=h).status_code in (200,204)
+    assert c.get('/api/companies/1/cockpit').json()['widgets']['veille']['label']=='Non connectée'

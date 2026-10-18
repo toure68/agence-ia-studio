@@ -3,7 +3,7 @@ const profileLabels={legal_name:'Raison sociale',siret:'SIRET',rcs_number:'Immat
 const documentKinds={kbis:'Extrait Kbis',registration:'Immatriculation / avis SIRENE',identity:'Carte d’identité',passport:'Passeport',residence:'Titre de séjour',address:'Justificatif de domicile / facture',rib:'RIB / coordonnées bancaires',insurance:'Attestation d’assurance',quote:'Ancien devis / tarifs',other:'Autre document'};
 const documentFields={kbis:['legal_name','rcs_number','siret','legal_form','capital','address','trade_name','activity','representative'],registration:['legal_name','siret','rcs_number','address','activity'],identity:['last_name','first_name','birth_date','birth_place','nationality','document_number','issue_date','expiry_date','sex','issuing_country','issuing_authority','personal_address'],passport:['last_name','first_name','birth_date','birth_place','nationality','document_number','issue_date','expiry_date','sex','issuing_country','issuing_authority'],residence:['last_name','first_name','birth_date','nationality','document_number','issue_date','expiry_date','sex','issuing_country','issuing_authority','personal_address'],address:['document_holder','personal_address'],rib:['account_holder','iban','bic'],insurance:['insurer','document_holder','policy_number','issue_date','expiry_date'],quote:['legal_name','siret','address'],other:Object.keys(profileLabels)};
 
-const moduleTones={requests:'blue',clients:'blue',activities:'gold',leads:'green',emails:'blue',prospects:'gold',calendar:'blue',reports:'green',drafts:'purple',companies:'blue','company-edit':'gold',team:'purple',treasury:'gold',equipment:'blue',risks:'purple',scanner:'gold'};
+const moduleTones={requests:'blue',clients:'blue',activities:'gold',leads:'green',emails:'blue',prospects:'gold',calendar:'blue',reports:'green',drafts:'purple',companies:'blue','company-edit':'gold',team:'purple',treasury:'gold',equipment:'blue',risks:'purple',scanner:'gold',veille:'blue'};
 function moduleTone(key){return moduleTones[key]||'green';}
 const tileStates=new Set(['neutral','info','success','warning','danger']);
 function tileState(state,label){return {state:tileStates.has(state)?state:'neutral',label:label||'Normal'};}
@@ -25,7 +25,8 @@ const widgetIconPaths={
  equipment:'<path d="M9 3h6l2 5h5v13H2V8h5zM2 13h20m-13-1v4h6v-4"/>',
  risks:'<path d="m12 2 9 4v6c0 5-5 9-9 11-4-2-9-6-9-11V6zM12 7v6m0 4h.01"/>',
  scanner:'<path d="M8 2H3v5m13-5h5v5M3 17v5h5m13-5v5h-5M7 6h10v12H7zM5 12h14"/>',
- social:'<path d="m4 10 13-6v16L4 14zM4 10H2v4h2m3 1 2 7h4l-3-6M20 9l3-2m-3 8 3 2"/>'
+ social:'<path d="m4 10 13-6v16L4 14zM4 10H2v4h2m3 1 2 7h4l-3-6M20 9l3-2m-3 8 3 2"/>',
+ veille:'<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4m8.4 0a6 6 0 0 0 0-8.4M4.9 4.9a10 10 0 0 0 0 14.2m14.2 0a10 10 0 0 0 0-14.2"/>'
 };
 const filledWidgetIcons={
  clients:'<circle cx="12" cy="7" r="4.5"/><path d="M3 22v-3a9 9 0 0 1 18 0v3z"/>',

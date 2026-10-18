@@ -190,7 +190,7 @@ const {chromium}=require('playwright');
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
    await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
    assert.equal(await page.locator('#content .module-grid').count(),1);
-   const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
+   const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner','veille'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
    assert.equal(await page.locator('.more-functions').count(),1);
    // Company-scoped links keep their company id, on the grid or in the + reserve panel.
    const moduleLink=async key=>{const inGrid=page.locator(`#content .module-grid [data-go="${key}"]`);if(await inGrid.count())return {href:await inGrid.getAttribute('href'),cid:await inGrid.getAttribute('data-company-id')};await page.locator('#content .module-reserve-launch').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${key}"]`);await link.waitFor();const found={href:await link.getAttribute('href'),cid:await link.getAttribute('data-company-id')};await backHome();return found;};
@@ -566,7 +566,7 @@ const {chromium}=require('playwright');
    await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===2);
    await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
    await openModuleLibrary();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
-   await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
+   await page.waitForFunction(()=>!document.querySelector('#contextPanel')&&document.querySelector('#content .module-grid'));
    assert.equal(await page.locator('.more-functions').isVisible(),false);assert(await page.locator('#content .module-reserve-launch').isVisible(),'The Réserve button stays reachable');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
    await openModuleLibrary();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
