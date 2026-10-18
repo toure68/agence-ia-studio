@@ -2,6 +2,8 @@
 
 Préparé pour validation, sans publication sur l’application de production.
 
+Mise à jour suivante : roue des banques, comptes nommés, signes +/−, réserves et prélèvements sous sept jours, préparation de l’approvisionnement interne avec confirmation. Fonctionnement détaillé dans `../BANKS.md`. Aperçu : `roue-banques.png` (données de test). Les captures précédentes restent des références historiques.
+
 - Cartes d’action : haut-parleur aligné au bouton, sans ligne supplémentaire ; au moins 2,5 cartes tiennent dans la zone défilée des actions.
 - Trésorerie : un badge de démonstration ; la carte n’est plus un lien, seul « Voir mes chiffres réels » ouvre le livre interne. Aucun chiffre fictif enregistré dans le livre.
 - Révision trésorerie : symbole de billets en euros, résumé limité à Solde / Entrées / Sorties. Les deux cases Entrées + et Sorties + préparent une saisie ; la confirmation reste obligatoire. Les totaux réels sont calculés depuis les mouvements internes, séparément par devise, sans mélange avec les créances/dettes. Exemple cohérent : 29 200,00 € − 4 350,00 € = 24 850,00 €.

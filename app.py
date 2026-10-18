@@ -178,6 +178,8 @@ install_mailbox(app, db, require=lambda *a, **kw: require(*a, **kw), own_company
 
 from zero_routes import install as install_zero
 install_zero(app, db, require=lambda *a, **kw: require(*a, **kw), own_company=lambda *a: own_company(*a), utcnow=utcnow)
+from bank_routes import install as install_banks
+install_banks(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a),utcnow=utcnow)
 from workspace_routes import install as install_workspace
 install_workspace(app,db,require=lambda *a,**kw:require(*a,**kw),own_company=lambda *a:own_company(*a))
 from document_routes import install as install_documents
@@ -709,3 +711,4 @@ def export_prospects(req:Request):
     for x in rows:
         writer.writerow([csv_safe(x[k]) for k in ('name','sector','city','website','email','contact','diagnosis','stage','created')])
     return Response(content='\ufeff'+out.getvalue(),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="prospects-agence-ia.csv"'})
+

@@ -24,6 +24,7 @@ class Movement(BaseModel):
     currency:Literal['EUR','XOF','USD']='EUR'
     date:date
     operation_id:Optional[UUID]=None
+    bank_id:Optional[int]=Field(default=None,gt=0)
 
     @field_validator('label')
     @classmethod
@@ -159,6 +160,8 @@ def init_schema(db):
         columns={r['name'] for r in con.execute('PRAGMA table_info(cash_movements)')}
         if 'operation_id' not in columns:con.execute('ALTER TABLE cash_movements ADD COLUMN operation_id TEXT')
         con.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_operation ON cash_movements(company_id,operation_id)')
+    from bank_routes import init_schema as init_banks
+    init_banks(db)
 
 
 def material_check(con,cid,wid):
@@ -235,10 +238,8 @@ def install(app,db,require,own_company,utcnow):
             scalar=lambda sql,args=(cid,):con.execute(sql,args).fetchone()[0]
             clients=scalar('SELECT COUNT(*) FROM clients WHERE company_id=? AND archived=0')
             active=scalar("SELECT COUNT(*) FROM work_items WHERE company_id=? AND status NOT IN ('done','cancelled')")
-            flows=list(con.execute("SELECT currency,SUM(CASE WHEN direction='in' THEN amount_minor ELSE 0 END) AS incoming,SUM(CASE WHEN direction='out' THEN amount_minor ELSE 0 END) AS outgoing FROM cash_movements WHERE company_id=? GROUP BY currency",(cid,)))
-            balances={r['currency']:r['incoming']-r['outgoing'] for r in flows}
-            inflows={r['currency']:r['incoming'] for r in flows}
-            outflows={r['currency']:r['outgoing'] for r in flows}
+            from bank_routes import snapshot
+            treasury=snapshot(con,cid)
             widgets={
               'requests':{'value':incoming+quotes+mails,'label':'À traiter'},
               'clients':{'value':clients,'label':'Clients'},
@@ -247,7 +248,7 @@ def install(app,db,require,own_company,utcnow):
               'emails':{'value':mails,'label':'À relire'},
               'calendar':{'value':agenda+len(risks),'label':'À prévoir'},
               'reports':{'value':active,'label':'Activités ouvertes'},
-              'treasury':{'balances_minor':balances,'inflows_minor':inflows,'outflows_minor':outflows,'bank_connected':False,'label':'Solde interne'},
+              'treasury':treasury,
               'equipment':{'value':sum(c['action']['type'] in ('equipment','material') for c in risks),'label':'Alertes'},
               'risks':{'value':sum(c['action']['type']=='risk' for c in risks),'label':'Échéances'},
               'companies':{'value':scalar('SELECT COUNT(*) FROM companies',()) if user['role']=='owner' else 1,'label':'Entreprises'},
@@ -279,28 +280,35 @@ def install(app,db,require,own_company,utcnow):
     def cashbook(cid:int,req:Request):
         scope(req,cid)
         with db() as con:
-            rows=[dict(r) for r in con.execute('SELECT * FROM cash_movements WHERE company_id=? ORDER BY date DESC,id DESC',(cid,))]
-        totals={}
-        for r in rows:totals[r['currency']]=totals.get(r['currency'],0)+(r['amount_minor'] if r['direction']=='in' else -r['amount_minor'])
-        return {'movements':rows,'balances_minor':totals,'bank_connected':False}
+            rows=[dict(r) for r in con.execute('SELECT m.*,b.name AS bank_name FROM cash_movements m LEFT JOIN bank_accounts b ON b.id=m.bank_id AND b.company_id=m.company_id WHERE m.company_id=? ORDER BY m.date DESC,m.id DESC',(cid,))]
+            from bank_routes import snapshot
+            result=snapshot(con,cid)
+        return {**result,'movements':rows}
 
     @app.post('/api/companies/{cid}/treasury',status_code=201)
     def add_movement(cid:int,data:Movement,req:Request):
         scope(req,cid,True)
         with db() as con:
+            con.execute('BEGIN IMMEDIATE')
+            if data.bank_id is not None:
+                from bank_routes import bank_for
+                bank=bank_for(con,cid,data.bank_id)
+                if data.currency!=bank['currency']:raise HTTPException(422,'La devise doit correspondre à la banque choisie.')
             operation_id=str(data.operation_id) if data.operation_id else None
             if operation_id:
                 old=con.execute('SELECT * FROM cash_movements WHERE company_id=? AND operation_id=?',(cid,operation_id)).fetchone()
                 if old:
-                    if (old['label'],old['direction'],old['amount_minor'],old['currency'],old['date'])!=(data.label,data.direction,int(data.amount*100),data.currency,data.date.isoformat()):raise HTTPException(409,'Cette opération a déjà été enregistrée avec un autre contenu.')
+                    if (old['label'],old['direction'],old['amount_minor'],old['currency'],old['date'],old['bank_id'])!=(data.label,data.direction,int(data.amount*100),data.currency,data.date.isoformat(),data.bank_id):raise HTTPException(409,'Cette opération a déjà été enregistrée avec un autre contenu.')
                     return dict(old)
-            cur=con.execute('INSERT OR IGNORE INTO cash_movements(company_id,label,direction,amount_minor,currency,date,created,operation_id) VALUES (?,?,?,?,?,?,?,?)',
-              (cid,data.label,data.direction,int(data.amount*100),data.currency,data.date.isoformat(),utcnow(),operation_id))
+            cur=con.execute('INSERT OR IGNORE INTO cash_movements(company_id,label,direction,amount_minor,currency,date,created,operation_id,bank_id) VALUES (?,?,?,?,?,?,?,?,?)',
+              (cid,data.label,data.direction,int(data.amount*100),data.currency,data.date.isoformat(),utcnow(),operation_id,data.bank_id))
             if cur.rowcount==0:
                 old=con.execute('SELECT * FROM cash_movements WHERE company_id=? AND operation_id=?',(cid,operation_id)).fetchone()
-                if not old or (old['label'],old['direction'],old['amount_minor'],old['currency'],old['date'])!=(data.label,data.direction,int(data.amount*100),data.currency,data.date.isoformat()):raise HTTPException(409,'Opération déjà enregistrée avec un autre contenu.')
+                if not old or (old['label'],old['direction'],old['amount_minor'],old['currency'],old['date'],old['bank_id'])!=(data.label,data.direction,int(data.amount*100),data.currency,data.date.isoformat(),data.bank_id):raise HTTPException(409,'Opération déjà enregistrée avec un autre contenu.')
                 return dict(old)
-            return scoped_row(con,'cash_movements',cid,cur.lastrowid)
+            result=scoped_row(con,'cash_movements',cid,cur.lastrowid)
+            con.execute('COMMIT')
+            return result
 
     @app.post('/api/companies/{cid}/treasury/{mid}/check')
     def check_movement(cid:int,mid:int,req:Request):
