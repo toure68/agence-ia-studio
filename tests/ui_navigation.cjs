@@ -555,7 +555,7 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
    await openModuleLibrary();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
-   assert.equal(await page.locator('.more-functions').isVisible(),true);
+   assert.equal(await page.locator('.more-functions').isVisible(),await page.locator('#content .module-grid .module-tile').count()===0,'Tous les modules only shows on an empty grid');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
    await openModuleLibrary();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
