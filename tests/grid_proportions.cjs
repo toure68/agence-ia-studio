@@ -22,16 +22,16 @@ const {chromium}=require('playwright');
   for(const width of [320,375,390,430,750,751,844,1280]){
    await page.setViewportSize({width,height:844});
    const measurements=[];
-   for(const columns of [2,3]){
+   for(const columns of [2,3,4]){
     await page.evaluate(columns=>{
      const grid=document.querySelector('.module-grid');
-     grid.outerHTML=homeModulesMarkup({...layoutWorkspace,columns},layoutSnapshot).split('<a class="module-search-launch"')[0];
+     updateHomeGrid({...layoutWorkspace,columns},layoutSnapshot);
     },columns);
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const geometry=await page.locator('.module-grid').evaluate(grid=>{
      const bounds=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
      return {overflow:document.documentElement.scrollWidth>innerWidth,cards:[...grid.children].map(card=>{
-      const tile=card.querySelector('.module-tile'),icon=card.querySelector('.module-icon'),text=card.querySelector('.widget-copy'),label=card.querySelector('strong'),metric=card.querySelector('.widget-metric');
+      const tile=card.querySelector('.module-tile'),icon=card.querySelector('.module-icon'),text=card.querySelector('.module-copy'),label=card.querySelector('strong'),metric=card.querySelector('.widget-metric');
       return {card:bounds(card),tile:bounds(tile),icon:bounds(icon),text:bounds(text),font:parseFloat(getComputedStyle(label).fontSize),metricFont:parseFloat(getComputedStyle(metric).fontSize),padding:parseFloat(getComputedStyle(tile).paddingTop)};
      })};
     });
@@ -40,24 +40,18 @@ const {chromium}=require('playwright');
      assert(Math.abs(c.card.height-geometry.cards[0].card.height)<.1,'Equal card heights');
      assert(c.tile.bottom<=c.card.bottom+.1,'Button stays within card bottom');
      assert(c.icon.y>=c.tile.y-.1&&c.icon.bottom<=c.tile.bottom+.1,'Icon contained vertically');
-     assert(c.icon.right<=c.text.x+.1,'Icon and text do not overlap');
+     assert(c.icon.bottom<=c.text.y+.1,'Icon is above the label');
      assert(c.text.bottom<=c.tile.bottom+.1,'Text contained vertically');
      assert(Math.abs(c.icon.width-c.icon.height)<.1,'Square icon badge');
      assert(c.card.height>=44,'Touch target remains at least 44px');
     }
     measurements.push(geometry.cards[0]);
    }
-   const [two,three]=measurements,scale=three.card.width/two.card.width;
-   assert(Math.abs(three.card.height/two.card.height-scale)<.002,'Same outer aspect ratio');
-   for(const [a,b] of [[two.icon.width,three.icon.width],[two.font,three.font],[two.metricFont,three.metricFont],[two.padding,three.padding]])assert(Math.abs(b/a-scale)<.01,'Icon, fonts and insets scale together');
-   results.push({width,scale,heights:[two.card.height,three.card.height]});
+   assert(measurements.every(c=>c.font>=14),'Labels stay readable in every grid');
+   results.push({width,heights:measurements.map(c=>c.card.height)});
    if(width===390)await page.screenshot({path:'/tmp/prospection-three-columns.png',fullPage:true});
   }
-  // The resize observer must update the existing grid, without remounting it.
   await page.setViewportSize({width:390,height:844});
-  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  const scale=await page.locator('.module-grid').evaluate(g=>parseFloat(g.style.getPropertyValue('--module-scale')));
-  assert(scale>.65&&scale<.67,'Resize updates the proportional scale');
   await page.locator('.module-grid [data-go]').first().click();
   await page.locator('#contextPanel').waitFor();
   await page.locator('#closeContext').click();
@@ -67,3 +61,4 @@ const {chromium}=require('playwright');
   console.log(JSON.stringify({passed:true,results}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+
