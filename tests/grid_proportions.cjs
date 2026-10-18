@@ -47,7 +47,11 @@ const {chromium}=require('playwright');
     }
     measurements.push(geometry.cards[0]);
    }
-   assert(measurements.every(c=>c.font>=14),'Labels stay readable in every grid');
+   for(const dense of measurements.slice(1)){
+    const two=measurements[0],scale=dense.card.width/two.card.width;
+    for(const [base,small] of [[two.card.height,dense.card.height],[two.icon.width,dense.icon.width],[two.font,dense.font],[two.padding,dense.padding]])
+     assert(Math.abs(small/base-scale)<.015,'Height, icon, font and padding scale with width');
+   }
    results.push({width,heights:measurements.map(c=>c.card.height)});
    if(width===390)await page.screenshot({path:'/tmp/prospection-three-columns.png',fullPage:true});
   }

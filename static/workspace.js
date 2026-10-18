@@ -88,6 +88,13 @@ const measuredHomeGrids=new Set();
 function sizeHomeGrid(grid){
  const width=grid.getBoundingClientRect().width;
  if(!width)return;
+ if(grid.closest('.reference-home')){
+  const columns=Number(grid.dataset.columns)||2,gap=parseFloat(getComputedStyle(grid).columnGap)||0;
+  const reference=(width-gap)/2,cell=(width-gap*(columns-1))/columns,scale=cell/reference;
+  grid.style.setProperty('--home-grid-scale',String(scale));
+  grid.style.setProperty('--home-grid-height',`${(matchMedia('(max-width:750px)').matches?112:132)*scale}px`);
+  return;
+ }
  const reference=(width-12)/2,cell=(width-16)/3,scale=cell/reference;
  grid.style.setProperty('--module-reference-width',`${reference-2}px`);
  grid.style.setProperty('--module-scale',String(scale));

@@ -111,3 +111,14 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 .reference-home .home-cash-mode{width:100%;margin:-6px 0 20px;min-height:44px}
 .reference-home .home-cash-details b{font-size:20px;line-height:1.3}
 @media(max-width:359px){.reference-home .home-cash-details>div{padding:12px 8px}.reference-home .home-cash-details b{font-size:18px}}
+
+/* One reference tile, reduced uniformly to the actual column width. */
+.reference-home .module-grid[data-columns]{--home-grid-scale:1;--home-grid-height:112px;--home-grid-font:14px;--home-grid-icon:40px;row-gap:calc(12px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns]>.module-card{height:var(--home-grid-height);border-radius:calc(20px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-tile{height:calc(var(--home-grid-height) - 2px);max-height:calc(var(--home-grid-height) - 2px);min-height:0;flex-direction:column;align-items:flex-start;justify-content:center;padding:calc(14px * var(--home-grid-scale));gap:calc(10px * var(--home-grid-scale));border-radius:calc(20px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-icon{width:calc(var(--home-grid-icon) * var(--home-grid-scale));height:calc(var(--home-grid-icon) * var(--home-grid-scale));flex-basis:calc(var(--home-grid-icon) * var(--home-grid-scale));border-radius:calc(13px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-icon svg{width:calc(23px * var(--home-grid-scale));height:calc(25px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-copy{height:auto;text-align:left}
+.reference-home .module-grid[data-columns] .module-copy strong{font-size:calc(var(--home-grid-font) * var(--home-grid-scale));line-height:1.3}
+.reference-home .module-grid[data-columns] .module-count{top:calc(12px * var(--home-grid-scale));right:calc(12px * var(--home-grid-scale));height:calc(20px * var(--home-grid-scale));min-width:calc(16px * var(--home-grid-scale));font-size:calc(14px * var(--home-grid-scale));line-height:calc(20px * var(--home-grid-scale))}
+@media(min-width:751px){.reference-home .module-grid[data-columns]{--home-grid-font:15px;--home-grid-icon:44px}}
