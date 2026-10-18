@@ -214,3 +214,12 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .bank-pill-static{cursor:default}
 .bank-positive{color:#1f8f57}.bank-negative{color:#c23b4a}
 .bank-debit-list .task-row{flex-wrap:wrap}
+.reference-home .module-grid:not(:empty)~.more-functions{display:none}
+.reference-home .home-modules-heading{gap:8px}
+.reference-home .column-chooser{display:flex;gap:8px}
+.reference-home .column-chooser[hidden]{display:none}
+.reference-home .column-choice{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:44px;height:44px;padding:0;border:1px solid var(--home-border);border-radius:12px;background:var(--home-surface);color:var(--home-muted);font-size:11px;font-weight:700;line-height:1;cursor:pointer}
+.reference-home .column-choice svg{width:20px;height:16px}
+.reference-home .column-choice[aria-pressed="true"]{color:var(--home-text);border-color:#16975b;outline:1px solid #16975b}
+.reference-home .column-choice:focus-visible,.reference-home [data-columns-toggle]:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
+.reference-home .home-modules-heading.is-choosing [data-columns-toggle]{color:var(--home-gold);border-color:var(--home-gold)}
