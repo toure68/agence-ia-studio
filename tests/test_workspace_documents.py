@@ -214,3 +214,15 @@ def test_dynamic_home_usage_ten_day_boundary_and_isolation(env,monkeypatch):
     assert not c.get(f'/api/companies/{cid}/workspace').json()['inactive']
     env.init_db();assert c.get(path).json()['dynamic'] is False and 'clients' not in c.get(path).json()['inactive']
 
+
+def test_home_rows_free_choice_persist_and_survive_other_saves(env):
+    c,h=owner(env);path='/api/companies/1/workspace';state=c.get(path).json()
+    assert state['rows'] is None
+    base={'domain':state['domain'],'visible':state['visible']}
+    assert c.put(path,headers=h,json={**base,'version':state['version'],'rows':0}).status_code==422
+    assert c.put(path,headers=h,json={**base,'version':state['version'],'rows':11}).status_code==422
+    assert c.put(path,headers=h,json={**base,'version':state['version'],'rows':5,'columns':2}).status_code==200
+    saved=c.get(path).json();assert saved['rows']==5 and saved['columns']==2
+    # Changing columns or saving from the settings page keeps the chosen rows.
+    assert c.put(path,headers=h,json={**base,'version':saved['version'],'columns':3}).status_code==200
+    again=c.get(path).json();assert again['rows']==5 and again['columns']==3

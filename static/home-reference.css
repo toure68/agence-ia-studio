@@ -232,3 +232,10 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .module-reserve-launch{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;margin:4px 0 0;padding:10px 16px;border:1px solid var(--home-border);border-radius:16px;background:var(--home-surface);color:var(--home-text);font-size:15px;font-weight:700;text-decoration:none}
 .reference-home .module-reserve-plus{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--home-gold);border-radius:9px;color:var(--home-gold);font-size:20px;font-weight:400;line-height:1}
 .reference-home .module-reserve-launch:focus-visible{outline:2px solid #e0e6ec;outline-offset:3px}
+.reference-home .home-modules-heading.is-choosing{align-items:flex-start}
+.reference-home .column-chooser{flex-direction:column;align-items:flex-end;gap:8px}
+.reference-home .column-choices{display:flex;gap:8px}
+.reference-home .row-stepper{display:flex;align-items:center;gap:8px;color:var(--home-muted);font-size:13px;font-weight:700}
+.reference-home .row-step{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:1px solid var(--home-border);border-radius:12px;background:var(--home-surface);color:var(--home-text);font-size:20px;line-height:1;cursor:pointer}
+.reference-home .row-step:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
+.reference-home .row-value{min-width:26px;text-align:center;color:var(--home-text);font-size:17px;font-weight:800}
