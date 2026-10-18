@@ -274,3 +274,22 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .home-modules-heading .column-chooser{order:3;flex:1 0 100%;align-items:flex-end}
 body[data-public-demo] .reference-home div.home-modules-heading{position:static;justify-content:flex-start;padding:0}
 body[data-public-demo] .reference-home .home-modules-heading>[data-go],body[data-public-demo] .reference-home .home-modules-heading>[data-columns-toggle]{position:static}
+#homeTreasury .home-treasury{padding:20px 20px 18px;font-variant-numeric:tabular-nums}
+#homeTreasury .home-treasury-top{display:flex;align-items:center;gap:10px;min-width:0}
+#homeTreasury .home-treasury-top .module-icon{width:30px;height:30px;flex:0 0 30px;border-radius:9px}
+#homeTreasury .home-treasury-top .module-icon svg{width:18px;height:18px}
+#homeTreasury .home-treasury-top h2{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;color:var(--home-muted);font-size:13px;line-height:1.2;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+#homeTreasury .home-treasury-top h2 .bank-home-name,#homeTreasury .home-treasury-top h2 .demo-bank-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;letter-spacing:0;text-transform:none}
+#homeTreasury .home-treasury-top h2 .home-demo-badge{margin:0;padding:3px 8px;font-size:11px;letter-spacing:0;text-transform:none}
+#homeTreasury .treasury-balance-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:18px 0}
+#homeTreasury .treasury-period{flex:0 0 auto;color:var(--home-muted);font-size:13px;font-weight:600;text-transform:capitalize}
+#homeTreasury .bank-total,#homeTreasury .demo-total,#homeTreasury .home-balances strong{display:block;margin:0;font-size:clamp(30px,9.4vw,38px);line-height:1.05;font-weight:800;letter-spacing:-.025em;white-space:nowrap}
+#homeTreasury .home-cash-balance{margin:18px 0}
+#homeTreasury .home-cash-details{gap:12px;margin:0}
+#homeTreasury .home-flow{min-height:78px;padding:14px 16px;gap:6px;border:1px solid #ffffff0a;border-radius:14px;background:#ffffff08}
+#homeTreasury .home-flow>span,#homeTreasury .home-flow-heading{color:var(--home-muted);font-size:13px;font-weight:600;letter-spacing:.01em}
+#homeTreasury .home-flow b{font-size:clamp(17px,5vw,20px);line-height:1.15;font-weight:800;letter-spacing:-.01em}
+#homeTreasury .bank-global-alerts:not(:empty),#homeTreasury .demo-global-alerts:not(:empty){margin-top:6px}
+#homeTreasury .bank-pills,#homeTreasury .demo-bank-pills{margin-top:14px}
+@media(max-width:359px){#homeTreasury .home-treasury{padding:16px}#homeTreasury .home-flow{padding:12px}}
+body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-flow{text-align:left;align-items:flex-start}
