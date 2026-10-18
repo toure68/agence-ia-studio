@@ -354,6 +354,10 @@ def home():
     return FileResponse(BASE / 'static' / 'admin.html')
 
 
+from demo_routes import install as install_demo
+install_demo(app, BASE)
+
+
 @app.get('/site/{slug}')
 def public_site(slug: str):
     return FileResponse(BASE / 'static' / 'site.html')

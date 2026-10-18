@@ -1,0 +1,1005 @@
+{
+  "/api/companies/1/priorities": [
+    {
+      "key": "2da816f97a22911f8d27b0c2dd8113173c0267059502dd310e76d16f4d778bfc",
+      "kind": "urgent",
+      "title": "Remplacer : Aspirateur professionnel",
+      "description": "1 à remplacer",
+      "action": {
+        "type": "equipment",
+        "id": 1
+      },
+      "action_label": "Contrôler le matériel",
+      "rank": 1,
+      "due": null,
+      "state": "warning",
+      "state_label": "À remplacer"
+    },
+    {
+      "key": "baa1bdfcfd2f50a739573cbf8b56f968243f069cb378d0ed60e5dfa4932c75ba",
+      "kind": "quote",
+      "title": "Devis Alex Martin, 5 208,00 € : à finaliser",
+      "description": "Devis pour Alex Martin : vérifier le contenu et son état.",
+      "action": {
+        "type": "quote",
+        "id": 1
+      },
+      "action_label": "Vérifier le devis",
+      "rank": 2,
+      "due": null,
+      "home_title": "Devis · Alex Martin",
+      "home_detail": "5 208,00 € · À finaliser"
+    },
+    {
+      "key": "7a840315f30d29a77297114eff6b127e78712624f0f8769494dd2f4267f02fcf",
+      "kind": "client",
+      "title": "Vérifier la fiche client : Alex Martin",
+      "description": "Nouvelle fiche ou informations modifiées : vérifiez puis validez les coordonnées.",
+      "action": {
+        "type": "client",
+        "id": 1,
+        "revision": "1f7aaef1d0a93616750115e69d1ea6a4a531b963698a9ff5117222baed164ba2"
+      },
+      "action_label": "Vérifier la fiche",
+      "rank": 3,
+      "due": null
+    },
+    {
+      "key": "7861f3270478b4aa9f10332795b44f76bd3d4398c71784faa57bb1095df24206",
+      "kind": "work",
+      "title": "Entretien des bureaux",
+      "description": "Normale",
+      "action": {
+        "type": "activity",
+        "id": 1
+      },
+      "action_label": "Traiter l’activité",
+      "rank": 4,
+      "due": null,
+      "workflow_status": "todo"
+    }
+  ],
+  "/api/companies/1/tasks": [],
+  "/api/companies/1/clients": [
+    {
+      "id": 1,
+      "company_id": 1,
+      "name": "Alex Martin",
+      "email": "alex@example.test",
+      "phone": "",
+      "address": "",
+      "notes": "",
+      "archived": false,
+      "created": "2026-10-18T13:55:55+00:00",
+      "updated": "2026-10-18T13:55:55+00:00",
+      "review_revision": "1f7aaef1d0a93616750115e69d1ea6a4a531b963698a9ff5117222baed164ba2",
+      "needs_review": true
+    }
+  ],
+  "/api/companies/1/clients/1": {
+    "id": 1,
+    "company_id": 1,
+    "name": "Alex Martin",
+    "email": "alex@example.test",
+    "phone": "",
+    "address": "",
+    "notes": "",
+    "archived": false,
+    "created": "2026-10-18T13:55:55+00:00",
+    "updated": "2026-10-18T13:55:55+00:00",
+    "review_revision": "1f7aaef1d0a93616750115e69d1ea6a4a531b963698a9ff5117222baed164ba2",
+    "needs_review": true
+  },
+  "/api/companies/1/activities": [
+    {
+      "id": 1,
+      "company_id": 1,
+      "title": "Entretien des bureaux",
+      "description": "",
+      "category": "operations",
+      "priority": "normal",
+      "status": "todo",
+      "assignee": "",
+      "due": null,
+      "client_id": 1,
+      "version": 1,
+      "created": "2026-10-18T13:55:55+00:00",
+      "updated": "2026-10-18T13:55:55+00:00",
+      "client_name": "Alex Martin"
+    }
+  ],
+  "/api/companies/1/activities/1": {
+    "id": 1,
+    "company_id": 1,
+    "title": "Entretien des bureaux",
+    "description": "",
+    "category": "operations",
+    "priority": "normal",
+    "status": "todo",
+    "assignee": "",
+    "due": null,
+    "client_id": 1,
+    "version": 1,
+    "created": "2026-10-18T13:55:55+00:00",
+    "updated": "2026-10-18T13:55:55+00:00",
+    "client_name": "Alex Martin"
+  },
+  "/api/companies/1/reports": {
+    "quotations": {
+      "draft": 1
+    },
+    "quotation_totals": [],
+    "clients_active": 1,
+    "activities": {
+      "todo": 1
+    },
+    "overdue": 0,
+    "leads": {},
+    "estimates_total": 0,
+    "estimates_signed": 0
+  },
+  "/api/drafts": [],
+  "/api/companies/1/quotations": [
+    {
+      "id": 1,
+      "company_id": 1,
+      "reference": "DEV-2026-00001",
+      "issuer": {
+        "name": "Entreprise Démo",
+        "city": "Paris",
+        "phone": "",
+        "email": "contact@example.test"
+      },
+      "subtotal_minor": 434000,
+      "tax_minor": 86800,
+      "total_minor": 520800,
+      "status": "draft",
+      "created": "2026-10-18T13:55:55+00:00",
+      "updated": "2026-10-18T13:55:55+00:00",
+      "data": {
+        "customer_name": "Alex Martin",
+        "customer_email": "alex@example.test",
+        "customer_address": "",
+        "title": "Entretien des locaux",
+        "currency": "EUR",
+        "vat_rate": "20",
+        "valid_until": null,
+        "status": "draft",
+        "notes": "",
+        "lines": [
+          {
+            "description": "Prestation mensuelle",
+            "quantity": "1",
+            "unit_price": "4340",
+            "total_minor": 434000
+          }
+        ]
+      }
+    }
+  ],
+  "/api/companies/1/quotations/1": {
+    "id": 1,
+    "company_id": 1,
+    "reference": "DEV-2026-00001",
+    "issuer": {
+      "name": "Entreprise Démo",
+      "city": "Paris",
+      "phone": "",
+      "email": "contact@example.test"
+    },
+    "subtotal_minor": 434000,
+    "tax_minor": 86800,
+    "total_minor": 520800,
+    "status": "draft",
+    "created": "2026-10-18T13:55:55+00:00",
+    "updated": "2026-10-18T13:55:55+00:00",
+    "data": {
+      "customer_name": "Alex Martin",
+      "customer_email": "alex@example.test",
+      "customer_address": "",
+      "title": "Entretien des locaux",
+      "currency": "EUR",
+      "vat_rate": "20",
+      "valid_until": null,
+      "status": "draft",
+      "notes": "",
+      "lines": [
+        {
+          "description": "Prestation mensuelle",
+          "quantity": "1",
+          "unit_price": "4340",
+          "total_minor": 434000
+        }
+      ]
+    },
+    "content_hash": "c57d1ffba8d8e3695cde54c12bd41a04e6f744649e7de737afe87dc1bf4ce0d4",
+    "signature": null
+  },
+  "/api/companies/1/mail/status": {
+    "email": "",
+    "keywords": "",
+    "automatic": 0,
+    "last_sync": 0,
+    "error": "",
+    "connected": false,
+    "configured": false
+  },
+  "/api/companies/1/mail/messages": [],
+  "/api/companies/1/cockpit": {
+    "badges": {
+      "requests": 1,
+      "prospects": 0,
+      "calendar": 1,
+      "treasury": 2
+    },
+    "risk_cards": [
+      {
+        "key": "2da816f97a22911f8d27b0c2dd8113173c0267059502dd310e76d16f4d778bfc",
+        "kind": "urgent",
+        "title": "Remplacer : Aspirateur professionnel",
+        "description": "1 à remplacer",
+        "action": {
+          "type": "equipment",
+          "id": 1
+        },
+        "action_label": "Contrôler le matériel",
+        "rank": 1,
+        "due": null,
+        "state": "warning",
+        "state_label": "À remplacer"
+      }
+    ],
+    "module_states": {
+      "clients": {
+        "state": "warning",
+        "label": "À valider"
+      },
+      "activities": {
+        "state": "info",
+        "label": "À faire"
+      },
+      "leads": {
+        "state": "warning",
+        "label": "À finaliser"
+      },
+      "requests": {
+        "state": "warning",
+        "label": "À traiter"
+      },
+      "equipment": {
+        "state": "warning",
+        "label": "À remplacer"
+      },
+      "treasury": {
+        "state": "warning",
+        "label": "À vérifier"
+      }
+    },
+    "widgets": {
+      "requests": {
+        "value": 1,
+        "label": "À traiter"
+      },
+      "clients": {
+        "value": 1,
+        "label": "Clients"
+      },
+      "activities": {
+        "value": 1,
+        "label": "En cours"
+      },
+      "leads": {
+        "value": 1,
+        "label": "À finaliser"
+      },
+      "emails": {
+        "value": 0,
+        "label": "À relire"
+      },
+      "calendar": {
+        "value": 1,
+        "label": "À prévoir"
+      },
+      "reports": {
+        "value": 1,
+        "label": "Activités ouvertes"
+      },
+      "treasury": {
+        "balances_minor": {
+          "EUR": 2485000
+        },
+        "inflows_minor": {
+          "EUR": 2920000
+        },
+        "outflows_minor": {
+          "EUR": 435000
+        },
+        "bank_connected": false,
+        "label": "Solde interne"
+      },
+      "equipment": {
+        "value": 1,
+        "label": "Alertes"
+      },
+      "risks": {
+        "value": 0,
+        "label": "Échéances"
+      },
+      "companies": {
+        "value": 1,
+        "label": "Entreprises"
+      },
+      "company-edit": {
+        "value": 4,
+        "label": "Tarifs du site"
+      },
+      "prospects": {
+        "value": 0,
+        "label": "Agence · à suivre"
+      },
+      "drafts": {
+        "value": 0,
+        "label": "Agence · brouillons"
+      },
+      "team": {
+        "value": 0,
+        "label": "Accès équipe"
+      },
+      "scanner": {
+        "value": 0,
+        "label": "À vérifier"
+      },
+      "social": {
+        "value": 0,
+        "label": "À valider"
+      }
+    }
+  },
+  "/api/companies/1/conformity": {
+    "complete": false,
+    "requirements": [
+      {
+        "id": "UI-01",
+        "requirement": "Carte prioritaire dynamique et action en un clic",
+        "status": "partial",
+        "detail": "Priorités réelles et traitement des tâches ; les marchés et la paie ne sont pas intégrés.",
+        "evidence": "test_zero_dashboard_and_ledger"
+      },
+      {
+        "id": "UI-02",
+        "requirement": "Modules existants conservés et pastilles dynamiques",
+        "status": "implemented",
+        "detail": "Selon la correction validée : accès directs conservés, Trésorerie, Matériel et Prévention ajoutés ; données filtrées par entreprise et utilisateur.",
+        "evidence": "test_zero_dashboard_and_ledger"
+      },
+      {
+        "id": "UI-03",
+        "requirement": "Une seule navigation sans sous-titres verbeux",
+        "status": "implemented",
+        "detail": "Grille conservée, cartes fermées par défaut avec message court d’action nécessaire ; détails et validation après clic ; panneaux flottants avec cockpit conservé, fermeture extérieure/Échap/geste, aucun menu latéral ou inférieur en double, y compris en paysage et sur tablette.",
+        "evidence": "tests/ui_navigation.cjs"
+      },
+      {
+        "id": "UI-04",
+        "requirement": "Ajout et saisie au clavier",
+        "status": "partial",
+        "detail": "Saisie au clavier et dialogue IA avec fichiers ; micro limité au dialogue sur demande. Connexion API à activer par la direction ; aucune modification de données par la conversation.",
+        "evidence": "tests/ui_navigation.cjs"
+      },
+      {
+        "id": "UI-05",
+        "requirement": "Réserve de fonctions et accueil personnel",
+        "status": "implemented",
+        "detail": "Plus de fonctions reste accessible même si tous les boutons sont masqués ; choix enregistré par compte et entreprise sans effacer les données.",
+        "evidence": "test_personal_modules_empty_home_domains_and_scope"
+      },
+      {
+        "id": "ONB-02",
+        "requirement": "Choix du domaine et fonctions adaptées",
+        "status": "implemented",
+        "detail": "Domaine à la création d’une entreprise et dans Mes fonctions ; recommandations modifiables avec accès aux autres domaines. Inscription publique toujours fermée.",
+        "evidence": "test_personal_modules_empty_home_domains_and_scope"
+      },
+      {
+        "id": "ONB-01",
+        "requirement": "Inscription avec identifiant et mot de passe uniquement",
+        "status": "missing",
+        "detail": "Les comptes sont encore créés par la direction ; une inscription publique nécessite une isolation renforcée des propriétaires.",
+        "evidence": "tests/test_app.py"
+      },
+      {
+        "id": "OCR-01",
+        "requirement": "Photographier Kbis et remplir SIRET et profil",
+        "status": "partial",
+        "detail": "Kbis en colonnes ; identité avec libellés français/anglais et lignes codées TD1, TD2, TD3 contrôlées ; domicile, RIB et assurance préremplis selon leur type. Vérification avant enregistrement ; formats inconnus ou champs ambigus à compléter.",
+        "evidence": "test_two_column_kbis_ocr_saved_fields_and_legacy_document / test_identity_photo_to_form_to_saved_profile"
+      },
+      {
+        "id": "OCR-02",
+        "requirement": "Photographier RIB et remplir IBAN",
+        "status": "implemented",
+        "detail": "Lecture locale, contrôle de cohérence IBAN, sélection et validation explicite ; données chiffrées et accès réservé à la direction.",
+        "evidence": "test_real_photo_ocr_and_iban_review"
+      },
+      {
+        "id": "OCR-03",
+        "requirement": "Importer les tarifs depuis les anciens devis",
+        "status": "partial",
+        "detail": "Tarifs unitaires clairement libellés proposés puis validés, réutilisables dans les devis. Les tableaux complexes ne sont pas interprétés automatiquement.",
+        "evidence": "test_document_review_no_automatic_changes_and_tariffs"
+      },
+      {
+        "id": "SIG-01",
+        "requirement": "Signature au doigt et apposition au devis après validation",
+        "status": "implemented",
+        "detail": "Tracé manuscrit, consentement explicite, empreinte du devis, conservation chiffrée et PDF signé ; version signée figée.",
+        "evidence": "test_signature_explicit_acceptance_pdf_encryption_and_immutable_version"
+      },
+      {
+        "id": "SIG-02",
+        "requirement": "Signature certifiée pour marchés publics",
+        "status": "blocked",
+        "detail": "Prestataire, certificat et parcours de consentement à choisir ; aucun certificat configuré.",
+        "evidence": ""
+      },
+      {
+        "id": "HIS-01",
+        "requirement": "Numériser l’historique et enrichir les propositions",
+        "status": "partial",
+        "detail": "Archives chiffrées des documents et tarifs validés réutilisables dans les devis ; apprentissage IA sur l’historique non implémenté.",
+        "evidence": "test_document_review_no_automatic_changes_and_tariffs"
+      },
+      {
+        "id": "MAIL-01",
+        "requirement": "Centraliser et détecter les e-mails prioritaires",
+        "status": "blocked",
+        "detail": "Connecteur Gmail par utilisateur testé avec un service simulé ; identifiants OAuth et autorisation réelle manquants.",
+        "evidence": "test_mail_oauth_private_import_review_send_and_deduplication"
+      },
+      {
+        "id": "MAIL-02",
+        "requirement": "Résumer et lire les messages à haute voix",
+        "status": "partial",
+        "detail": "Résumé IA à la demande, mis en cache et lisible à voix haute ; connexion IA et Gmail réelles nécessaires pour validation de bout en bout. Services simulés en tests.",
+        "evidence": "tests/test_mail_ai.py / tests/ui_navigation.cjs"
+      },
+      {
+        "id": "MAIL-03",
+        "requirement": "Réponse sur mesure fondée sur l’historique",
+        "status": "partial",
+        "detail": "Proposition IA fondée sur le message, six échanges antérieurs et vingt tarifs de vente validés de l’entreprise ; catalogue inclus dans la clé de cache. Pas de coûts de revient, remise autorisée ni recherche exhaustive. Reprise, correction et validation avant envoi. Connexion Gmail réelle manquante.",
+        "evidence": "tests/test_mail_ai.py / tests/ui_navigation.cjs"
+      },
+      {
+        "id": "MAIL-04",
+        "requirement": "Corriger à la voix et envoyer après validation",
+        "status": "blocked",
+        "detail": "Correction au clavier et envoi explicite avec révision enregistrée ; connexion Gmail réelle manquante.",
+        "evidence": "test_mail_unconfirmed_send_not_retried_and_user_scope"
+      },
+      {
+        "id": "SOC-01",
+        "requirement": "Détecter les chantiers terminés de la semaine",
+        "status": "implemented",
+        "detail": "Liste des activités terminées sur sept jours, date de fin conservée lors des corrections ; dates anciennes explicitement estimées.",
+        "evidence": "tests/test_social.py"
+      },
+      {
+        "id": "SOC-02",
+        "requirement": "Générer textes et visuels LinkedIn, Facebook, TikTok",
+        "status": "partial",
+        "detail": "Trames locales modifiables et visuels texte PNG carrés ou verticaux, sans coût IA. Pas de photographie générée, de vidéo TikTok ni de génération IA spécialisée.",
+        "evidence": "tests/test_social.py / tests/ui_navigation.cjs"
+      },
+      {
+        "id": "SOC-03",
+        "requirement": "Faire remonter le post dans les priorités",
+        "status": "implemented",
+        "detail": "Brouillons à valider en priorité pour la direction ; validation de version, retour à vérifier après modification de la source ou du texte ; classement sans publier.",
+        "evidence": "tests/test_social.py / tests/ui_navigation.cjs"
+      },
+      {
+        "id": "SOC-04",
+        "requirement": "Publier en un clic sur les comptes autorisés",
+        "status": "blocked",
+        "detail": "Comptes, autorisations et intégrations de publication à connecter ; aucun envoi social n’est activé.",
+        "evidence": ""
+      },
+      {
+        "id": "LOG-01",
+        "requirement": "Inventaire et état du matériel",
+        "status": "implemented",
+        "detail": "Inventaire par entreprise : quantité, état et prochaine révision.",
+        "evidence": "test_logistics_crosscheck_and_risks"
+      },
+      {
+        "id": "LOG-02",
+        "requirement": "Croiser exigences du chantier et matériel",
+        "status": "partial",
+        "detail": "Comparaison des besoins enregistrés et de l’inventaire ; détection des manques et pannes. Lecture IA des contrats absente.",
+        "evidence": "test_logistics_crosscheck_and_risks"
+      },
+      {
+        "id": "LOG-03",
+        "requirement": "Proposer achat et location géolocalisés",
+        "status": "missing",
+        "detail": "Aucune offre locale vérifiée ni fournisseur de recherche d’offres connecté.",
+        "evidence": ""
+      },
+      {
+        "id": "RISK-01",
+        "requirement": "Révisions des véhicules et du matériel",
+        "status": "implemented",
+        "detail": "Dates configurées et alertes avant échéance ; aucun intervalle de révision inventé.",
+        "evidence": "test_logistics_crosscheck_and_risks"
+      },
+      {
+        "id": "RISK-02",
+        "requirement": "Échéances des EPI et consommables",
+        "status": "implemented",
+        "detail": "Registre des échéances et priorités ; renouvellement à confirmer humainement.",
+        "evidence": "test_logistics_crosscheck_and_risks"
+      },
+      {
+        "id": "RISK-03",
+        "requirement": "Expiration décennale et RC Pro",
+        "status": "implemented",
+        "detail": "Dates saisies par l’entreprise et alertes ; aucun renouvellement de contrat automatique.",
+        "evidence": "test_logistics_crosscheck_and_risks"
+      },
+      {
+        "id": "RISK-04",
+        "requirement": "Habilitations et échéances des salariés",
+        "status": "implemented",
+        "detail": "Échéances nominatives et rappels ; vérification documentaire non automatisée.",
+        "evidence": "test_logistics_crosscheck_and_risks"
+      },
+      {
+        "id": "TENDER-01",
+        "requirement": "Détecter et préparer un marché public",
+        "status": "missing",
+        "detail": "Veille BOAMP, qualification et dossier de candidature non implémentés.",
+        "evidence": ""
+      },
+      {
+        "id": "PAY-01",
+        "requirement": "Paie des salariés et validation",
+        "status": "missing",
+        "detail": "Pas de calcul de paie, de génération de bulletin ni de transmission ; les tâches de calendrier ne constituent pas un module paie.",
+        "evidence": ""
+      },
+      {
+        "id": "FIN-01",
+        "requirement": "Trésorerie",
+        "status": "partial",
+        "detail": "Livre des mouvements internes avec soldes par devise ; pas de synchronisation bancaire ni de comptabilité certifiée.",
+        "evidence": "test_zero_dashboard_and_ledger"
+      },
+      {
+        "id": "QUOTE-01",
+        "requirement": "Créer, retrouver, modifier et télécharger les devis",
+        "status": "implemented",
+        "detail": "Devis internes, calculs serveur, historique, PDF et signature manuscrite après validation.",
+        "evidence": "test_quotation_money_pdf_and_tenant_isolation"
+      },
+      {
+        "id": "SEC-01",
+        "requirement": "Validation humaine, cloisonnement et absence d’envoi caché",
+        "status": "implemented",
+        "detail": "Sessions, CSRF, droits par entreprise et utilisateur, protection contre le double envoi.",
+        "evidence": "tests/test_office.py"
+      },
+      {
+        "id": "AUT-01",
+        "requirement": "L’application prépare, l’entrepreneur vérifie et valide",
+        "status": "partial",
+        "detail": "Priorités calculées par règles et import Gmail périodique après activation ; analyses IA, réponses commerciales, publications et devis encore déclenchés manuellement. Orchestration autonome globale à développer.",
+        "evidence": "tests/test_mail_ai.py / tests/test_social.py"
+      },
+      {
+        "id": "COST-01",
+        "requirement": "Suivi des consommations et plafond IA par entreprise",
+        "status": "partial",
+        "detail": "Journal des appels, tokens fournisseur, estimation USD, réservations atomiques, quota mensuel strict et plafond prévisionnel configurables ; incertitudes conservées et régularisation tracée. Ni facture fournisseur ni plafond monétaire absolu ; tarifs connus limités, aucun rétrocalcul historique. Orchestration massive encore à développer.",
+        "evidence": "tests/test_ai_budget.py / tests/ui_navigation.cjs"
+      }
+    ],
+    "counts": {
+      "implemented": 15,
+      "partial": 12,
+      "blocked": 4,
+      "missing": 4
+    },
+    "connections": {
+      "gmail": false,
+      "ai": false,
+      "social": false,
+      "qualified_signature": false
+    },
+    "evidence_url": "https://github.com/toure68/agence-ia-studio/actions"
+  },
+  "/api/companies/1/treasury": {
+    "movements": [
+      {
+        "id": 2,
+        "company_id": 1,
+        "label": "Charges et fournitures",
+        "direction": "out",
+        "amount_minor": 435000,
+        "currency": "EUR",
+        "date": "2026-10-18",
+        "checked": 0,
+        "created": "2026-10-18T13:55:56+00:00",
+        "operation_id": null
+      },
+      {
+        "id": 1,
+        "company_id": 1,
+        "label": "Règlements clients",
+        "direction": "in",
+        "amount_minor": 2920000,
+        "currency": "EUR",
+        "date": "2026-10-18",
+        "checked": 0,
+        "created": "2026-10-18T13:55:55+00:00",
+        "operation_id": null
+      }
+    ],
+    "balances_minor": {
+      "EUR": 2485000
+    },
+    "bank_connected": false
+  },
+  "/api/companies/1/equipment": [
+    {
+      "id": 1,
+      "company_id": 1,
+      "name": "Aspirateur professionnel",
+      "quantity": 1,
+      "condition": "worn",
+      "maintenance_due": null,
+      "updated": "2026-10-18T13:55:55+00:00"
+    }
+  ],
+  "/api/companies/1/activities/1/material": {
+    "requirements_configured": false,
+    "items": [],
+    "alerts": [],
+    "ready": false
+  },
+  "/api/companies/1/risks": [],
+  "/api/companies/1/workspace": {
+    "modules": [
+      {
+        "key": "requests",
+        "label": "Demandes",
+        "icon": "📥",
+        "domains": []
+      },
+      {
+        "key": "clients",
+        "label": "Clients",
+        "icon": "👤",
+        "domains": []
+      },
+      {
+        "key": "activities",
+        "label": "Activités",
+        "icon": "✅",
+        "domains": []
+      },
+      {
+        "key": "leads",
+        "label": "Devis",
+        "icon": "📄",
+        "domains": []
+      },
+      {
+        "key": "emails",
+        "label": "E-mails",
+        "icon": "✉️",
+        "domains": [
+          "consulting",
+          "commerce"
+        ]
+      },
+      {
+        "key": "prospects",
+        "label": "Prospection",
+        "icon": "🤝",
+        "domains": [
+          "consulting",
+          "commerce"
+        ]
+      },
+      {
+        "key": "calendar",
+        "label": "Agenda",
+        "icon": "🗓️",
+        "domains": []
+      },
+      {
+        "key": "reports",
+        "label": "Rapports",
+        "icon": "📊",
+        "domains": [
+          "consulting",
+          "commerce"
+        ]
+      },
+      {
+        "key": "drafts",
+        "label": "Brouillons",
+        "icon": "✉️",
+        "domains": [
+          "consulting",
+          "commerce"
+        ]
+      },
+      {
+        "key": "companies",
+        "label": "Entreprises",
+        "icon": "🏢",
+        "domains": []
+      },
+      {
+        "key": "company-edit",
+        "label": "Identité & tarifs",
+        "icon": "🎨",
+        "domains": []
+      },
+      {
+        "key": "team",
+        "label": "Équipe",
+        "icon": "👥",
+        "domains": [
+          "cleaning",
+          "construction",
+          "agriculture"
+        ]
+      },
+      {
+        "key": "treasury",
+        "label": "Trésorerie",
+        "icon": "💶",
+        "domains": []
+      },
+      {
+        "key": "equipment",
+        "label": "Matériel",
+        "icon": "🧰",
+        "domains": [
+          "cleaning",
+          "construction",
+          "automotive",
+          "agriculture"
+        ]
+      },
+      {
+        "key": "risks",
+        "label": "Prévention",
+        "icon": "🛡️",
+        "domains": [
+          "cleaning",
+          "construction",
+          "automotive",
+          "agriculture"
+        ]
+      },
+      {
+        "key": "scanner",
+        "label": "Documents & profil",
+        "icon": "📷",
+        "domains": []
+      },
+      {
+        "key": "social",
+        "label": "Publications",
+        "icon": "📣",
+        "domains": []
+      }
+    ],
+    "domains": {
+      "general": "Tous secteurs",
+      "cleaning": "Nettoyage & services",
+      "construction": "Bâtiment & chantiers",
+      "automotive": "Automobile & atelier",
+      "agriculture": "Agriculture & transformation",
+      "commerce": "Commerce",
+      "consulting": "Conseil & prestations"
+    },
+    "domain": "general",
+    "configured": false,
+    "visible": [
+      "requests",
+      "clients",
+      "activities",
+      "leads",
+      "emails",
+      "prospects",
+      "calendar",
+      "reports",
+      "drafts",
+      "companies",
+      "company-edit",
+      "team",
+      "treasury",
+      "equipment",
+      "risks",
+      "scanner"
+    ],
+    "suggested": [
+      "requests",
+      "clients",
+      "activities",
+      "leads",
+      "emails",
+      "prospects",
+      "calendar",
+      "reports",
+      "drafts",
+      "companies",
+      "company-edit",
+      "team",
+      "treasury",
+      "equipment",
+      "risks",
+      "scanner",
+      "social"
+    ],
+    "version": 0,
+    "columns": 2,
+    "dynamic": true,
+    "last_used": {
+      "prospects": 1792331756.1404023,
+      "team": 1792331756.1404023,
+      "social": 1792331756.1404023,
+      "clients": 1792331756.1404023,
+      "scanner": 1792331756.1404023,
+      "calendar": 1792331756.1404023,
+      "risks": 1792331756.1404023,
+      "treasury": 1792331756.1404023,
+      "leads": 1792331756.1404023,
+      "equipment": 1792331756.1404023,
+      "reports": 1792331756.1404023,
+      "company-edit": 1792331756.1404023,
+      "companies": 1792331756.1404023,
+      "activities": 1792331756.1404023,
+      "drafts": 1792331756.1404023,
+      "requests": 1792331756.1404023,
+      "emails": 1792331756.1404023
+    },
+    "inactive": []
+  },
+  "/api/companies/1/profile": {
+    "fields": {},
+    "version": 0
+  },
+  "/api/companies/1/documents": [],
+  "/api/companies/1/tariff-catalog": [],
+  "/api/companies/1/assistant": {
+    "configured": false,
+    "can_connect": true,
+    "revision": 0,
+    "busy": false,
+    "turns": [],
+    "limits": {
+      "files": 4,
+      "file_mb": 8,
+      "total_mb": 16,
+      "pdf_pages": 20,
+      "video_seconds": 90,
+      "audio_seconds": 180
+    }
+  },
+  "/api/companies/1/social": {
+    "candidates": [],
+    "posts": [],
+    "networks": {
+      "linkedin": "LinkedIn",
+      "facebook": "Facebook",
+      "tiktok": "TikTok"
+    },
+    "connected": false
+  },
+  "/api/companies/1/ai-usage": {
+    "scope": "company:1",
+    "month": "2026-10",
+    "timezone": "Europe/Paris",
+    "tracking_started": "2026-10-18T13:55:55.741632+00:00",
+    "version": 0,
+    "monthly_usd": null,
+    "monthly_calls": null,
+    "calls": 0,
+    "estimated_usd": "0.000000",
+    "held_usd": "0.000000",
+    "committed_usd": "0.000000",
+    "unpriced": 0,
+    "pending": 0,
+    "remaining_usd": null,
+    "warning": false,
+    "blocked": false,
+    "price_version": "2026-10-17",
+    "priced_models": [
+      "gpt-4.1-mini",
+      "gpt-4.1-mini-2025-04-14",
+      "gpt-4o-mini-transcribe",
+      "gpt-4o-mini-transcribe-2025-12-15"
+    ],
+    "calls_recent": []
+  },
+  "/api/ai-usage/platform": {
+    "scope": "platform",
+    "month": "2026-10",
+    "timezone": "Europe/Paris",
+    "tracking_started": "2026-10-18T13:55:55.741632+00:00",
+    "version": 0,
+    "monthly_usd": null,
+    "monthly_calls": null,
+    "calls": 0,
+    "estimated_usd": "0.000000",
+    "held_usd": "0.000000",
+    "committed_usd": "0.000000",
+    "unpriced": 0,
+    "pending": 0,
+    "remaining_usd": null,
+    "warning": false,
+    "blocked": false,
+    "price_version": "2026-10-17",
+    "priced_models": [
+      "gpt-4.1-mini",
+      "gpt-4.1-mini-2025-04-14",
+      "gpt-4o-mini-transcribe",
+      "gpt-4o-mini-transcribe-2025-12-15"
+    ],
+    "calls_recent": []
+  },
+  "/api/setup": {
+    "ready": true
+  },
+  "/api/me": {
+    "id": 1,
+    "email": "visiteur@example.test",
+    "role": "owner",
+    "company_id": null,
+    "auth_version": 1,
+    "csrf": "demo-read-only"
+  },
+  "/api/companies": [
+    {
+      "id": 1,
+      "slug": "entreprise-demo",
+      "name": "Entreprise Démo",
+      "city": "Paris",
+      "headline": "Votre activité au quotidien",
+      "color": "#14866e",
+      "phone": "",
+      "email": "contact@example.test",
+      "rates": {
+        "home": {
+          "label": "Nettoyage de logement",
+          "unit": 2.4,
+          "min": 60
+        },
+        "office": {
+          "label": "Nettoyage de bureaux",
+          "unit": 1.9,
+          "min": 90
+        },
+        "after": {
+          "label": "Nettoyage après travaux",
+          "unit": 3.6,
+          "min": 150
+        },
+        "windows": {
+          "label": "Nettoyage de vitres",
+          "unit": 2.7,
+          "min": 55
+        }
+      },
+      "created": "2026-10-18T13:55:55+00:00"
+    }
+  ],
+  "/api/companies/1/leads": [],
+  "/api/prospects": []
+}
