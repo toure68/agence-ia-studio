@@ -154,27 +154,42 @@ function refreshHomeSummary(state,cards){
  const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}
  const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.textContent=date.charAt(0).toUpperCase()+date.slice(1)+' · '+(count?count+' action'+(count>1?'s':'')+' à traiter':'Vos priorités sont à jour');}
 }
-// Inline column chooser: the grid button expands into 2/3/4 squares that apply instantly, without leaving home.
+// Inline layout chooser: the grid button expands into 2/3/4 column squares and a 1–10 row stepper.
+// Each change applies instantly on home and is saved in order in the background; no form, no navigation.
+function homeDefaultRows(columns){return ({2:3,3:3,4:2})[columns]||3;}
 function mountColumnChooser(button,workspace,state){
  if(!button)return;
  button.removeAttribute('data-go');button.dataset.columnsToggle='';button.setAttribute('role','button');button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls','homeColumnChooser');
  const square=n=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${Array.from({length:n},(_,i)=>`<rect x="${2+i*(20/n)+0.5}" y="5" width="${20/n-1.5}" height="14" rx="1.5"/>`).join('')}</svg>`;
- const chooser=document.createElement('div');chooser.id='homeColumnChooser';chooser.className='column-chooser';chooser.setAttribute('role','group');chooser.setAttribute('aria-label','Nombre de colonnes');chooser.hidden=true;
- chooser.innerHTML=[2,3,4].map(n=>`<button type="button" class="column-choice" data-set-columns="${n}" aria-pressed="${n===(workspace.columns||2)}" aria-label="${n} colonnes" title="${n} colonnes">${square(n)}<span>${n}</span></button>`).join('');
+ const rows=()=>workspace.rows||homeDefaultRows(workspace.columns||2);
+ const chooser=document.createElement('div');chooser.id='homeColumnChooser';chooser.className='column-chooser';chooser.setAttribute('role','group');chooser.setAttribute('aria-label','Disposition de l’accueil');chooser.hidden=true;
+ chooser.innerHTML=`<div class="column-choices" role="group" aria-label="Nombre de colonnes">${[2,3,4].map(n=>`<button type="button" class="column-choice" data-set-columns="${n}" aria-pressed="${n===(workspace.columns||2)}" aria-label="${n} colonnes" title="${n} colonnes">${square(n)}<span>${n}</span></button>`).join('')}</div><div class="row-stepper" role="group" aria-label="Nombre de rangées"><span class="row-stepper-label">Rangées</span><button type="button" class="row-step" data-rows-step="-1" aria-label="Une rangée de moins">−</button><output class="row-value" id="homeRowsValue" aria-live="polite">${rows()}</output><button type="button" class="row-step" data-rows-step="1" aria-label="Une rangée de plus">＋</button></div>`;
  button.before(chooser);
  const open=show=>{chooser.hidden=!show;button.setAttribute('aria-expanded',String(show));button.closest('.home-modules-heading')?.classList.toggle('is-choosing',show);};
- button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();open(chooser.hidden);});
- chooser.addEventListener('click',async e=>{
-  const choice=e.target.closest('[data-set-columns]');if(!choice)return;e.preventDefault();e.stopPropagation();
-  const columns=Number(choice.dataset.setColumns);if(columns===(workspace.columns||2)){open(false);return;}
-  chooser.querySelectorAll('[data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(b===choice)));
-  workspace={...workspace,columns};updateHomeGrid(workspace,state);open(false);
+ let saving=Promise.resolve(),pending=0;
+ const save=()=>{
+  const layout={columns:workspace.columns||2,rows:workspace.rows};
   if(document.body.dataset.publicDemo==='true')return;
-  try{
+  pending++;
+  saving=saving.then(async()=>{
    const cid=company.id,fresh=await api(`/api/companies/${cid}/workspace`);
-   await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:fresh.domain,visible:fresh.visible,version:fresh.version,columns,dynamic:fresh.dynamic!==false})});
-   await refreshCockpit();
-  }catch(error){notify(error.message);}
+   const payload={domain:fresh.domain,visible:fresh.visible,version:fresh.version,columns:layout.columns,dynamic:fresh.dynamic!==false};
+   if(layout.rows)payload.rows=layout.rows;
+   await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify(payload)});
+  }).catch(error=>notify(error.message)).then(()=>{if(--pending===0)return refreshCockpit().catch(()=>{});});
+ };
+ const apply=()=>{updateHomeGrid(workspace,state);chooser.querySelector('#homeRowsValue').textContent=String(rows());save();};
+ button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();open(chooser.hidden);});
+ chooser.addEventListener('click',e=>{
+  const choice=e.target.closest('[data-set-columns]'),step=e.target.closest('[data-rows-step]');if(!choice&&!step)return;e.preventDefault();e.stopPropagation();
+  if(choice){
+   const columns=Number(choice.dataset.setColumns);if(columns===(workspace.columns||2))return;
+   chooser.querySelectorAll('[data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(b===choice)));
+   workspace={...workspace,columns};apply();return;
+  }
+  const next=Math.min(10,Math.max(1,rows()+Number(step.dataset.rowsStep)));if(next===rows())return;
+  workspace={...workspace,rows:next};apply();
  });
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!chooser.hidden&&chooser.isConnected){open(false);button.focus({preventScroll:true});}});
+ document.addEventListener('click',e=>{if(!chooser.hidden&&chooser.isConnected&&!chooser.contains(e.target)&&!button.contains(e.target))open(false);});
 }

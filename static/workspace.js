@@ -72,9 +72,10 @@ function homeGridModules(workspace,state={}){
  const recent=key=>workspace.last_used?.[key]||0;
  let keys=dynamic?[...new Set([...workspace.modules.filter(m=>urgent(m.key)).map(m=>m.key),...selected.filter(key=>!inactive.has(key)||urgent(key))])]:[...selected];
  if(dynamic)keys.sort((a,b)=>weight(b)-weight(a)||recent(b)-recent(a));
- // Row cap per layout (2 cols → 3 rows, 3 → 3, 4 → 2): 6, 9 or 8 real modules.
+ // Row cap: the user's chosen rows (1–10), else 3 rows in 2 and 3 columns and 2 rows in 4 columns.
  // Modules with an action to do (urgent) always show, adding rows if needed; the rest stays in the reserve.
- const cap=({2:3,3:3,4:2})[columns]*columns;
+ const rows=Number.isInteger(workspace.rows)&&workspace.rows>=1&&workspace.rows<=10?workspace.rows:({2:3,3:3,4:2})[columns];
+ const cap=rows*columns;
  const urgentKeys=keys.filter(urgent),calm=keys.filter(key=>!urgent(key));
  const kept=new Set([...urgentKeys,...calm.slice(0,Math.max(0,cap-urgentKeys.length))]);
  keys=keys.filter(key=>kept.has(key));

@@ -25,6 +25,7 @@ class Preferences(BaseModel):
     visible:list[str]=Field(max_length=100)
     version:int=Field(ge=0)
     columns:Optional[Literal[2,3,4]]=None
+    rows:Optional[int]=Field(default=None,ge=1,le=10)
     dynamic:Optional[bool]=None
 
 class Domain(BaseModel):
@@ -39,6 +40,8 @@ def init_schema(db):
           PRIMARY KEY(user_id,company_id))''')
         if 'columns' not in {r[1] for r in con.execute('PRAGMA table_info(workspace_preferences)')}:
             con.execute('ALTER TABLE workspace_preferences ADD COLUMN columns INTEGER NOT NULL DEFAULT 2')
+        if 'grid_rows' not in {r[1] for r in con.execute('PRAGMA table_info(workspace_preferences)')}:
+            con.execute('ALTER TABLE workspace_preferences ADD COLUMN grid_rows INTEGER')
         if 'dynamic' not in {r[1] for r in con.execute('PRAGMA table_info(workspace_preferences)')}:
             con.execute('ALTER TABLE workspace_preferences ADD COLUMN dynamic INTEGER NOT NULL DEFAULT 1')
         con.execute('CREATE TABLE IF NOT EXISTS workspace_tracking(user_id INTEGER NOT NULL,company_id INTEGER NOT NULL,started REAL NOT NULL,PRIMARY KEY(user_id,company_id))')
@@ -64,7 +67,7 @@ def install(app,db,require,own_company):
         return {'modules':modules,'domains':DOMAINS,'domain':domain,'configured':bool(row),
           'visible':[k for k in json.loads(row['visible']) if k in allowed] if row else [m['key'] for m in modules if m['key']!='social' and (not business or domain=='general' or not m['domains'] or domain in m['domains'])],
           'suggested':[m['key'] for m in modules if domain=='general' or not m['domains'] or domain in m['domains']],
-          'version':row['version'] if row else 0,'columns':row['columns'] if row else 2,'dynamic':bool(row['dynamic']) if row else True,
+          'version':row['version'] if row else 0,'columns':row['columns'] if row else 2,'rows':row['grid_rows'] if row else None,'dynamic':bool(row['dynamic']) if row else True,
           'last_used':{key:usage.get(key,started) for key in allowed},'inactive':[key for key in allowed if now-usage.get(key,started)>=10*86400]}
 
     @app.post('/api/companies/{cid}/workspace/usage/{key}')
@@ -94,12 +97,13 @@ def install(app,db,require,own_company):
         if len(set(data.visible))!=len(data.visible):raise HTTPException(422,'Fonction sélectionnée deux fois')
         with db() as con:
             own_company(con,cid);con.execute('BEGIN IMMEDIATE')
-            row=con.execute('SELECT version,columns,dynamic FROM workspace_preferences WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
+            row=con.execute('SELECT version,columns,grid_rows,dynamic FROM workspace_preferences WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
             version=row['version'] if row else 0
             if version!=data.version:raise HTTPException(409,'La personnalisation a changé sur un autre écran. Rechargez cette page.')
             columns=data.columns if data.columns is not None else row['columns'] if row else 2
+            rows=data.rows if data.rows is not None else row['grid_rows'] if row else None
             dynamic=int(data.dynamic if data.dynamic is not None else bool(row['dynamic']) if row else True)
-            con.execute('INSERT INTO workspace_preferences(user_id,company_id,domain,visible,version,columns,dynamic) VALUES (?,?,?,?,?,?,?) ON CONFLICT(user_id,company_id) DO UPDATE SET domain=excluded.domain,visible=excluded.visible,version=excluded.version,columns=excluded.columns,dynamic=excluded.dynamic',
-              (user['id'],cid,data.domain,json.dumps(data.visible),version+1,columns,dynamic))
+            con.execute('INSERT INTO workspace_preferences(user_id,company_id,domain,visible,version,columns,grid_rows,dynamic) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(user_id,company_id) DO UPDATE SET domain=excluded.domain,visible=excluded.visible,version=excluded.version,columns=excluded.columns,grid_rows=excluded.grid_rows,dynamic=excluded.dynamic',
+              (user['id'],cid,data.domain,json.dumps(data.visible),version+1,columns,rows,dynamic))
             con.execute('COMMIT')
         return {'ok':True,'version':version+1}
