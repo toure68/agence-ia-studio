@@ -24,3 +24,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - The small glass app badge also has a steady 1px state rim: red danger, orange warning, blue info. Keep the colored glyph, glass fill, badge size and outer moving border unchanged; neutral and completed modules retain their normal rim.
 
 - Event/required-date command preparation offers an explicit date picker, keeps dates written in the command working, and displays validation errors inline without hiding the Prepare button behind a toast. Creating a record still requires explicit confirmation.
+
+- Home section titles ("À faire maintenant", "Vos modules") are visually hidden but kept for screen readers; blocks are separated by spacing only. Keep the column-chooser button visible.
