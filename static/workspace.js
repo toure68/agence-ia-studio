@@ -3,7 +3,7 @@ const profileLabels={legal_name:'Raison sociale',siret:'SIRET',rcs_number:'Immat
 const documentKinds={kbis:'Extrait Kbis',registration:'Immatriculation / avis SIRENE',identity:'Carte d’identité',passport:'Passeport',residence:'Titre de séjour',address:'Justificatif de domicile / facture',rib:'RIB / coordonnées bancaires',insurance:'Attestation d’assurance',quote:'Ancien devis / tarifs',other:'Autre document'};
 const documentFields={kbis:['legal_name','rcs_number','siret','legal_form','capital','address','trade_name','activity','representative'],registration:['legal_name','siret','rcs_number','address','activity'],identity:['last_name','first_name','birth_date','birth_place','nationality','document_number','issue_date','expiry_date','sex','issuing_country','issuing_authority','personal_address'],passport:['last_name','first_name','birth_date','birth_place','nationality','document_number','issue_date','expiry_date','sex','issuing_country','issuing_authority'],residence:['last_name','first_name','birth_date','nationality','document_number','issue_date','expiry_date','sex','issuing_country','issuing_authority','personal_address'],address:['document_holder','personal_address'],rib:['account_holder','iban','bic'],insurance:['insurer','document_holder','policy_number','issue_date','expiry_date'],quote:['legal_name','siret','address'],other:Object.keys(profileLabels)};
 
-const moduleTones={requests:'blue',clients:'green',activities:'gold',leads:'blue',emails:'blue',prospects:'gold',calendar:'purple',reports:'green',drafts:'purple',companies:'blue','company-edit':'gold',team:'purple',treasury:'gold',equipment:'blue',risks:'purple',scanner:'green'};
+const moduleTones={requests:'blue',clients:'blue',activities:'gold',leads:'green',emails:'blue',prospects:'gold',calendar:'blue',reports:'green',drafts:'purple',companies:'blue','company-edit':'gold',team:'purple',treasury:'gold',equipment:'blue',risks:'purple',scanner:'gold'};
 function moduleTone(key){return moduleTones[key]||'green';}
 const tileStates=new Set(['neutral','info','success','warning','danger']);
 function tileState(state,label){return {state:tileStates.has(state)?state:'neutral',label:label||'Normal'};}
@@ -21,7 +21,7 @@ const widgetIconPaths={
  companies:'<path d="M4 22V3h16v19M2 22h20M8 7h2m4 0h2M8 11h2m4 0h2M8 15h2m4 0h2m-6 7v-4h4v4"/>',
  'company-edit':'<path d="m4 17 12-12 3 3L7 20l-4 1zM14 7l3 3M4 4h6M4 8h3M14 21h7"/>',
  team:'<circle cx="9" cy="8" r="4"/><path d="M2 22v-3a7 7 0 0 1 14 0v3M17 4a4 4 0 0 1 0 8m2 3a6 6 0 0 1 3 5v2"/>',
- treasury:'<rect x="2" y="5" width="20" height="15" rx="3"/><path d="M3 5V3h16m3 7h-6v6h6m-3-3h.01M6 10h5m-5 4h3"/>',
+ treasury:'<path d="m3 8 9-5 9 5-9 5zM3 13l9 5 9-5M3 18l9 5 9-5"/>',
  equipment:'<path d="M9 3h6l2 5h5v13H2V8h5zM2 13h20m-13-1v4h6v-4"/>',
  risks:'<path d="m12 2 9 4v6c0 5-5 9-9 11-4-2-9-6-9-11V6zM12 7v6m0 4h.01"/>',
  scanner:'<path d="M8 2H3v5m13-5h5v5M3 17v5h5m13-5v5h-5M7 6h10v12H7zM5 12h14"/>',
@@ -37,7 +37,7 @@ const filledWidgetIcons={
  reports:'<rect x="2" y="15" width="4" height="8" rx="1" fill="#ed6265"/><rect x="7.5" y="11" width="4" height="12" rx="1" fill="#edbe54"/><rect x="13" y="6" width="4" height="17" rx="1" fill="#58c57e"/><rect x="18.5" y="1" width="4" height="22" rx="1" fill="#58a9dd"/>',
  treasury:'<path d="m1 7 11-6 11 6-11 6zm1 4 10 5 10-5v4l-10 5-10-5zm0 7 10 5 10-5v3l-10 5-10-5z"/>'
 };
-function moduleIcon(key){const name=Object.hasOwn(widgetIconPaths,key)?key:'requests',filled=filledWidgetIcons[name];return `<svg data-icon="${name}" viewBox="0 0 24 26" fill="${filled?'currentColor':'none'}" stroke="${filled?'none':'currentColor'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${filled||widgetIconPaths[name]}</svg>`;}
+function moduleIcon(key){const name=Object.hasOwn(widgetIconPaths,key)?key:'requests';return `<svg data-icon="${name}" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${widgetIconPaths[name]}</svg>`;}
 
 function moduleWidget(key,state){
  const data=state.widgets?.[key];
@@ -111,7 +111,7 @@ function homeModulesMarkup(workspace,state){
   const icon=`<span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>`,widget=widgetMarkup(moduleWidget(m.key,state)),count=n?`<span class="module-count" aria-label="${n} élément(s) à traiter">${n}</span>`:'';
   const label=`<span class="module-copy"><strong>${clean(grid.columns>2?(shortLabels[m.key]||m.label):m.label)}</strong><p class="module-insight">${n?n+' élément(s) à traiter':p.label==='Normal'?'':clean(p.label)}</p></span>`;
   return `<article class="module-card tone-${moduleTone(m.key)}" data-module="${m.key}"${m.automatic?' data-reserve-fill="true"':''}><a class="module-tile tone-${moduleTone(m.key)} state-${p.state}" data-state="${p.state}" data-go="${m.key}" data-module-label="${clean(m.label)}" title="${clean(m.label)}" aria-label="${clean(m.label)} · ${clean(p.label)}" href="#/${m.key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>${grid.columns===4?`<span class="module-face">${icon}${widget}${count}</span>${label}`:`${icon}<span class="widget-copy">${label}${widget}</span>${count}<span class="module-chevron" aria-hidden="true">›</span>`}</a></article>`;
- }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Réserve de modules →</a>`;
+ }).join('')}</nav><a class="module-search-launch" data-go="module-library" href="#/module-library"><span aria-hidden="true">⌕</span> Rechercher vos modules…</a><a class="btn more-functions" data-go="module-library" href="#/module-library">Tous les modules</a>`;
 }
 function updateHomeGrid(workspace,state){
  const current=$('#content .module-grid');if(!current)return;
@@ -195,3 +195,4 @@ function addTariffPicker(catalog){
   $('#quoteLines').append(quotationLine({description:r.description,quantity:1,unit_price:(r.unit_price_minor/100).toFixed(2)}));updateQuotePreview();e.target.value='';
  };
 }
+

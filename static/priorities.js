@@ -22,14 +22,13 @@ function groupPriorityCards(cards){
  return [...groups.values()];
 }
 function priorityMarkup(cards){
- if(!cards.length)return '';
- return `<div class="priority-stack" aria-label="Priorités par importance">${cards.map((c,i)=>{
-  const level=c.level||(c.rank===0?'urgent':c.rank<=2?'high':'normal');
-  const importance=c.importance||({client:'À valider',document:'À vérifier',quote:'À finaliser'})[c.action.type]||(c.rank===0?'Urgente':c.rank<=2?'Importante':'À prévoir');
-  const icon=moduleIcon(({activity:'activities',task:'calendar',client:'clients',document:'scanner',quote:'leads',email:'emails',equipment:'equipment',material:'equipment',risk:'risks',social:'social',prospect:'prospects'})[c.action.type]||'requests');
-  const presentation=priorityPresentation(c);
-  return `<article class="priority-card priority-tier-${Math.min(i+1,5)} ${c.example?'example-card':''} ${c.fallback?'routine-card':''}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button class="module-tile priority-tile tone-${moduleTone(({task:'calendar',client:'clients',document:'scanner',activity:'activities',quote:'leads',email:'emails',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment'})[c.action.type])} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}${c.example?' · Exemple':''}"><span class="module-icon" aria-hidden="true">${icon}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance ${clean(level)}">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}${c.example?'<span class="example-label">Exemple</span>':''}</span></span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
- }).join('')}</div>`;
+ const visible=cards.slice(0,3);
+ return `<h2 class="home-section-title">À faire maintenant</h2><div class="priority-stack" aria-label="Priorités par importance">${visible.map((c,i)=>{
+  const presentation=priorityPresentation(c),key=priorityModules[c.action.type]||'requests';
+  const tone=['equipment','material','risk'].includes(c.action.type)?'red':c.action.type==='quote'?'green':c.action.type==='document'?'gold':'blue';
+  const action=c.members.length>1?'Voir les '+c.members.length+' actions':c.action_label||'Ouvrir le dossier';
+  return `<article class="priority-card priority-tier-${i+1} tone-${tone}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button type="button" class="module-tile priority-tile tone-${tone} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}"><span class="priority-top"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="priority-copy"><strong>${clean(c.title)}</strong><span class="priority-labels"><span class="importance">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}</span></span></span><span class="priority-description">${clean(c.description||'Ouvrez le dossier pour vérifier les informations et continuer.')}</span><span class="priority-cta">${clean(action)}</span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+ }).join('')}</div>${cards.length>3?`<button class="btn home-all-actions" id="homeAllActions">Toutes les actions · ${cards.reduce((n,c)=>n+c.members.length,0)}</button>`:''}`;
 }
 'use strict';
 let priorityCards = [];
@@ -47,10 +46,12 @@ async function renderPriorities(initial={}) {
   updateHomeGrid(workspace,cockpit);
   refreshHomeBadges(cockpit.badges,cockpit.risk_cards,cockpit.module_states);
   refreshHomeWidgets(cockpit);
+  refreshHomeSummary(cockpit,cards);
   priorityCards = cards;
   refreshHomeMessages(cards,cockpit);
   const displayCards=groupPriorityCards(cards);
   host.innerHTML = priorityMarkup(displayCards);
+  const all=host.querySelector("#homeAllActions");if(all)all.onclick=()=>openPriorityGroup({module:"all",members:cards},cid);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const group=displayCards[Number(btn.dataset.priorityOpen)];
     if(group.members.length===1)return openPriorityAction(group.members[0]);
@@ -172,3 +173,4 @@ function refreshHomeMessages(cards,cockpit){
   const insight=tile.querySelector('.module-insight');insight.textContent=message;insight.title=message;
  });
 }
+

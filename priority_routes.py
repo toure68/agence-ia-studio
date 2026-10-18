@@ -113,7 +113,7 @@ def install(app, db, require, own_company, utcnow):
 
         for row in con.execute("SELECT * FROM quotations WHERE company_id=? AND status='draft'",(cid,)):
             quote=dict(row);data=json.loads(quote['payload']);due=data.get('valid_until')
-            add('quote','quote-'+str(quote['id']),quote['updated']+quote['payload'],'Finaliser '+quote['reference'],
+            add('quote','quote-'+str(quote['id']),quote['updated']+quote['payload'],'Devis '+data['customer_name']+', '+format(quote['total_minor']/100,'.2f').replace('.',',')+' '+data.get('currency','EUR')+' : à finaliser',
                 'Devis pour '+data['customer_name']+' : vérifier le contenu et son état.',
                 {'type':'quote','id':quote['id']},'Vérifier le devis',1 if due and due<=today.isoformat() else 2,due)
 
@@ -132,7 +132,7 @@ def install(app, db, require, own_company, utcnow):
                     {'type':'social','id':p['id']},'Vérifier la publication',3)
             for row in con.execute('SELECT id,filename,kind FROM source_documents WHERE company_id=? AND reviewed=0',(cid,)):
                 doc=dict(row)
-                add('document','document-'+str(doc['id']),doc['kind'],'Vérifier le document : '+doc['filename'],
+                add('document','document-'+str(doc['id']),doc['kind'],'Vérifier un document reçu',
                     'Informations extraites en attente de vérification et d’enregistrement.',
                     {'type':'document','id':doc['id']},'Vérifier le document',2)
 
@@ -214,3 +214,4 @@ def install(app, db, require, own_company, utcnow):
             con.execute('INSERT OR IGNORE INTO task_completions(task_id,occurrence,user_id,completed) VALUES (?,?,?,?)',
                         (tid, data.occurrence.isoformat(), user['id'], utcnow()))
         return {'ok': True}
+

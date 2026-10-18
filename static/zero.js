@@ -22,7 +22,8 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
 async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
- $('#content').innerHTML=`<header class="home-heading"><h1>Bonjour ${clean(me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed Touré':me.email.split('@')[0]))}</h1></header>${assistantDockMarkup()}<section id="priorityBlock" aria-label="Priorités à traiter"></section>`+homeModulesMarkup(workspace,state);
+ $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Votre secteur cette semaine</h2><p>Votre veille métier reste à configurer.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
+ $('#homeSectorInfo').onclick=()=>{openModal('<h2>Votre veille métier</h2><p>La veille sectorielle n’est pas encore connectée. Aucune actualité n’est inventée.</p><button class="btn" id="closeSectorInfo">Fermer</button>');$('#closeSectorInfo').onclick=closeModal;};
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
 
@@ -108,4 +109,16 @@ async function renderMaterial(id){
  const [work,check]=await Promise.all([api(`/api/companies/${company.id}/activities/${id}`),api(`/api/companies/${company.id}/activities/${id}/material`)]);
  $('#content').innerHTML=`<section class="form-page"><h1>${clean(work.title)}</h1><h2>Contrôle du matériel</h2>${!check.requirements_configured?'<p class="msg">Besoins à définir avant de conclure sur la disponibilité du matériel.</p>':check.alerts.length?`<div class="msg err">${check.alerts.map(a=>`<p>${clean(a.name)} : ${a.missing} manquant(s), ${a.available} disponible(s) sur ${a.required}.</p>`).join('')}</div>`:'<p class="msg">Matériel disponible selon l’inventaire enregistré.</p>'}<form id="materialForm" class="stack"><div class="field"><label for="materialNeeds">Besoins : un article par ligne, nom : quantité</label><textarea id="materialNeeds" rows="5" maxlength="5000">${check.items.map(x=>clean(x.name)+': '+x.quantity).join('\n')}</textarea></div><button class="btn primary">Vérifier et enregistrer</button></form><a class="btn" data-go="equipment" href="#/equipment">Ouvrir l’inventaire</a></section>`;
  $('#materialForm').onsubmit=async e=>{e.preventDefault();try{const items=$('#materialNeeds').value.split('\n').filter(x=>x.trim()).map(line=>{const m=line.match(/^(.+?)\s*:\s*(\d+)\s*$/);if(!m)throw Error('Utilisez le format « Perceuse : 2 ».');return {name:m[1].trim(),quantity:Number(m[2])};});await api(`/api/companies/${company.id}/activities/${id}/material`,{method:'PUT',body:JSON.stringify({items})});await renderMaterial(id);}catch(err){notify(err.message);}};
+}
+
+
+function homeTreasuryMarkup(state){
+ const balances=Object.entries(state.widgets?.treasury?.balances_minor||{});
+ const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):'<strong class="home-no-balance">Aucun mouvement</strong>';
+ return `<a class="home-treasury" data-go="treasury" href="#/treasury" aria-label="Ouvrir la trésorerie"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2><div class="home-balances">${amounts}</div><small>Solde enregistré · livre interne</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>Non renseigné</b></div><div><span>À payer</span><b>Non renseigné</b></div></div></a>`;
+}
+function refreshHomeSummary(state,cards){
+ const grid=document.querySelector('#content .module-grid'),setting=document.querySelector('.home-modules-heading [data-go="module-library"]');if(grid&&setting)setting.textContent='Grille · '+grid.dataset.columns;
+ const host=document.querySelector('#homeTreasury');if(host)host.innerHTML=homeTreasuryMarkup(state);
+ const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.textContent=date.charAt(0).toUpperCase()+date.slice(1)+' · '+(count?count+' action'+(count>1?'s':'')+' à traiter':'Vos priorités sont à jour');}
 }
