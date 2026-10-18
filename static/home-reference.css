@@ -244,3 +244,6 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .bank-logo-preview{display:flex;justify-content:center;margin:8px 0 14px}
 .bank-logo-preview .bank-pill{width:88px;height:88px;min-width:88px;border-radius:22px;font-size:26px;background:#171d22;color:#fff}
 .bank-logo-preview .bank-pill-logo{border-radius:21px}
+.reference-home .priority-card>.voice-button{top:6px;right:50px;bottom:auto;width:44px;height:44px;min-height:44px;border:0;background:transparent}
+.reference-home .priority-cta{width:100%}
+.reference-home .priority-top{padding-right:84px}
