@@ -39,7 +39,7 @@ const {chromium}=require('playwright');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
   // Bank in alert: balance in red and alert expanded automatically.
   const rivage=page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"]');await rivage.click();
-  assert((await page.locator('.bank-home-name').innerText()).includes('Rivage'));
+  assert((await page.locator('.bank-home-name').innerText()).toLowerCase().includes('rivage'));
   assert(await page.locator('.bank-total.bank-negative').isVisible());
   const fund=page.locator('.bank-home-alert .bank-fund');assert(await fund.isVisible());
   assert((await page.locator('.bank-home-alert').innerText()).includes('1 000,00'),'Missing amount covers overdraft plus debit');
