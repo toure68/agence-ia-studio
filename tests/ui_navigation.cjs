@@ -31,14 +31,21 @@ const {chromium}=require('playwright');
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
    if(await tile.count())await tile.click();
+   else if(await page.locator('#content .module-grid .module-add').count()&&(await page.evaluate(async r=>{const cid=company.id,[w,c]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);return w.modules.some(m=>m.key===r);},route))){
+     // Modules beyond the row cap are opened from the + reserve panel.
+     await page.locator('#content .module-grid .module-add').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${route}"]`);await link.waitFor();await link.click();
+   }
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
  }
  async function openAssistant(){
    if(await page.locator('#assistantMessage').isVisible())return;
    await backHome();await page.locator('#assistantDock').click();await page.locator('#assistantMessage').waitFor({state:'visible'});
  }
- async function layout(count=16){
-   assert.equal(await page.locator('#content .module-grid .module-tile').count(),count);
+ async function layout(){
+   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length>0);
+   // 2 columns: at most 3 rows (5 modules + the + cell), more only for modules with an action to do.
+   const cells=await page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,tiles:el.querySelectorAll('.module-tile').length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length,addLast:el.lastElementChild.classList.contains('module-add-card')}));
+   assert(cells.tiles>0&&cells.addLast&&cells.cells%2===0&&cells.cells<=Math.max(6,Math.ceil((cells.urgent+1)/2)*2),'Home grid respects the 2-column row cap: '+JSON.stringify(cells));
    assert.equal(await page.locator('.sidebar,#sideNav,#mobileNav').count(),0);
    const g=await page.locator('#content .module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -64,10 +71,10 @@ const {chromium}=require('playwright');
     const tones={};for(const tone of ['green','blue','gold','purple']){probe.className='module-tile tone-'+tone;const original=read(),states={};for(const state of ['neutral','info','warning','danger','success']){probe.className='module-tile tone-'+tone+' state-'+state;probe.dataset.state=state;states[state]={surface:read(),top:getComputedStyle(probe).borderTopColor,shadow:getComputedStyle(probe).boxShadow};}tones[tone]={original,states};}
     probe.setAttribute('aria-current','page');const active={color:getComputedStyle(probe).color,background:getComputedStyle(probe).backgroundImage,band:getComputedStyle(probe).borderTopColor};
     const glass=getComputedStyle(el.parentElement),icons=[...document.querySelectorAll('#content .module-grid .module-icon')].map(i=>getComputedStyle(i).color);
-    probe.remove();return {tones,active,glass:{background:glass.backgroundColor,filter:glass.backdropFilter},iconColors:new Set(icons).size};
+    probe.remove();return {tones,active,glass:{background:glass.backgroundColor,filter:glass.backdropFilter},iconColors:new Set(icons).size,toneCount:new Set([...document.querySelectorAll('#content .module-grid .module-tile')].map(t=>[...t.classList].find(c=>c.startsWith('tone-')))).size};
    });
    for(const tone of Object.values(surfaces.tones))for(const state of Object.values(tone.states))assert.deepEqual(state.surface,tone.original,'State changes preserve the neutral glass surface');
-   assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,1);assert(surfaces.glass.filter.includes('blur'));assert(surfaces.iconColors>=3,'App badges are colorful and identifiable');
+   assert.equal(new Set(Object.values(surfaces.tones).map(t=>t.original[0])).size,1);assert(surfaces.glass.filter.includes('blur'));assert(surfaces.iconColors>=Math.min(3,surfaces.toneCount),'App badges are colorful and identifiable');
    assert.equal(surfaces.tones.green.states.danger.shadow,'none','Urgency glow lives on the outer frame');
    assert.equal(surfaces.active.color,'rgb(242, 245, 247)');
 
@@ -133,7 +140,7 @@ const {chromium}=require('playwright');
    await page.locator('.chat-file button').click();await backHome();
    await page.evaluate(()=>{document.querySelector('#assistantChat').dataset.identity='same-cockpit';});
    await page.locator('#content [data-go="clients"]').click();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
-   assert.equal(await page.locator('#cockpitContent .module-grid .module-card').count(),16);
+   assert((await page.locator('#cockpitContent .module-grid .module-card').count())>=2,'Cockpit grid stays mounted behind the panel');
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/panel-mobile.png',animations:'disabled'});
    await page.setViewportSize({width:1280,height:900});assert.equal(await page.locator('#contextPanel').count(),1);await page.screenshot({path:'/tmp/ui-images/panel-desktop.png',animations:'disabled'});await page.setViewportSize({width:390,height:844});
    assert.equal(await page.locator('#shell').evaluate(el=>el.inert),true);
@@ -182,10 +189,12 @@ const {chromium}=require('playwright');
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
    await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
    assert.equal(await page.locator('#content .module-grid').count(),1);
-   assert.deepEqual(await page.locator('#content .module-grid [data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go).sort()),['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'].sort());
+   const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
    assert.equal(await page.locator('.more-functions').count(),1);
-   assert.equal(await page.locator('#content .module-grid [data-go="company-edit"]').getAttribute('href'),'#/company-edit/1');
-   assert.equal(await page.locator('#content .module-grid [data-go="team"]').getAttribute('data-company-id'),'1');
+   // Company-scoped links keep their company id, on the grid or in the + reserve panel.
+   const moduleLink=async key=>{const inGrid=page.locator(`#content .module-grid [data-go="${key}"]`);if(await inGrid.count())return {href:await inGrid.getAttribute('href'),cid:await inGrid.getAttribute('data-company-id')};await page.locator('#content .module-grid .module-add').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${key}"]`);await link.waitFor();const found={href:await link.getAttribute('href'),cid:await link.getAttribute('data-company-id')};await backHome();return found;};
+   assert.equal((await moduleLink('company-edit')).href,'#/company-edit/1');
+   assert.equal((await moduleLink('team')).cid,'1');
    assert.equal(await page.locator('#mobileNav').count(),0);
    assert.equal(await page.locator('.home-quick-actions').count(),0);
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
@@ -386,7 +395,7 @@ const {chromium}=require('playwright');
    await page.locator('[data-validate-client]').click();await page.locator('#content .module-grid').waitFor();
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients')))[0].needs_review,false);
-   assert.equal(await page.locator('#content .module-grid [data-go="clients"]').getAttribute('data-state'),'success');
+   {const clientsTile=page.locator('#content .module-grid [data-go="clients"]');if(await clientsTile.count())assert.equal(await clientsTile.getAttribute('data-state'),'success');}
    await goModule('activities');
    await page.evaluate(()=>openTab('activity-new'));
    await page.locator('#activityTitle').fill('Préparer intervention');
@@ -457,7 +466,7 @@ const {chromium}=require('playwright');
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.routine-card)').length===0);
    // The normal Add action opens the voice composer, not the legacy form.
-   await page.locator('#content [data-go="calendar"]').click();
+   await goModule('calendar');
    await page.locator('#content [data-go="task-new"]').click();
    await page.locator('#commandText').waitFor();
    await page.locator('#closeModal').click();
@@ -551,11 +560,11 @@ const {chromium}=require('playwright');
    await openModuleLibrary();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
    await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
    await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
-   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===2);
-   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
+   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===1);
+   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),1);
    await openModuleLibrary();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
-   assert.equal(await page.locator('.more-functions').isVisible(),await page.locator('#content .module-grid .module-tile').count()===0,'Tous les modules only shows on an empty grid');
+   assert.equal(await page.locator('.more-functions').isVisible(),false);assert(await page.locator('#content .module-grid .module-add').isVisible(),'The + reserve cell stays reachable');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
    await openModuleLibrary();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
@@ -582,12 +591,12 @@ const {chromium}=require('playwright');
        return {columns,count:filled.modules.length,keys:filled.modules.map(m=>m.key),automatic:filled.modules.filter(m=>m.automatic).length,unchanged:JSON.stringify(input)===before,empty:none.modules.length,allowed:filled.modules.every(m=>source.modules.some(a=>a.key===m.key)),fullCount:full.modules.length};
      });
    });
-   for(const result of fillCases){assert.equal(result.count,result.columns);assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,Math.floor(17/result.columns)*result.columns);}
+   for(const result of fillCases){const rows={2:3,3:3,4:2}[result.columns];assert.equal(result.count,result.columns-1,'One row: modules plus the + cell');assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-2);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,rows*result.columns-1,'Row cap leaves room for the + cell');}
    const widgetRefresh=await page.evaluate(async()=>{
-     const state=await api('/api/companies/1/cockpit'),tile=document.querySelector('[data-go="leads"]');
+     const state=await api('/api/companies/1/cockpit'),tile=document.querySelector('#content .module-grid .module-tile[data-go]:not([data-go="treasury"])'),key=tile.dataset.go;
      const icon=tile.querySelector('svg');tile.dataset.identity='widget-kept';
-     refreshHomeWidgets({...state,widgets:{...state.widgets,leads:{value:99,label:'À finaliser'}}});
-     const result={value:tile.querySelector('.widget-value').textContent,same:document.querySelector('[data-go="leads"]')===tile&&tile.querySelector('svg')===icon,multi:moduleWidget('treasury',{widgets:{treasury:{balances_minor:{EUR:10000,XOF:50000}}}})};
+     refreshHomeWidgets({...state,widgets:{...state.widgets,[key]:{value:99,label:'À finaliser'}}});
+     const result={value:tile.querySelector('.widget-value').textContent,same:document.querySelector(`#content .module-grid [data-go="${key}"]`)===tile&&tile.querySelector('svg')===icon,multi:moduleWidget('treasury',{widgets:{treasury:{balances_minor:{EUR:10000,XOF:50000}}}})};
      refreshHomeWidgets(state);return result;
    });
    assert.equal(widgetRefresh.value,'99');assert(widgetRefresh.same);assert.equal(widgetRefresh.multi.value,'2');assert(widgetRefresh.multi.detail.includes('100')&&widgetRefresh.multi.detail.includes('500'));
@@ -599,7 +608,7 @@ const {chromium}=require('playwright');
      const manual=homeGridModules({...input,dynamic:false}).modules.map(m=>m.key);
      return {urgent,quiet:quiet.length,manual};
    });
-   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,3);assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
+   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,2,'3 columns: 2 modules + the + cell keep the row complete');assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
    // Column choice survives closing the panel and reload without changing modules.
    for(const columns of [2,3,4]){
      await openModuleLibrary();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();

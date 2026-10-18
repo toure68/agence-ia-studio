@@ -12,7 +12,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
   tile.querySelector('.module-count')?.remove();
   if(count){const badge=document.createElement('span');badge.className='module-count';badge.textContent=String(count);badge.setAttribute('aria-label',count+' élément(s) à traiter');(tile.querySelector('.module-face')||tile).append(badge);}
  }
- document.querySelectorAll('.module-grid [data-go]').forEach(tile=>{
+ document.querySelectorAll('.module-grid .module-tile[data-go]').forEach(tile=>{
   const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});
   for(const state of tileStates)tile.classList.toggle('state-'+state,state===p.state);
   tile.dataset.state=p.state;
