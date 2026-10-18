@@ -1,0 +1,41 @@
+{
+  "testedAt": "2026-10-18T06:52:32.623Z",
+  "scope": "Chromium, web export only; not a real iPhone test",
+  "viewports": [
+    320,
+    390,
+    430
+  ],
+  "grids": [
+    {
+      "columns": 2,
+      "count": 6
+    },
+    {
+      "columns": 3,
+      "count": 6
+    },
+    {
+      "columns": 4,
+      "count": 4
+    }
+  ],
+  "checks": [
+    "preference persistence after reload",
+    "previous setting restore and persistence",
+    "complete rows and equal tile dimensions",
+    "zero counter available through reserve",
+    "no horizontal page overflow",
+    "explicit simulated send confirmation",
+    "empty state after hiding actions",
+    "assistant draft preserved between panels"
+  ],
+  "runtimeErrors": [],
+  "buildChecks": [
+    "TypeScript : réussi",
+    "ESLint : réussi sans avertissement",
+    "Export web : réussi",
+    "Bundle iOS Hermes : réussi",
+    "Bundle Android Hermes : réussi"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "savedAt": "2026-10-18",
+  "repository": "toure68/agence-ia-studio",
+  "originalCommit": "c919bda00f78f237a17223321c04127d80c84258",
+  "backupBranch": "backup/avant-accueil-mobile-2026-10-18",
+  "previewBranch": "design/accueil-mobile-expo-2026-10-18",
+  "scope": "Ajout isolé mobile/, aucun changement à l'application web ni au serveur",
+  "defaultGridColumns": 2,
+  "themeVersion": "accueil-verre-2026-10-18",
+  "runtimeRollback": "Grille > Revenir au réglage précédent",
+  "sourceRollback": "Supprimer seulement mobile/ ou revenir au commit sauvegardé après examen des changements ultérieurs"
+}
