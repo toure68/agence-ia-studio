@@ -34,6 +34,7 @@ async function zeroDashboard(){
   $('#saveHomeSector').onclick=async e=>{const button=e.currentTarget;button.disabled=true;try{await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:$('#homeSectorChoice').value,visible:settings.visible,columns:settings.columns,dynamic:settings.dynamic,version:settings.version})});closeModal();await renderPriorities();notify('Votre métier est enregistré.');}catch(error){button.disabled=false;notify(error.message);}};
  };
  const gridButton=$('.home-modules-heading [data-go="module-library"]');gridButton.setAttribute('aria-label','Choisir le nombre de colonnes');gridButton.title='Choisir le nombre de colonnes';gridButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+ mountColumnChooser(gridButton,workspace,state);
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
 
@@ -152,4 +153,28 @@ function homeTreasuryMarkup(state){
 function refreshHomeSummary(state,cards){
  const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}
  const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.textContent=date.charAt(0).toUpperCase()+date.slice(1)+' · '+(count?count+' action'+(count>1?'s':'')+' à traiter':'Vos priorités sont à jour');}
+}
+// Inline column chooser: the grid button expands into 2/3/4 squares that apply instantly, without leaving home.
+function mountColumnChooser(button,workspace,state){
+ if(!button)return;
+ button.removeAttribute('data-go');button.dataset.columnsToggle='';button.setAttribute('role','button');button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls','homeColumnChooser');
+ const square=n=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${Array.from({length:n},(_,i)=>`<rect x="${2+i*(20/n)+0.5}" y="5" width="${20/n-1.5}" height="14" rx="1.5"/>`).join('')}</svg>`;
+ const chooser=document.createElement('div');chooser.id='homeColumnChooser';chooser.className='column-chooser';chooser.setAttribute('role','group');chooser.setAttribute('aria-label','Nombre de colonnes');chooser.hidden=true;
+ chooser.innerHTML=[2,3,4].map(n=>`<button type="button" class="column-choice" data-set-columns="${n}" aria-pressed="${n===(workspace.columns||2)}" aria-label="${n} colonnes" title="${n} colonnes">${square(n)}<span>${n}</span></button>`).join('');
+ button.before(chooser);
+ const open=show=>{chooser.hidden=!show;button.setAttribute('aria-expanded',String(show));button.closest('.home-modules-heading')?.classList.toggle('is-choosing',show);};
+ button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();open(chooser.hidden);});
+ chooser.addEventListener('click',async e=>{
+  const choice=e.target.closest('[data-set-columns]');if(!choice)return;e.preventDefault();e.stopPropagation();
+  const columns=Number(choice.dataset.setColumns);if(columns===(workspace.columns||2)){open(false);return;}
+  chooser.querySelectorAll('[data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(b===choice)));
+  workspace={...workspace,columns};updateHomeGrid(workspace,state);open(false);
+  if(document.body.dataset.publicDemo==='true')return;
+  try{
+   const cid=company.id,fresh=await api(`/api/companies/${cid}/workspace`);
+   await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:fresh.domain,visible:fresh.visible,version:fresh.version,columns,dynamic:fresh.dynamic!==false})});
+   await refreshCockpit();
+  }catch(error){notify(error.message);}
+ });
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!chooser.hidden&&chooser.isConnected){open(false);button.focus({preventScroll:true});}});
 }

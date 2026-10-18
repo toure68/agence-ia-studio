@@ -27,3 +27,4 @@ Preserve working behavior and approved design. A request to add a feature does n
 
 - Home section titles ("À faire maintenant", "Vos modules") are visually hidden but kept for screen readers; blocks are separated by spacing only. Keep the column-chooser button visible.
 - Home treasury uses bank pills (docs/BANKS.md): "Tous" is always the default view, alerts expand automatically for a bank in deficit, other banks show their 5 latest movements. Do not reintroduce the bank wheel.
+- The home grid button expands inline into 2/3/4 column squares that apply and save immediately (no form, no navigation). The home "Tous les modules" link only shows when the grid is empty; the module library stays reachable from Outils > Plus de fonctions.

@@ -54,6 +54,14 @@ jobs:
             exit 1
           fi
       - run: node tests/grid_proportions.cjs
+      - name: Run node tests/column_chooser.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/column_chooser.cjs 2>&1 | tee /tmp/column-chooser.log; then
+            msg=$(tail -c 3000 /tmp/column-chooser.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=column_chooser::$msg"
+            exit 1
+          fi
       - name: Run node tests/bank_pills.cjs
         run: |
           set -o pipefail

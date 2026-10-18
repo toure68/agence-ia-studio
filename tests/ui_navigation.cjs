@@ -5,6 +5,8 @@ const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{}),...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ // The module library is reached from Outils; the home 'Tous les modules' link only shows on an empty grid.
+ const openModuleLibrary=async()=>{await page.evaluate(()=>openTab('module-library'));await page.locator('#saveModules').waitFor();};
  await page.addInitScript(()=>{
    window.__spoken=[];window.__spokenDetails=[];window.__voices=[];
    const speechEvents=new EventTarget();
@@ -546,16 +548,16 @@ const {chromium}=require('playwright');
    await page.locator('[data-risk]').waitFor();assert((await page.locator('[data-risk]').innerText()).includes('Vérifié'));
    assert.equal((await page.evaluate(()=>api('/api/companies/1/risks')))[0].completed,1);await backHome();
    await goModule('conformity');await page.locator('.compliance-list').waitFor();assert.equal(await page.locator('.compliance-list article').count(),35);assert((await page.locator('.compliance-list').innerText()).includes('COST-01'));await backHome();
-   await page.locator('.more-functions').click();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
+   await openModuleLibrary();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
    await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
    await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===2);
    await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
-   await page.locator('.more-functions').click();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
+   await openModuleLibrary();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
-   assert.equal(await page.locator('.more-functions').isVisible(),true);
+   assert.equal(await page.locator('.more-functions').isVisible(),await page.locator('#content .module-grid .module-tile').count()===0,'Tous les modules only shows on an empty grid');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
-   await page.locator('.more-functions').click();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
+   await openModuleLibrary();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
    await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();assert.equal(await page.locator('[data-module-key="social"]').isChecked(),true);await page.locator('[data-module-key="social"]').uncheck();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();await layout();
    const iconRims=await page.locator('#content .module-grid .module-tile,.priority-tile').evaluateAll(tiles=>[tiles.find(t=>t.closest('.module-grid')),tiles.find(t=>t.matches('.priority-tile'))].map(tile=>{const original=tile.className,kind=tile.matches('.priority-tile')?' priority-tile':'',icon=tile.querySelector('.module-icon'),svg=icon.querySelector('svg').outerHTML,result={};for(const state of ['neutral','danger','warning','info','success']){tile.className='module-tile'+kind+' state-'+state;const style=getComputedStyle(icon),r=icon.getBoundingClientRect();result[state]={border:style.borderTopColor,line:style.borderTopWidth,width:r.width,height:r.height,fill:style.backgroundImage,glyph:style.color};}tile.className=original;return {states:result,sameSvg:svg===icon.querySelector('svg').outerHTML};}));
@@ -600,7 +602,7 @@ const {chromium}=require('playwright');
    assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,3);assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
    // Column choice survives closing the panel and reload without changing modules.
    for(const columns of [2,3,4]){
-     await page.locator('.more-functions').click();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();
+     await openModuleLibrary();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();
      await page.waitForFunction(n=>document.querySelector('#content .module-grid')?.dataset.columns===String(n),columns);
      await page.reload({waitUntil:'networkidle'});
      for(const width of [320,390,844,1280]){
@@ -617,11 +619,11 @@ const {chromium}=require('playwright');
      }
      await page.setViewportSize({width:390,height:844});await goModule('clients');await page.locator('#contextPanel').waitFor();await backHome();
      assert.equal(await page.locator('.module-grid').getAttribute('data-columns'),String(columns));
-     await page.locator('.more-functions').click();assert.equal(await page.locator('#homeColumns').inputValue(),String(columns));await backHome();
+     await openModuleLibrary();assert.equal(await page.locator('#homeColumns').inputValue(),String(columns));await backHome();
    }
-   await page.locator('.more-functions').click();await page.locator('#homeColumns').selectOption('2');await page.locator('#saveModules').click();
+   await openModuleLibrary();await page.locator('#homeColumns').selectOption('2');await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('#content .module-grid')?.dataset.columns==='2');await layout();
-   await page.locator('.more-functions').click();await page.locator('#dynamicHome').check();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();
+   await openModuleLibrary();await page.locator('#dynamicHome').check();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();
    assert.equal((await page.evaluate(()=>api('/api/companies/1/workspace'))).dynamic,true);
    await goModule('scanner');
    await page.locator('#scanKind').waitFor();
