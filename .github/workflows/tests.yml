@@ -53,7 +53,14 @@ jobs:
             echo "::error title=ui_navigation::$msg"
             exit 1
           fi
-      - run: node tests/grid_proportions.cjs
+      - name: Run node tests/grid_proportions.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/grid_proportions.cjs 2>&1 | tee /tmp/grid-proportions.log; then
+            msg=$(tail -c 3000 /tmp/grid-proportions.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=grid_proportions::$msg"
+            exit 1
+          fi
       - name: Run node tests/column_chooser.cjs
         run: |
           set -o pipefail
