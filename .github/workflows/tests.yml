@@ -45,7 +45,14 @@ jobs:
           cat /tmp/agence-ui-server.log
           exit 1
       - run: python tests/document_fixtures.py
-      - run: node tests/ui_navigation.cjs
+      - name: Run node tests/ui_navigation.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/ui_navigation.cjs 2>&1 | tee /tmp/ui-navigation.log; then
+            msg=$(tail -c 3000 /tmp/ui-navigation.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=ui_navigation::$msg"
+            exit 1
+          fi
       - run: node tests/grid_proportions.cjs
       - uses: actions/upload-artifact@v4
         if: always()
