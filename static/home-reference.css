@@ -247,3 +247,17 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .priority-card>.voice-button{top:6px;right:50px;bottom:auto;width:44px;height:44px;min-height:44px;border:0;background:transparent}
 .reference-home .priority-cta{width:100%}
 .reference-home .priority-top{padding-right:84px}
+.reference-home .module-reserve-chevron{margin-left:auto;color:var(--home-muted);font-size:18px;line-height:1;transition:transform .2s ease}
+.reference-home .module-reserve-launch.is-open .module-reserve-chevron{transform:rotate(180deg)}
+.reference-home .module-reserve-launch{cursor:pointer;font-family:inherit}
+.reference-home .module-reserve-inline{margin:10px 0 0;padding:12px;border:1px solid var(--home-border);border-radius:16px;background:#ffffff05}
+.reference-home .module-reserve-inline[hidden]{display:none}
+.reference-home .module-reserve-hint{margin:0 0 10px;color:var(--home-muted);font-size:13px;line-height:1.4}
+.reference-home .module-reserve-grid-inline{margin:0}
+.reference-home .reserve-tile{width:100%;cursor:pointer;font:inherit;text-align:left}
+.reference-home .reserve-tile[aria-checked="false"] .module-icon{filter:saturate(.4) brightness(.85)}
+.reference-home .reserve-check{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:1.5px solid var(--home-muted);border-radius:8px;color:#082b16;font-size:15px;font-weight:900;line-height:1}
+.reference-home .reserve-tile[aria-checked="true"] .reserve-check{background:var(--home-green);border-color:var(--home-green)}
+.reference-home .reserve-tile:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
+#contextTitle{color:#102b35}
+.library-card strong,.module-reserve-item strong{color:#102b35}

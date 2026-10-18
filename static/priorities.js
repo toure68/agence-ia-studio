@@ -177,11 +177,11 @@ document.addEventListener('visibilitychange',()=>{
 function refreshHomeMessages(cards,cockpit){
  if(tab!=='dashboard')return;
  const routes={task:'calendar',activity:'activities',client:'clients',document:'scanner',quote:'leads',email:'emails',social:'social',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment',lead:'requests'};
- document.querySelectorAll('#content .module-card').forEach(tile=>{
+ document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-card').forEach(tile=>{
   const key=tile.dataset.module,card=cards.find(c=>!c.example&&!c.fallback&&routes[c.action.type]===key);
   const label=modulePresentation(key,cockpit).label;
   const message=card?card.title:label==='Normal'?'':label;
-  const insight=tile.querySelector('.module-insight');insight.textContent=message;insight.title=message;
+  const insight=tile.querySelector('.module-insight');if(!insight)return;insight.textContent=message;insight.title=message;
  });
 }
 
