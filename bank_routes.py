@@ -39,6 +39,9 @@ class TransferInput(BaseModel):
     operation_id:UUID
     confirmed:bool=False
 
+class LogoInput(BaseModel):
+    image:str=Field(min_length=30,max_length=1_500_000)
+
 class Confirmation(BaseModel):
     confirmed:bool=False
 
@@ -69,8 +72,29 @@ def init_schema(db):
         if 'bank_id' not in columns:con.execute('ALTER TABLE cash_movements ADD COLUMN bank_id INTEGER REFERENCES bank_accounts(id)')
         if 'transfer_id' not in columns:con.execute('ALTER TABLE cash_movements ADD COLUMN transfer_id INTEGER REFERENCES bank_transfers(id)')
         debit_columns={r['name'] for r in con.execute('PRAGMA table_info(bank_debits)')}
+        bank_columns={r['name'] for r in con.execute('PRAGMA table_info(bank_accounts)')}
+        if 'logo' not in bank_columns:con.execute('ALTER TABLE bank_accounts ADD COLUMN logo TEXT')
         if 'operation_id' not in debit_columns:con.execute('ALTER TABLE bank_debits ADD COLUMN operation_id TEXT')
         con.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_bank_debit_operation ON bank_debits(company_id,operation_id)')
+
+def clean_logo(data_url):
+    # Accept only raster images uploaded by the user; re-encode server-side so nothing but pixels is stored.
+    import base64,binascii,io
+    from PIL import Image,UnidentifiedImageError
+    prefix,_,payload=data_url.partition(',')
+    if prefix not in ('data:image/png;base64','data:image/jpeg;base64','data:image/webp;base64'):raise HTTPException(422,'Choisissez une image PNG, JPEG ou WebP.')
+    try:raw=base64.b64decode(payload,validate=True)
+    except (binascii.Error,ValueError):raise HTTPException(422,'Image illisible.')
+    if len(raw)>1_000_000:raise HTTPException(413,'Image trop lourde (1 Mo maximum).')
+    try:
+        image=Image.open(io.BytesIO(raw));image.load()
+    except (UnidentifiedImageError,OSError,Image.DecompressionBombError):raise HTTPException(422,'Image illisible.')
+    if image.width*image.height>40_000_000:raise HTTPException(422,'Image trop grande.')
+    image=image.convert('RGBA');side=min(image.size)
+    left,top=(image.width-side)//2,(image.height-side)//2
+    image=image.crop((left,top,left+side,top+side)).resize((128,128),Image.LANCZOS)
+    out=io.BytesIO();image.save(out,format='PNG',optimize=True)
+    return 'data:image/png;base64,'+base64.b64encode(out.getvalue()).decode()
 
 def bank_for(con,cid,bid):
     row=con.execute('SELECT * FROM bank_accounts WHERE company_id=? AND id=?',(cid,bid)).fetchone()
@@ -143,6 +167,24 @@ def install(app,db,require,own_company,utcnow):
             con.execute('UPDATE bank_accounts SET name=?,opening_minor=?,reserved_minor=?,version=version+1 WHERE company_id=? AND id=?',(data.name,int(data.opening_balance*100),int(data.reserved*100),cid,bid))
             con.execute('COMMIT')
             return bank_for(con,cid,bid)
+
+    @app.put('/api/companies/{cid}/banks/{bid}/logo')
+    def set_logo(cid:int,bid:int,data:LogoInput,req:Request):
+        scope(req,cid,True);logo=clean_logo(data.image)
+        with db() as con:
+            con.execute('BEGIN IMMEDIATE');bank_for(con,cid,bid)
+            con.execute('UPDATE bank_accounts SET logo=? WHERE company_id=? AND id=?',(logo,cid,bid))
+            con.execute('COMMIT')
+            return {'ok':True,'logo':logo}
+
+    @app.delete('/api/companies/{cid}/banks/{bid}/logo')
+    def remove_logo(cid:int,bid:int,req:Request):
+        scope(req,cid,True)
+        with db() as con:
+            con.execute('BEGIN IMMEDIATE');bank_for(con,cid,bid)
+            con.execute('UPDATE bank_accounts SET logo=NULL WHERE company_id=? AND id=?',(cid,bid))
+            con.execute('COMMIT')
+            return {'ok':True}
 
     @app.post('/api/companies/{cid}/bank-debits',status_code=201)
     def add_debit(cid:int,data:DebitInput,req:Request):

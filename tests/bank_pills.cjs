@@ -58,6 +58,13 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
   await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').click();await page.locator('.bank-fold').click();
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
+  // A bank logo uploaded by the user replaces the initials in its pill.
+  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#1e7a4f';g.fillRect(0,0,64,64);return c.toDataURL('image/png');});
+  await page.evaluate(async image=>{const banks=(await api(`/api/companies/${company.id}/banks`)).banks;const atlas=banks.find(b=>b.name==='Banque Pastille Atlas');await api(`/api/companies/${company.id}/banks/${atlas.id}/logo`,{method:'PUT',body:JSON.stringify({image})});},png);
+  await page.reload({waitUntil:'networkidle'});await page.locator('#homeTreasury .bank-home').waitFor();
+  const logo=page.locator('.bank-pill[aria-label="Banque Pastille Atlas"] img.bank-pill-logo');assert.equal(await logo.count(),1,'Logo shown in the pill');
+  const box=await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').boundingBox();assert.equal(Math.round(box.width),44);
+  assert.equal(await page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"] img').count(),0,'Banks without a logo keep their initials');
   // "+" opens the manual bank editor.
   await page.locator('.bank-pill[data-bank-add]').click();await page.locator('#bankEditor').waitFor();
   assert.deepEqual(errors,[]);
