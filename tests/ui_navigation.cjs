@@ -190,7 +190,7 @@ const {chromium}=require('playwright');
    assert.equal(await pressedTile.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
    await page.mouse.move(1,1);await page.mouse.up();await page.mouse.move(1,1);
    assert.equal(await page.locator('#content .module-grid').count(),1);
-   const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
+   const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner','veille'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
    assert.equal(await page.locator('.more-functions').count(),1);
    // Company-scoped links keep their company id, on the grid or in the + reserve panel.
    const moduleLink=async key=>{const inGrid=page.locator(`#content .module-grid [data-go="${key}"]`);if(await inGrid.count())return {href:await inGrid.getAttribute('href'),cid:await inGrid.getAttribute('data-company-id')};await page.locator('#content .module-reserve-launch').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${key}"]`);await link.waitFor();const found={href:await link.getAttribute('href'),cid:await link.getAttribute('data-company-id')};await backHome();return found;};

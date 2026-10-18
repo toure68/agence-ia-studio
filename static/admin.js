@@ -24,7 +24,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  if(!me)return;
  const labels={dashboard:'Accueil',leads:'Devis',prospects:'Prospection',companies:'Entreprises',calendar:'Agenda','prospect-new':'Nouveau prospect','task-new':'Nouvelle échéance','company-new':'Nouvelle entreprise','company-edit':'Identité & tarifs',team:'Équipe',clients:'Clients','client-new':'Nouveau client','client-edit':'Client',activities:'Activités','activity-new':'Nouvelle activité','activity-edit':'Modifier l’activité',activity:'Activité',reports:'Rapports',drafts:'Brouillons',draft:'Brouillon','priority-example':'Exemple',requests:'Demandes',tools:'Outils',treasury:'Trésorerie',equipment:'Matériel',risks:'Prévention',material:'Contrôle matériel',conformity:'Conformité',incoming:'Demandes reçues','quote-new':'Nouveau devis','quote-edit':'Modifier le devis',quote:'Devis',emails:'E-mails',email:'E-mail'};
  const ownerTabs=new Set(['prospects','prospect-new','company-new','team','drafts','draft']);
- Object.assign(labels,{'module-reserve':'Réserve','module-library':'Mes fonctions',scanner:'Documents & profil',document:'Vérifier le document'});
+ Object.assign(labels,{veille:'Veille métier','module-reserve':'Réserve','module-library':'Mes fonctions',scanner:'Documents & profil',document:'Vérifier le document'});
  ownerTabs.add('scanner');ownerTabs.add('document');
  Object.assign(labels,{social:'Publications','social-new':'Préparer une publication','social-post':'Vérifier la publication'});
  labels.assistant='Assistant IA';
@@ -70,6 +70,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  try{
    if(next==='dashboard')await dashboard();
    else if(next==='assistant')renderAssistantPanel();
+   else if(next==='veille')await renderVeille();
    else if(next==='module-reserve')await renderModuleReserve();
    else if(next==='module-library')await renderModuleLibrary();
    else if(next==='scanner')await renderScanner();

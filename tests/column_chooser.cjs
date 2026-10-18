@@ -62,7 +62,11 @@ const {chromium}=require('playwright');
   await page.locator('#contextPanel .module-reserve').waitFor();
   assert.equal(await page.locator('#saveModules').count(),0);
   assert(await page.locator('#contextPanel .module-reserve-manage').isVisible());
+  // Veille métier is a function in the reserve, not a fixed card at the bottom of home.
+  const veille=page.locator('#contextPanel .module-reserve [data-go="veille"]');assert.equal(await veille.count(),1,'Veille métier waits in the reserve');
+  await veille.click();await page.locator('#contextPanel .veille-panel').waitFor();assert((await page.locator('#contextPanel .veille-panel').innerText()).includes('Veille non connectée'));
   await page.locator('#closeContext').click();await page.locator('#content .module-grid').waitFor();
+  assert.equal(await page.locator('#content .home-sector').count(),0);
   // Escape closes the chooser without changing anything.
   await toggle.click();await page.keyboard.press('Escape');assert(await chooser.isHidden());
   assert.deepEqual(errors,[]);

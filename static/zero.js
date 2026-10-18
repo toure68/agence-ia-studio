@@ -23,16 +23,9 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
 async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
- $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}<article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Veille métier</h2><p>Veille non connectée.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article></div>`;
+ $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
  $('#homeTreasury').addEventListener('click',e=>{const command=e.target.closest('[data-home-cash]');if(command){e.preventDefault();openCommand('movement',command.dataset.homeCash);return;}if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
  const greeting=$('.home-heading h1');greeting.textContent=greeting.textContent.replace(/Bonjour (\p{L})/u,(_,letter)=>'Bonjour '+letter.toLocaleUpperCase('fr'));
- $('#homeSectorInfo').textContent='Choisir mon métier';
- $('#homeSectorInfo').onclick=async()=>{
-  const settings=await api(`/api/companies/${cid}/workspace`);
-  openModal(`<h2>Choisir mon métier</h2><div class="field"><label for="homeSectorChoice">Mon secteur d’activité</label><select id="homeSectorChoice">${selectMap(settings.domains,settings.domain)}</select></div><p class="tiny sub">Ce choix adapte vos modules. La veille n’est pas encore connectée.</p><button class="btn primary" id="saveHomeSector">Enregistrer</button><button class="btn" id="cancelHomeSector">Annuler</button>`);
-  $('#cancelHomeSector').onclick=closeModal;
-  $('#saveHomeSector').onclick=async e=>{const button=e.currentTarget;button.disabled=true;try{await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:$('#homeSectorChoice').value,visible:settings.visible,columns:settings.columns,dynamic:settings.dynamic,version:settings.version})});closeModal();await renderPriorities();notify('Votre métier est enregistré.');}catch(error){button.disabled=false;notify(error.message);}};
- };
  const gridButton=$('.home-modules-heading [data-go="module-library"]');gridButton.setAttribute('aria-label','Choisir le nombre de colonnes');gridButton.title='Choisir le nombre de colonnes';gridButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  mountColumnChooser(gridButton,workspace,state);
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
@@ -192,4 +185,18 @@ function mountColumnChooser(button,workspace,state){
  });
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!chooser.hidden&&chooser.isConnected){open(false);button.focus({preventScroll:true});}});
  document.addEventListener('click',e=>{if(!chooser.hidden&&chooser.isConnected&&!chooser.contains(e.target)&&!button.contains(e.target))open(false);});
+}
+
+// Veille métier is a regular function (reserve by default); it rises on the grid when it needs action.
+async function openSectorChooser(){
+ const cid=company.id;
+  const settings=await api(`/api/companies/${cid}/workspace`);
+  openModal(`<h2>Choisir mon métier</h2><div class="field"><label for="homeSectorChoice">Mon secteur d’activité</label><select id="homeSectorChoice">${selectMap(settings.domains,settings.domain)}</select></div><p class="tiny sub">Ce choix adapte vos modules. La veille n’est pas encore connectée.</p><button class="btn primary" id="saveHomeSector">Enregistrer</button><button class="btn" id="cancelHomeSector">Annuler</button>`);
+  $('#cancelHomeSector').onclick=closeModal;
+  $('#saveHomeSector').onclick=async e=>{const button=e.currentTarget;button.disabled=true;try{await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:$('#homeSectorChoice').value,visible:settings.visible,columns:settings.columns,dynamic:settings.dynamic,version:settings.version})});closeModal();if(tab==='veille')await renderVeille();else await renderPriorities();notify('Votre métier est enregistré.');}catch(error){button.disabled=false;notify(error.message);}};
+ }
+async function renderVeille(){
+ const settings=await api(`/api/companies/${company.id}/workspace`),label=settings.domains?.[settings.domain]||settings.domain;
+ $('#content').innerHTML=`<section class="veille-panel"><article class="card"><p class="sub">Statut</p><strong>Veille non connectée</strong><p class="tiny sub">Aucune alerte pour le moment. Quand une veille demandera une action, la fonction remontera sur l’accueil.</p></article><article class="card"><p class="sub">Mon métier</p><strong>${clean(label||'Non choisi')}</strong></article><button type="button" class="btn primary" id="homeSectorInfo">Choisir mon métier</button></section>`;
+ $('#homeSectorInfo').onclick=async()=>{await openSectorChooser();};
 }

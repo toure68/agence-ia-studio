@@ -251,6 +251,7 @@ def install(app,db,require,own_company,utcnow):
               'treasury':treasury,
               'equipment':{'value':sum(c['action']['type'] in ('equipment','material') for c in risks),'label':'Alertes'},
               'risks':{'value':sum(c['action']['type']=='risk' for c in risks),'label':'Échéances'},
+              'veille':{'value':0,'label':'Non connectée'},
               'companies':{'value':scalar('SELECT COUNT(*) FROM companies',()) if user['role']=='owner' else 1,'label':'Entreprises'},
               'company-edit':{'value':len(json.loads(con.execute('SELECT rates FROM companies WHERE id=?',(cid,)).fetchone()['rates'])),'label':'Tarifs du site'},
             }
