@@ -1,84 +1,110 @@
 'use strict';
-// Synthetic state held in this tab only; no requests or real transfers.
 if(document.body.dataset.publicDemo==='true'){
- const banks=[{id:'horizon',name:'Banque Horizon',balance:1800000,incoming:1900000,outgoing:100000,due:0},{id:'rivage',name:'Banque Rivage',balance:-35000,incoming:200000,outgoing:235000,due:65000},{id:'atlas',name:'Banque Atlas',balance:720000,incoming:820000,outgoing:100000,due:0}];
- const movements=banks.flatMap(b=>[{bank:b.id,label:'Règlements clients',amount:b.incoming},{bank:b.id,label:'Charges et fournitures',amount:-b.outgoing}]);
+ // One configuration table: bank identity, logo, color and synthetic data.
+ // Logo markup is trusted, repo-owned SVG; never customer-supplied HTML.
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const month=today.slice(0,7),day=Number(today.slice(-2));
+ const date=n=>month+'-'+String(Math.min(day,n)).padStart(2,'0');
+ const tomorrow=new Date(today+'T12:00:00Z');tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+ const dueDate=tomorrow.toISOString().slice(0,10);
+ const svg=path=>`<svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+ const banks=[
+  {id:'horizon',name:'Banque Horizon',logo:svg('<path d="M3 16h18M5 12a7 7 0 0 1 14 0M12 2v2M3 6l2 2m16-2-2 2M7 21h10"/>'),color:'#14765a',data:{opening:0,payments:[],transactions:[
+   {date:date(18),label:'Règlement client Atelier',amount:900000},{date:date(15),label:'Fournitures',amount:-60000},{date:date(12),label:'Règlement client Bureaux',amount:600000},{date:date(8),label:'Abonnement professionnel',amount:-40000},{date:date(3),label:'Règlement client Résidence',amount:400000}
+  ]}},
+  {id:'rivage',name:'Banque Rivage',logo:svg('<path d="M3 8c3-5 6 5 9 0s6 5 9 0M3 14c3-5 6 5 9 0s6 5 9 0M3 20c3-5 6 5 9 0s6 5 9 0"/>'),color:'#246ca5',data:{opening:0,payments:[{date:dueDate,label:'Assurance professionnelle',amount:65000}],transactions:[
+   {date:date(18),label:'Charges sociales',amount:-135000},{date:date(16),label:'Règlement client',amount:150000},{date:date(13),label:'Fournitures',amount:-60000},{date:date(9),label:'Règlement client',amount:50000},{date:date(4),label:'Abonnement',amount:-40000}
+  ]}},
+  {id:'atlas',name:'Banque Atlas',logo:null,color:'#7253a0',data:{opening:0,payments:[],transactions:[
+   {date:date(17),label:'Règlement client Hôtel',amount:420000},{date:date(14),label:'Équipement',amount:-70000},{date:date(11),label:'Règlement client Commerce',amount:250000},{date:date(7),label:'Transport',amount:-30000},{date:date(2),label:'Règlement client Cabinet',amount:150000}
+  ]}}
+ ];
  let selected='all',feedback='',gesture=null;
  const format=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(n/100).replace(/[\u00a0\u202f]/g,' ');
  const signed=n=>(n<0?'−':'+')+' '+format(Math.abs(n));
- const shortage=b=>Math.max(0,b.due-b.balance);
- const donorFor=b=>banks.filter(d=>d.id!==b.id&&d.balance-d.due>=shortage(b)).sort((a,c)=>c.balance-c.due-(a.balance-a.due))[0];
- const chevron='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
- const css=document.createElement('style');
- css.textContent=`
+ const shortDate=d=>new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'2-digit',timeZone:'Europe/Paris'}).format(new Date(d+'T12:00:00Z'));
+ const period=new Intl.DateTimeFormat('fr-FR',{month:'long',timeZone:'Europe/Paris'}).format(new Date(today+'T12:00:00Z'));
+ const totals=b=>({balance:b.data.opening+b.data.transactions.reduce((s,t)=>s+t.amount,0),incoming:b.data.transactions.filter(t=>!t.internal&&t.date.startsWith(month)&&t.amount>0).reduce((s,t)=>s+t.amount,0),outgoing:-b.data.transactions.filter(t=>!t.internal&&t.date.startsWith(month)&&t.amount<0).reduce((s,t)=>s+t.amount,0)});
+ const upcoming=b=>b.data.payments.filter(p=>p.date>=today&&p.date<=new Date(new Date(today+'T12:00:00Z').getTime()+7*86400000).toISOString().slice(0,10));
+ const shortage=b=>Math.max(0,upcoming(b).reduce((s,p)=>s+p.amount,0)-totals(b).balance);
+ const donorFor=b=>banks.filter(d=>d.id!==b.id&&totals(d).balance-upcoming(d).reduce((s,p)=>s+p.amount,0)>=shortage(b)).sort((a,c)=>totals(c).balance-totals(a).balance)[0];
+ const initial=b=>b.name.replace(/^Banque\s+/i,'').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+ const latest=b=>b.data.transactions.map((t,i)=>({...t,i})).sort((a,c)=>c.date.localeCompare(a.date)||a.i-c.i);
+ const rows=items=>items.map(t=>`<div class="demo-bank-row" data-demo-movement><time datetime="${t.date}">${shortDate(t.date)}</time><span title="${clean(t.label)}">${clean(t.label)}</span><b class="${t.amount<0?'demo-negative':'demo-positive'}">${signed(t.amount)}</b></div>`).join('');
+ const css=document.createElement('style');css.textContent=`
+ #homeTreasury .demo-multibank{background:#fff;border-color:#d5e7de;color:#173d30;box-shadow:0 2px 12px #001f140a}
+ #homeTreasury .home-treasury-top{gap:10px}
+ #homeTreasury .home-treasury-top>div{flex:1}
+ #homeTreasury .home-treasury-top h2{color:#456757;font-size:11px;line-height:14px;letter-spacing:.02em;text-transform:none;display:flex;justify-content:space-between;gap:6px}
  #homeTreasury .demo-total{display:block;font-size:clamp(20px,5.3vw,22px);font-weight:800;line-height:1.05;letter-spacing:-.03em;white-space:nowrap;margin-top:1px}
- #homeTreasury .home-treasury-top h2{font-size:11px;line-height:14px;letter-spacing:.07em}
+ #homeTreasury .demo-multibank .module-icon{color:#14765a;border-color:#b8d9c8;background:#edf7f1}
+ #homeTreasury .demo-bank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #homeTreasury .home-cash-details{margin-top:12px;gap:8px}
- #homeTreasury .home-flow{min-height:58px;padding:8px 10px}
- #homeTreasury .home-flow span{font-size:12px}
+ #homeTreasury .home-flow{background:#f1f7f3;border-color:#e0ece5;min-height:58px;padding:8px 10px}
+ #homeTreasury .home-flow span{color:#456757;font-size:12px}
  #homeTreasury .home-flow b{font-size:clamp(15px,4vw,18px)}
- #homeTreasury .demo-bank-pills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:3px 1px;margin:10px 0 0}
- #homeTreasury .demo-bank-pill{min-width:0;border:1px solid #ffffff26;border-radius:999px;background:#ffffff06;color:inherit;padding:8px 6px;font:inherit;font-size:12px;min-height:44px;cursor:pointer;text-align:center}
- #homeTreasury .demo-bank-pill[aria-pressed=true]{background:#ffffff14;border-color:#a4b1bd}
- #homeTreasury .demo-bank-pill.is-alert{border-color:#e46e72;box-shadow:0 0 0 1px #e46e7218}
- #homeTreasury button:focus-visible,#homeTreasury .demo-bank-scroll:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
- #homeTreasury .demo-bank-detail{margin-top:8px;border-top:1px solid #ffffff12}
+ #homeTreasury .demo-bank-pills{display:flex;gap:12px;overflow-x:auto;padding:6px 4px;margin:8px 0 0;scrollbar-width:thin;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+ #homeTreasury .demo-bank-pill{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;flex:0 0 44px;scroll-snap-align:start;border:1px solid #d4e2da;border-radius:50%;background:var(--bank-color,#eef5f0);color:#fff;padding:0;font:700 15px Manrope,sans-serif;cursor:pointer;box-sizing:border-box}
+ #homeTreasury .demo-bank-pill[data-demo-bank=all]{color:#14765a}
+ #homeTreasury .demo-bank-pill[aria-pressed=true]{outline:2px solid #16975b;outline-offset:2px}
+ #homeTreasury .demo-bank-dot{position:absolute;right:-1px;top:-1px;width:9px;height:9px;border-radius:50%;background:#d33847;border:2px solid #fff;box-sizing:content-box}
+ #homeTreasury .demo-bank-dot[hidden]{display:none}
+ #homeTreasury .demo-global-alert{display:flex;align-items:center;gap:6px;width:100%;background:none;border:0;padding:8px 0 0;color:#b72b3c;text-align:left;font:600 12px/1.5 Manrope,sans-serif;cursor:pointer;min-height:36px}
+ #homeTreasury .demo-global-alert span{min-width:0}
+ #homeTreasury button:focus-visible,#homeTreasury .demo-bank-scroll:focus-visible{outline:2px solid #137747;outline-offset:3px}
  #homeTreasury .demo-bank-detail[hidden]{display:none}
- #homeTreasury .demo-bank-summary{display:flex;justify-content:space-between;align-items:center;gap:8px;height:40px;font-size:12px}
- #homeTreasury .demo-bank-summary strong{font-size:16px;white-space:nowrap}
- #homeTreasury .demo-fold{display:flex;align-items:center;justify-content:center;flex:0 0 44px;height:40px;border:0;background:none;color:inherit;cursor:pointer;touch-action:none}
- #homeTreasury .demo-bank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
- #homeTreasury .demo-bank-scroll{height:108px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
- #homeTreasury .demo-bank-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;border-top:1px solid #ffffff0b;font-size:12px}
- #homeTreasury .demo-bank-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #homeTreasury .demo-detail-heading{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-top:6px;color:#456757}
+ #homeTreasury .demo-fold{display:flex;align-items:center;justify-content:center;flex:0 0 44px;height:36px;border:0;background:none;color:#14765a;cursor:pointer;touch-action:none}
+ #homeTreasury .demo-bank-scroll{max-height:126px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+ #homeTreasury .demo-bank-row{display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:39px;border-top:1px solid #e5eee8;font-size:12px}
+ #homeTreasury .demo-bank-row time{color:#526b5d;flex:0 0 34px;font-size:11px}
+ #homeTreasury .demo-bank-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
  #homeTreasury .demo-bank-row b{font-size:12px;white-space:nowrap}
- #homeTreasury .demo-bank-alert{color:#ef8a8e}
- #homeTreasury .demo-rebalance{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:44px;width:100%;padding:7px 9px;margin:3px 0;border:1px solid #e46e7260;border-radius:10px;background:#ffffff04;color:inherit;font:inherit;font-size:12px;cursor:pointer}
- #homeTreasury .demo-rebalance span{min-width:0;text-align:left}
- #homeTreasury .demo-rebalance b{white-space:nowrap}
- #homeTreasury .demo-bank-status{font-size:12px;color:var(--home-green);padding:8px 0;margin:0}
- #homeTreasury .demo-bank-note{font-size:11px;color:var(--home-muted);margin:6px 0}
- #homeTreasury .demo-positive{color:var(--home-green,#50ca89)}
- #homeTreasury .demo-negative{color:#ef8a8e}
- `;
- document.head.append(css);
+ #homeTreasury .demo-bank-alert{background:#fff3f3;border:1px solid #ecc6cd;border-radius:12px;padding:10px;margin-top:10px;color:#9d2032}
+ #homeTreasury .demo-bank-alert p{font-size:12px;line-height:1.5;margin:0 0 6px}
+ #homeTreasury .demo-rebalance{width:100%;min-height:44px;padding:9px;border:1px solid #b8d9c8;border-radius:9px;background:#fff;color:#145c3e;font:600 12px/1.5 Manrope,sans-serif;cursor:pointer;text-align:left}
+ #homeTreasury .demo-bank-note{font-size:11px;color:#526b5d;margin:6px 0 0}
+ #homeTreasury .demo-bank-status{font-size:12px;color:#147047;margin:8px 0;line-height:1.5}
+ #homeTreasury .demo-view-all{display:block;color:#146d46;font:600 12px Manrope,sans-serif;padding:10px 0;border:0;background:none;cursor:pointer;min-height:36px}
+ #homeTreasury .demo-positive{color:#14804c!important}
+ #homeTreasury .demo-negative{color:#bd2b3c!important}
+ .demo-transactions .demo-bank-row{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff15;font-size:13px}
+ .demo-transactions .demo-bank-row>span{flex:1}.demo-transactions time{min-width:38px}.demo-transactions .demo-positive{color:#50ca89}.demo-transactions .demo-negative{color:#ef8a8e}
+ `;document.head.append(css);
  function update(host){
-  const bank=banks.find(b=>b.id===selected),detail=host.querySelector('.demo-bank-detail');
-  host.querySelectorAll('[data-demo-bank]').forEach(p=>{const b=banks.find(b=>b.id===p.dataset.demoBank);p.setAttribute('aria-pressed',String(p.dataset.demoBank===selected));if(b){p.classList.toggle('is-alert',shortage(b)>0);p.setAttribute('aria-label',b.name+(shortage(b)>0?' · Solde insuffisant':''));}});
-  detail.hidden=!bank;if(!bank){detail.replaceChildren();return;}
-  const amount=shortage(bank),donor=donorFor(bank);
-  detail.innerHTML=`<div class="demo-bank-summary"><span class="demo-bank-name">${bank.name}</span><strong class="${bank.balance<0?'demo-negative':''}" data-demo-balance>${signed(bank.balance)}</strong><button type="button" class="demo-fold" aria-label="Replier les détails de la banque" data-demo-close>${chevron}</button></div>
-   <div class="demo-bank-scroll" tabindex="0" role="region" aria-label="Détails défilants de ${bank.name}">
-   ${feedback?`<p class="demo-bank-status" role="status">${feedback}</p>`:''}
-   ${bank.due?`<div class="demo-bank-row ${amount?'demo-bank-alert':''}"><span>Prélèvement demain</span><b>− ${format(bank.due)}</b></div>`:''}
-   ${amount?`<div class="demo-bank-row demo-bank-alert"><span>À approvisionner</span><b>${format(amount)}</b></div>${donor?`<button type="button" class="demo-rebalance" data-demo-rebalance="${bank.id}" aria-label="Simuler un approvisionnement de ${format(amount)} depuis ${donor.name}"><span>⇄ Depuis ${donor.name}</span><b>${format(amount)}</b></button>`:'<p class="demo-bank-note">Aucun compte suffisamment approvisionné.</p>'}`:''}
-   ${movements.filter(m=>m.bank===bank.id).map(m=>`<div class="demo-bank-row" data-demo-movement><span>${m.label}</span><b class="${m.amount<0?'demo-negative':'demo-positive'}">${signed(m.amount)}</b></div>`).join('')}
-   <p class="demo-bank-note">Simulation · aucun virement réel</p></div>`;
+  const bank=banks.find(b=>b.id===selected),scope=bank?[bank]:banks;
+  const sum=scope.reduce((s,b)=>{const t=totals(b);for(const k of Object.keys(s))s[k]+=t[k];return s;},{balance:0,incoming:0,outgoing:0});
+  host.querySelector('[data-demo-name]').textContent=bank?bank.name.replace(/^Banque /,''):'Toutes les banques';
+  const balance=host.querySelector('[data-demo-balance]');balance.textContent=format(sum.balance);balance.classList.toggle('demo-negative',!!bank&&shortage(bank)>0);
+  host.querySelector('[data-demo-incoming]').textContent=format(sum.incoming);host.querySelector('[data-demo-outgoing]').textContent=format(sum.outgoing);
+  host.querySelectorAll('[data-demo-bank]').forEach(p=>{const b=banks.find(b=>b.id===p.dataset.demoBank);p.setAttribute('aria-pressed',String(p.dataset.demoBank===selected));if(b){const alert=shortage(b)>0;p.querySelector('.demo-bank-dot').hidden=!alert;p.setAttribute('aria-label',b.name+(alert?' · Alerte : solde insuffisant':''));}});
+  host.querySelector('.demo-global-alerts').innerHTML=bank?'':banks.filter(b=>shortage(b)>0).map(b=>`<button type="button" class="demo-global-alert" data-demo-alert="${b.id}"><span aria-hidden="true">●</span><span>${clean(b.name)} ${totals(b).balance<0?'à '+signed(totals(b).balance):'· solde insuffisant'}${upcoming(b).length?' · prélèvement '+(upcoming(b)[0].date===dueDate?'demain':shortDate(upcoming(b)[0].date)):''}</span><span aria-hidden="true">›</span></button>`).join('');
+  const detail=host.querySelector('.demo-bank-detail');detail.hidden=!bank;if(!bank){detail.replaceChildren();return;}
+  const amount=shortage(bank),donor=donorFor(bank),payments=upcoming(bank);
+  detail.innerHTML=`${feedback?`<p class="demo-bank-status" role="status">${feedback}</p>`:''}${amount?`<div class="demo-bank-alert" role="status"><p><strong>Solde insuffisant</strong>${payments.length?' · prélèvement de '+format(payments.reduce((s,p)=>s+p.amount,0))+' le '+shortDate(payments[0].date):''}<br>Montant manquant : <strong>${format(amount)}</strong></p>${donor?`<button type="button" class="demo-rebalance" data-demo-rebalance="${bank.id}">Approvisionner depuis ${clean(donor.name)} · ${format(amount)}</button>`:'<p>Aucune autre banque suffisamment approvisionnée.</p>'}<p class="demo-bank-note">Simulation · aucun virement réel</p></div>`:`<div class="demo-detail-heading"><span>5 dernières transactions</span><button type="button" class="demo-fold" data-demo-close aria-label="Revenir à toutes les banques">⌃</button></div><div class="demo-bank-scroll" tabindex="0" role="region" aria-label="Dernières transactions de ${clean(bank.name)}">${rows(latest(bank).slice(0,5))}</div><button type="button" class="demo-view-all" data-demo-all-transactions="${bank.id}">Voir tout →</button>`}`;
  }
  function mount(){
   const host=document.querySelector('#homeTreasury');if(!host||host.querySelector('.demo-multibank'))return;
-  selected='all';feedback='';
-  host.innerHTML=`<article class="home-treasury demo-multibank"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie · total</h2><strong class="demo-total" data-demo-global>${format(banks.reduce((s,b)=>s+b.balance,0))}</strong></div></div>
-   <div class="home-cash-details"><div class="home-flow"><span>↓ Entrées</span><b class="demo-positive">${format(banks.reduce((s,b)=>s+b.incoming,0))}</b></div><div class="home-flow"><span>↑ Sorties</span><b class="demo-negative">${format(banks.reduce((s,b)=>s+b.outgoing,0))}</b></div></div>
-   <div class="demo-bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="demo-bank-pill" data-demo-bank="all" aria-label="Tous les comptes, replier les détails" aria-pressed="true">Tous</button>${banks.map(b=>`<button type="button" class="demo-bank-pill" data-demo-bank="${b.id}" aria-pressed="false" aria-controls="demoBankDetail">${b.name.replace(/^Banque /,'')}</button>`).join('')}</div><div id="demoBankDetail" class="demo-bank-detail" hidden></div></article>`;
-  update(host);
+  selected='all';feedback='';host.innerHTML=`<article class="home-treasury demo-multibank"><div class="home-treasury-top"><span class="module-icon" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2><span>Trésorerie · <span data-demo-name></span></span><span>${period}</span></h2><strong class="demo-total" data-demo-balance aria-label="Solde disponible"></strong></div></div><div class="home-cash-details"><div class="home-flow"><span>↓ Entrées du mois</span><b class="demo-positive" data-demo-incoming></b></div><div class="home-flow"><span>↑ Sorties du mois</span><b class="demo-negative" data-demo-outgoing></b></div></div><div class="demo-global-alerts"></div><div class="demo-bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="demo-bank-pill" data-demo-bank="all" aria-label="Toutes les banques" title="Toutes les banques">${svg('<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/>')}</button>${banks.map(b=>`<button type="button" class="demo-bank-pill" data-demo-bank="${b.id}" style="--bank-color:${b.color}" title="${clean(b.name)}" aria-controls="demoBankDetail">${b.logo||`<span aria-hidden="true">${clean(initial(b))}</span>`}<span class="demo-bank-dot" hidden aria-hidden="true"></span></button>`).join('')}</div><div id="demoBankDetail" class="demo-bank-detail" hidden></div></article>`;update(host);
  }
  function close(host,focus=false){selected='all';feedback='';update(host);if(focus)host.querySelector('[data-demo-bank="all"]').focus({preventScroll:true});}
  document.addEventListener('click',e=>{
   const host=document.querySelector('#homeTreasury');if(!host?.querySelector('.demo-multibank'))return;
+  // Modal transactions belong to this bank view, even outside the home card.
+  if(e.target.closest('#modalLayer'))return;
   if(!host.contains(e.target)){if(selected!=='all')close(host);return;}
-  const pill=e.target.closest('[data-demo-bank]'),button=e.target.closest('[data-demo-rebalance]');
+  const pill=e.target.closest('[data-demo-bank]'),alert=e.target.closest('[data-demo-alert]'),button=e.target.closest('[data-demo-rebalance]'),all=e.target.closest('[data-demo-all-transactions]');
   if(e.target.closest('[data-demo-close]')){e.preventDefault();e.stopImmediatePropagation();close(host,true);return;}
-  if(!pill&&!button)return;e.preventDefault();e.stopImmediatePropagation();
-  if(pill){selected=pill.dataset.demoBank===selected?'all':pill.dataset.demoBank;feedback='';update(host);return;}
+  if(!pill&&!alert&&!button&&!all)return;e.preventDefault();e.stopImmediatePropagation();
+  if(pill||alert){const id=(pill||alert).dataset[pill?'demoBank':'demoAlert'];selected=pill&&id===selected?'all':id;feedback='';update(host);return;}
+  if(all){const b=banks.find(b=>b.id===all.dataset.demoAllTransactions);openModal(`<h2>${clean(b.name)}</h2><p class="sub">Toutes les transactions · données fictives</p><div class="demo-transactions">${rows(latest(b))}</div>`);return;}
   const recipient=banks.find(b=>b.id===button.dataset.demoRebalance),amount=shortage(recipient),donor=donorFor(recipient);if(!amount||!donor)return;
-  donor.balance-=amount;recipient.balance+=amount;
-  movements.unshift({bank:recipient.id,label:'⇄ Depuis '+donor.name,amount},{bank:donor.id,label:'⇄ Vers '+recipient.name,amount:-amount});
-  feedback='✓ Prélèvement couvert · virement simulé';update(host);host.querySelector('[data-demo-close]').focus({preventScroll:true});
+  donor.data.transactions.unshift({date:today,label:'Virement vers '+recipient.name,amount:-amount,internal:true});recipient.data.transactions.unshift({date:today,label:'Virement depuis '+donor.name,amount,internal:true});
+  feedback='✓ Prélèvement couvert · virement simulé';update(host);host.querySelector('[data-demo-bank="'+selected+'"]').focus({preventScroll:true});
  },true);
- document.addEventListener('keydown',e=>{const host=document.querySelector('#homeTreasury');if(e.key==='Escape'&&selected!=='all'&&host?.querySelector('.demo-multibank')){e.preventDefault();close(host,true);}});
- document.addEventListener('pointerdown',e=>{const detail=e.target.closest('#homeTreasury .demo-bank-detail');if(!detail)return;const scroll=detail.querySelector('.demo-bank-scroll');gesture={x:e.clientX,y:e.clientY,id:e.pointerId,handle:!!e.target.closest('.demo-bank-summary'),top:scroll.scrollTop<=0,bottom:scroll.scrollTop+scroll.clientHeight>=scroll.scrollHeight-1};if(e.target.closest('.demo-fold'))e.target.closest('.demo-fold').setPointerCapture(e.pointerId);},{passive:true});
- document.addEventListener('pointerup',e=>{if(!gesture||gesture.id!==e.pointerId)return;const g=gesture;gesture=null;const dy=e.clientY-g.y,dx=e.clientX-g.x;if(Math.abs(dy)>45&&Math.abs(dy)>Math.abs(dx)&&(g.handle||(dy>0&&g.top)||(dy<0&&g.bottom))){const host=document.querySelector('#homeTreasury');if(host)close(host,true);}});
+ document.addEventListener('keydown',e=>{const host=document.querySelector('#homeTreasury');if(e.key==='Escape'&&selected!=='all'&&host?.querySelector('.demo-multibank')&&!document.querySelector('#modalLayer:not(.hide)')){e.preventDefault();close(host,true);}});
+ document.addEventListener('pointerdown',e=>{const handle=e.target.closest('#homeTreasury .demo-fold');if(!handle)return;gesture={y:e.clientY,id:e.pointerId};handle.setPointerCapture(e.pointerId);},{passive:true});
+ document.addEventListener('pointerup',e=>{if(!gesture||gesture.id!==e.pointerId)return;const g=gesture;gesture=null;if(Math.abs(e.clientY-g.y)>45){const host=document.querySelector('#homeTreasury');if(host)close(host,true);}});
  document.addEventListener('pointercancel',()=>{gesture=null;});
  new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});mount();
 }
