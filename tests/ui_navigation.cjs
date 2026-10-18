@@ -591,12 +591,12 @@ const {chromium}=require('playwright');
        return {columns,count:filled.modules.length,keys:filled.modules.map(m=>m.key),automatic:filled.modules.filter(m=>m.automatic).length,unchanged:JSON.stringify(input)===before,empty:none.modules.length,allowed:filled.modules.every(m=>source.modules.some(a=>a.key===m.key)),fullCount:full.modules.length};
      });
    });
-   for(const result of fillCases){assert.equal(result.count,result.columns);assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,Math.floor(17/result.columns)*result.columns);}
+   for(const result of fillCases){const rows={2:3,3:3,4:2}[result.columns];assert.equal(result.count,result.columns-1,'One row: modules plus the + cell');assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-2);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,rows*result.columns-1,'Row cap leaves room for the + cell');}
    const widgetRefresh=await page.evaluate(async()=>{
-     const state=await api('/api/companies/1/cockpit'),tile=document.querySelector('[data-go="leads"]');
+     const state=await api('/api/companies/1/cockpit'),tile=document.querySelector('#content .module-grid .module-tile[data-go]:not([data-go="treasury"])'),key=tile.dataset.go;
      const icon=tile.querySelector('svg');tile.dataset.identity='widget-kept';
-     refreshHomeWidgets({...state,widgets:{...state.widgets,leads:{value:99,label:'À finaliser'}}});
-     const result={value:tile.querySelector('.widget-value').textContent,same:document.querySelector('[data-go="leads"]')===tile&&tile.querySelector('svg')===icon,multi:moduleWidget('treasury',{widgets:{treasury:{balances_minor:{EUR:10000,XOF:50000}}}})};
+     refreshHomeWidgets({...state,widgets:{...state.widgets,[key]:{value:99,label:'À finaliser'}}});
+     const result={value:tile.querySelector('.widget-value').textContent,same:document.querySelector(`#content .module-grid [data-go="${key}"]`)===tile&&tile.querySelector('svg')===icon,multi:moduleWidget('treasury',{widgets:{treasury:{balances_minor:{EUR:10000,XOF:50000}}}})};
      refreshHomeWidgets(state);return result;
    });
    assert.equal(widgetRefresh.value,'99');assert(widgetRefresh.same);assert.equal(widgetRefresh.multi.value,'2');assert(widgetRefresh.multi.detail.includes('100')&&widgetRefresh.multi.detail.includes('500'));
