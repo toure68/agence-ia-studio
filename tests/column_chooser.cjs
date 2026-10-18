@@ -13,7 +13,7 @@ const {chromium}=require('playwright');
   await page.getByRole('button',{name:'Se connecter'}).click();
   await page.locator('#content .module-grid .module-tile').first().waitFor();
   const url=page.url();
-  // "Tous les modules" text link is replaced by the + reserve cell.
+  // "Tous les modules" text link is replaced by the Réserve button below the grid.
   assert.equal(await page.locator('.more-functions').isVisible(),false);
   const toggle=page.locator('[data-columns-toggle]'),chooser=page.locator('#homeColumnChooser');
   assert.equal(await toggle.getAttribute('aria-expanded'),'false');assert(await chooser.isHidden());
@@ -34,14 +34,15 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').waitFor();
    assert.equal(await page.locator('#content .module-grid').getAttribute('data-columns'),String(columns),'Choice is saved');
    assert.equal(await page.locator(`[data-set-columns="${columns}"]`).getAttribute('aria-pressed'),'true');
-   // Row cap: 2 cols → 3 rows, 3 → 3, 4 → 2, with the + cell last; urgent modules may add rows.
-   const grid=await page.locator('#content .module-grid').evaluate((el,n)=>{const tiles=[...el.querySelectorAll('.module-tile')],urgent=tiles.filter(t=>['danger','warning'].includes(t.dataset.state)).length;return {cells:el.children.length,urgent,addLast:el.lastElementChild.classList.contains('module-add-card')};},columns);
+   // Row cap: 2 cols → 3 rows, 3 → 3, 4 → 2, real functions only; urgent ones may add rows.
+   const grid=await page.locator('#content .module-grid').evaluate(el=>{const tiles=[...el.querySelectorAll('.module-tile')],urgent=tiles.filter(t=>['danger','warning'].includes(t.dataset.state)).length;return {cells:el.children.length,urgent,onlyFunctions:[...el.children].every(c=>c.querySelector('.module-tile'))};});
    const rows={2:3,3:3,4:2}[columns];
-   assert(grid.addLast,'The + cell closes the grid');assert.equal(grid.cells%columns,0,'Complete rows');
-   assert(grid.cells<=Math.max(rows*columns,Math.ceil((grid.urgent+1)/columns)*columns),`At most ${rows} rows unless actions require more`);
+   assert(grid.onlyFunctions,'Grid cells are real functions');assert.equal(grid.cells%columns,0,'Complete rows');
+   assert(grid.cells<=Math.max(rows*columns,Math.ceil(grid.urgent/columns)*columns),`At most ${rows} rows unless actions require more`);
   }
-  // The + cell opens the reserve over home, without the settings form.
-  await page.locator('#content .module-grid .module-add').click();
+  // The Réserve button opens the reserve over home, without the settings form; the + and the text both work.
+  assert(await page.locator('#content .module-reserve-launch .module-reserve-plus').isVisible());
+  await page.locator('#content .module-reserve-launch').getByText('Réserve').click();
   await page.locator('#contextPanel .module-reserve').waitFor();
   assert.equal(await page.locator('#saveModules').count(),0);
   assert(await page.locator('#contextPanel .module-reserve-manage').isVisible());
