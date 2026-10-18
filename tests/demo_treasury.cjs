@@ -11,6 +11,11 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   assert.equal(await page.locator('#homeTreasury .home-demo-badge').count(),0);
   assert.equal(await page.locator('[data-demo-global]').innerText(),'24 850,00 €');
   assert.equal(await page.locator('.demo-bank-pill.is-alert').count(),1);
+  assert(await page.locator('.home-treasury-top').evaluate(e=>e.querySelector('[data-demo-global]').getBoundingClientRect().bottom<=e.querySelector('.module-icon').getBoundingClientRect().bottom+1));
+  assert(await page.locator('.demo-bank-pills').evaluate(e=>{
+   const bounds=e.getBoundingClientRect();
+   return e.scrollWidth<=e.clientWidth&&[...e.children].every(p=>{const b=p.getBoundingClientRect();return b.left>=bounds.left&&b.right<=bounds.right&&p.scrollWidth<=p.clientWidth;});
+  }));
   if(width===390)await page.locator('#homeTreasury').screenshot({path:process.env.HOME_PREVIEW_DIR+'/demo-tresorerie-compacte.png'});
   await page.locator('[data-demo-bank="rivage"]').click();
   assert.equal(await page.locator('[data-demo-balance]').innerText(),'− 350,00 €');

@@ -11,15 +11,14 @@ if(document.body.dataset.publicDemo==='true'){
  const chevron='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
  const css=document.createElement('style');
  css.textContent=`
- #homeTreasury .demo-total{display:block;font-size:clamp(25px,7vw,34px);font-weight:800;line-height:1.15;letter-spacing:-.04em;white-space:nowrap;margin-top:3px}
- #homeTreasury .home-treasury-top h2{font-size:12px;letter-spacing:.07em}
+ #homeTreasury .demo-total{display:block;font-size:clamp(20px,5.3vw,22px);font-weight:800;line-height:1.05;letter-spacing:-.03em;white-space:nowrap;margin-top:1px}
+ #homeTreasury .home-treasury-top h2{font-size:11px;line-height:14px;letter-spacing:.07em}
  #homeTreasury .home-cash-details{margin-top:12px;gap:8px}
  #homeTreasury .home-flow{min-height:58px;padding:8px 10px}
  #homeTreasury .home-flow span{font-size:12px}
  #homeTreasury .home-flow b{font-size:clamp(15px,4vw,18px)}
- #homeTreasury .demo-bank-pills{display:flex;gap:7px;overflow-x:auto;padding:3px 1px;margin:10px 0 0;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
- #homeTreasury .demo-bank-pills::-webkit-scrollbar{display:none}
- #homeTreasury .demo-bank-pill{flex:0 0 auto;scroll-snap-align:start;border:1px solid #ffffff26;border-radius:999px;background:#ffffff06;color:inherit;padding:8px 12px;font:inherit;font-size:12px;min-height:44px;cursor:pointer}
+ #homeTreasury .demo-bank-pills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:3px 1px;margin:10px 0 0}
+ #homeTreasury .demo-bank-pill{min-width:0;border:1px solid #ffffff26;border-radius:999px;background:#ffffff06;color:inherit;padding:8px 6px;font:inherit;font-size:12px;min-height:44px;cursor:pointer;text-align:center}
  #homeTreasury .demo-bank-pill[aria-pressed=true]{background:#ffffff14;border-color:#a4b1bd}
  #homeTreasury .demo-bank-pill.is-alert{border-color:#e46e72;box-shadow:0 0 0 1px #e46e7218}
  #homeTreasury button:focus-visible,#homeTreasury .demo-bank-scroll:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
@@ -61,7 +60,7 @@ if(document.body.dataset.publicDemo==='true'){
   selected='all';feedback='';
   host.innerHTML=`<article class="home-treasury demo-multibank"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie · total</h2><strong class="demo-total" data-demo-global>${format(banks.reduce((s,b)=>s+b.balance,0))}</strong></div></div>
    <div class="home-cash-details"><div class="home-flow"><span>↓ Entrées</span><b class="demo-positive">${format(banks.reduce((s,b)=>s+b.incoming,0))}</b></div><div class="home-flow"><span>↑ Sorties</span><b class="demo-negative">${format(banks.reduce((s,b)=>s+b.outgoing,0))}</b></div></div>
-   <div class="demo-bank-pills" role="group" aria-label="Choisir une banque, faire glisser pour parcourir"><button type="button" class="demo-bank-pill" data-demo-bank="all" aria-label="Tous les comptes, replier les détails" aria-pressed="true">Tous</button>${banks.map(b=>`<button type="button" class="demo-bank-pill" data-demo-bank="${b.id}" aria-pressed="false" aria-controls="demoBankDetail">${b.name}</button>`).join('')}</div><div id="demoBankDetail" class="demo-bank-detail" hidden></div></article>`;
+   <div class="demo-bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="demo-bank-pill" data-demo-bank="all" aria-label="Tous les comptes, replier les détails" aria-pressed="true">Tous</button>${banks.map(b=>`<button type="button" class="demo-bank-pill" data-demo-bank="${b.id}" aria-pressed="false" aria-controls="demoBankDetail">${b.name.replace(/^Banque /,'')}</button>`).join('')}</div><div id="demoBankDetail" class="demo-bank-detail" hidden></div></article>`;
   update(host);
  }
  function close(host,focus=false){selected='all';feedback='';update(host);if(focus)host.querySelector('[data-demo-bank="all"]').focus({preventScroll:true});}
