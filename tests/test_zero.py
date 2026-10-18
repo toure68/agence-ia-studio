@@ -23,6 +23,10 @@ def test_zero_dashboard_and_ledger(env):
     c.post(base+'/treasury',headers=h,json={**data,'operation_id':str(uuid4()),'label':'Dépense','direction':'out','amount':'28.10'})
     c.post(base+'/treasury',headers=h,json={**data,'operation_id':str(uuid4()),'currency':'XOF','amount':'500'})
     cash=c.get(base+'/treasury').json();assert cash['balances_minor']=={'EUR':10000,'XOF':50000}
+    snapshot=c.get(base+'/cockpit').json()['widgets']['treasury']
+    assert snapshot['balances_minor']=={'EUR':10000,'XOF':50000}
+    assert snapshot['inflows_minor']=={'EUR':12810,'XOF':50000}
+    assert snapshot['outflows_minor']=={'EUR':2810,'XOF':0}
     assert len(cash['movements'])==3 and cash['bank_connected'] is False
     assert c.get(base+'/cockpit').json()['badges']['treasury']==3
     assert c.post(base+f'/treasury/{mid}/check',headers=h).status_code==200
@@ -148,3 +152,4 @@ def test_cockpit_widgets_share_factual_scoped_snapshot(env):
     own=m.get(f'/api/companies/{cid}/cockpit').json()['widgets']
     assert own['leads']['value']==0 and own['clients']['value']==0 and own['treasury']['balances_minor']=={}
     assert not {'scanner','team','prospects','drafts','social'}&own.keys()
+

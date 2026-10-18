@@ -4,6 +4,7 @@ Préparé pour validation, sans publication sur l’application de production.
 
 - Cartes d’action : haut-parleur aligné au bouton, sans ligne supplémentaire ; au moins 2,5 cartes tiennent dans la zone défilée des actions.
 - Trésorerie : un badge de démonstration ; la carte n’est plus un lien, seul « Voir mes chiffres réels » ouvre le livre interne. Aucun chiffre fictif enregistré dans le livre.
+- Révision trésorerie : symbole de billets en euros, résumé limité à Solde / Entrées / Sorties. Les deux cases Entrées + et Sorties + préparent une saisie ; la confirmation reste obligatoire. Les totaux réels sont calculés depuis les mouvements internes, séparément par devise, sans mélange avec les créances/dettes. Exemple cohérent : 29 200,00 € − 4 350,00 € = 24 850,00 €.
 - Choisir mon métier : véritable sélecteur de secteur, enregistrement avec contrôle de version et conservation des modules/colonnes.
 - Compteurs : même file d’actions que les priorités, sans limitation aux trois cartes visibles. Zéros masqués. Trésorerie : mouvements non vérifiés.
 - Révision après retour de Mohamed : couleurs existantes restaurées (dont les boutons verts et les couleurs propres des modules). Suppression de la nouvelle recoloration générale. Reflets de contour fixes pour limiter le mouvement visuel.

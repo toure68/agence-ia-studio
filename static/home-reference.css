@@ -162,3 +162,12 @@ body:has(.reference-home) .top>div:has(>#topLabel:empty){display:none}
 body:has(.reference-home) .top>.row{margin-left:auto;flex-wrap:nowrap;min-width:0;max-width:100%}
 body:has(.reference-home) .top #companySelect{flex:1 1 auto;width:auto;min-width:0}
 body:has(.reference-home) .top .account-menu{flex:0 0 auto}
+
+/* Treasury: one balance, two actionable cash totals, existing colors. */
+.reference-home .home-cash-balance{margin:14px 0 0}
+.reference-home .home-cash-balance>span{display:block;color:var(--home-muted);margin-bottom:3px;font-size:14px}
+.reference-home .home-flow{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;min-height:74px;padding:10px;border:1px solid #ffffff08;background:#07090d8a;border-radius:12px;text-align:left;color:var(--home-text)}
+.reference-home .home-flow-heading{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.reference-home .home-flow-plus{font-size:20px;line-height:1;color:var(--home-text)}
+.reference-home .home-flow:first-child b{color:var(--home-green)}
+.reference-home .home-treasury .module-icon svg{width:29px;height:30px}

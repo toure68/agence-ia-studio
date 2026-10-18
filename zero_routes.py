@@ -235,7 +235,10 @@ def install(app,db,require,own_company,utcnow):
             scalar=lambda sql,args=(cid,):con.execute(sql,args).fetchone()[0]
             clients=scalar('SELECT COUNT(*) FROM clients WHERE company_id=? AND archived=0')
             active=scalar("SELECT COUNT(*) FROM work_items WHERE company_id=? AND status NOT IN ('done','cancelled')")
-            balances={r['currency']:r['balance'] for r in con.execute("SELECT currency,SUM(CASE WHEN direction='in' THEN amount_minor ELSE -amount_minor END) AS balance FROM cash_movements WHERE company_id=? GROUP BY currency",(cid,))}
+            flows=list(con.execute("SELECT currency,SUM(CASE WHEN direction='in' THEN amount_minor ELSE 0 END) AS incoming,SUM(CASE WHEN direction='out' THEN amount_minor ELSE 0 END) AS outgoing FROM cash_movements WHERE company_id=? GROUP BY currency",(cid,)))
+            balances={r['currency']:r['incoming']-r['outgoing'] for r in flows}
+            inflows={r['currency']:r['incoming'] for r in flows}
+            outflows={r['currency']:r['outgoing'] for r in flows}
             widgets={
               'requests':{'value':incoming+quotes+mails,'label':'À traiter'},
               'clients':{'value':clients,'label':'Clients'},
@@ -244,7 +247,7 @@ def install(app,db,require,own_company,utcnow):
               'emails':{'value':mails,'label':'À relire'},
               'calendar':{'value':agenda+len(risks),'label':'À prévoir'},
               'reports':{'value':active,'label':'Activités ouvertes'},
-              'treasury':{'balances_minor':balances,'bank_connected':False,'label':'Solde interne'},
+              'treasury':{'balances_minor':balances,'inflows_minor':inflows,'outflows_minor':outflows,'bank_connected':False,'label':'Solde interne'},
               'equipment':{'value':sum(c['action']['type'] in ('equipment','material') for c in risks),'label':'Alertes'},
               'risks':{'value':sum(c['action']['type']=='risk' for c in risks),'label':'Échéances'},
               'companies':{'value':scalar('SELECT COUNT(*) FROM companies',()) if user['role']=='owner' else 1,'label':'Entreprises'},

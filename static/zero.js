@@ -24,7 +24,7 @@ async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
  $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Veille métier</h2><p>Veille non connectée.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
- $('#homeTreasury').addEventListener('click',e=>{if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
+ $('#homeTreasury').addEventListener('click',e=>{const command=e.target.closest('[data-home-cash]');if(command){e.preventDefault();openCommand('movement',command.dataset.homeCash);return;}if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
  const greeting=$('.home-heading h1');greeting.textContent=greeting.textContent.replace(/Bonjour (\p{L})/u,(_,letter)=>'Bonjour '+letter.toLocaleUpperCase('fr'));
  $('#homeSectorInfo').textContent='Choisir mon métier';
  $('#homeSectorInfo').onclick=async()=>{
@@ -79,10 +79,11 @@ function interpretCommand(text,context='auto',selectedDate=''){
  if(type==='prospect')return {type,title:'Créer le prospect',path:'/api/prospects',payload:{name:title,sector:'À préciser',diagnosis:text}};
  if(type==='task')return {type,title:'Créer l’échéance',path:`/api/companies/${company.id}/tasks`,payload:{title,description:text,first_due:selectedDate||dateFromCommand(text,true),monthly:/chaque mois|mensuel/i.test(text)}};
  if(type==='movement'){
-  const amount=text.match(/(\d+(?:[.,]\d{1,2})?)\s*(€|euros?|EUR|FCFA|XOF|USD|dollars?)/i);if(!amount)throw Error('Précisez le montant et la devise, par exemple : entrée 120 euros client Dupont.');
+  const amount=text.match(/(-?\d[\d \u00a0\u202f]*(?:[.,]\d{1,2})?)\s*(€|euros?|EUR|FCFA|XOF|USD|dollars?)/i);if(!amount)throw Error('Précisez le montant et la devise, par exemple : entrée 120 euros client Dupont.');
+  amount[1]=amount[1].trim();if(amount.index>0&&/[\d.,]/.test(text[amount.index-1])||!/^\d+(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d{1,2})?$/.test(amount[1]))throw Error('Vérifiez le montant positif, par exemple : 12 800,00 €.');
   const direction=/\b(entree|encaissement)\b/.test(normalized)?'in':/\b(sortie|depense)\b/.test(normalized)?'out':null;if(!direction)throw Error('Précisez entrée ou sortie.');
   const currency=/FCFA|XOF/i.test(amount[2])?'XOF':/USD|dollar/i.test(amount[2])?'USD':'EUR';
-  return {type,title:'Enregistrer le mouvement',path:`/api/companies/${company.id}/treasury`,payload:{label:title,direction,amount:amount[1].replace(',','.'),currency,date:dateFromCommand(text)||new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris'}).format(new Date())}};
+  return {type,title:'Enregistrer le mouvement',path:`/api/companies/${company.id}/treasury`,payload:{label:title,direction,amount:amount[1].replace(/[ \u00a0\u202f]/g,'').replace(',','.'),currency,date:dateFromCommand(text)||new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris'}).format(new Date())}};
  }
  if(type==='equipment'){
   const quantity=text.match(/quantit[eé]\s*:?\s*(\d+)/i);let name=title.replace(/^(?:matériel|materiel|équipement|equipement)\s*:?\s*/i,'').split(/quantit[eé]|en panne|[àa] remplacer|r[eé]vision/i)[0].trim();
@@ -94,15 +95,27 @@ function interpretCommand(text,context='auto',selectedDate=''){
  }
  return {type:'activity',title:'Créer l’activité',path:`/api/companies/${company.id}/activities`,payload:{title,description:text,priority:/urgent/.test(normalized)?'urgent':'normal',due:dateFromCommand(text)}};
 }
-function openCommand(context='auto'){
+function commandPreviewEntries(proposal){
+ if(proposal.type!=='movement')return Object.entries(proposal.payload);
+ const p=proposal.payload;
+ return [['direction',p.direction==='in'?'Entrée':'Sortie'],['amount',quoteMoney(Math.round(Number(p.amount)*100),p.currency)],['label',p.label],['date',p.date.split('-').reverse().join('/')]];
+}
+function openCommand(context='auto',cashDirection=null){
  stopReading();
  openModal(`<h1>Votre consigne</h1><p class="tiny sub">Commande structurée, sans IA externe. Vérifiez la proposition avant enregistrement.</p><div class="field"><label for="commandText">Que faut-il faire ?</label><textarea id="commandText" maxlength="3000" rows="4" placeholder="Par exemple : ajoute une échéance assurance demain"></textarea></div><div id="commandDateField" class="field command-date-field ${['task','risk'].includes(context)?'':'hide'}"><label for="commandDate">Date de l’événement ou de l’échéance</label><input id="commandDate" type="date" aria-describedby="commandDateHint commandError"><small id="commandDateHint">Choisissez une date ici, ou indiquez-la dans votre consigne.</small></div><p id="commandError" class="command-inline-error hide" role="alert" tabindex="-1"></p><div class="row"><button class="btn" id="previewCommand">Préparer</button></div><div id="commandPreview" aria-live="polite"></div>`);
  let proposal=null,operationId=crypto.randomUUID();
  const resetProposal=()=>{proposal=null;$('#commandPreview').replaceChildren();$('#commandError').classList.add('hide');$('#commandDate').removeAttribute('aria-invalid');};
  $('#commandText').oninput=resetProposal;$('#commandDate').oninput=resetProposal;
  const showCommandError=error=>{const field=$('#commandDateField');if(error.code==='date_required'){field.classList.remove('hide');$('#commandDate').setAttribute('aria-invalid','true');}const message=$('#commandError');message.textContent=error.message;message.classList.remove('hide');message.focus({preventScroll:true});message.scrollIntoView({block:'nearest'});};
- $('#previewCommand').onclick=()=>{try{$('#commandError').classList.add('hide');proposal=interpretCommand($('#commandText').value,context,$('#commandDate').value);$('#commandPreview').innerHTML=`<article class="task-detail"><h2>${clean(proposal.title)}</h2><dl class="report-lines">${Object.entries(proposal.payload).map(([k,v])=>`<div><dt>${clean(({title:'Action',name:'Nom',description:'Consigne',sector:'Secteur à vérifier',diagnosis:'Consigne',first_due:'Date',due:'Date',monthly:'Chaque mois',priority:'Importance',direction:'Sens',amount:'Montant',currency:'Devise',date:'Date',label:'Libellé',quantity:'Quantité',condition:'État',maintenance_due:'Révision',kind:'Type',responsible:'Responsable',completed:'Terminé'})[k]||k)}</dt><dd>${clean(v===null?'—':v===true?'Oui':v===false?'Non':v)}</dd></div>`).join('')}</dl><button class="btn primary" id="confirmCommand">Confirmer l’enregistrement</button></article>`;$('#confirmCommand').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{const body={...proposal.payload};if(proposal.type==='movement')body.operation_id=operationId;await api(proposal.path,{method:'POST',body:JSON.stringify(body)});const target=({task:'calendar',prospect:'prospects',movement:'treasury',equipment:'equipment',risk:'risks',activity:'activities'})[proposal.type];closeModal();await openTab(target);notify('Enregistrement confirmé.');}catch(err){b.disabled=false;showCommandError(err);}};}catch(e){showCommandError(e);}};
- $('#commandText').focus();
+ $('#previewCommand').onclick=()=>{try{$('#commandError').classList.add('hide');proposal=interpretCommand($('#commandText').value,context,$('#commandDate').value);$('#commandPreview').innerHTML=`<article class="task-detail"><h2>${clean(proposal.title)}</h2><dl class="report-lines">${commandPreviewEntries(proposal).map(([k,v])=>`<div><dt>${clean(({title:'Action',name:'Nom',description:'Consigne',sector:'Secteur à vérifier',diagnosis:'Consigne',first_due:'Date',due:'Date',monthly:'Chaque mois',priority:'Importance',direction:'Sens',amount:'Montant',currency:'Devise',date:'Date',label:'Libellé',quantity:'Quantité',condition:'État',maintenance_due:'Révision',kind:'Type',responsible:'Responsable',completed:'Terminé'})[k]||k)}</dt><dd>${clean(v===null?'—':v===true?'Oui':v===false?'Non':v)}</dd></div>`).join('')}</dl><button class="btn primary" id="confirmCommand">Confirmer l’enregistrement</button></article>`;$('#confirmCommand').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{const body={...proposal.payload};if(proposal.type==='movement')body.operation_id=operationId;await api(proposal.path,{method:'POST',body:JSON.stringify(body)});const target=({task:'calendar',prospect:'prospects',movement:'treasury',equipment:'equipment',risk:'risks',activity:'activities'})[proposal.type];closeModal();await openTab(target);notify('Enregistrement confirmé.');}catch(err){b.disabled=false;showCommandError(err);}};}catch(e){showCommandError(e);}};
+ if(context==='movement'&&['in','out'].includes(cashDirection)){
+  const incoming=cashDirection==='in',prefix=incoming?'Entrée':'Sortie';
+  $('#modalLayer h1').textContent=incoming?'Nouvelle entrée':'Nouvelle sortie';
+  $('#modalLayer h1+p').textContent='Indiquez le montant et le motif. Après confirmation, ce mouvement sera ajouté à vos chiffres réels.';
+  $('#commandText').placeholder=prefix+' 120 € — '+(incoming?'règlement client':'achat de fournitures');
+  $('#commandText').value=prefix+' ';
+ }
+ $('#commandText').focus();$('#commandText').setSelectionRange($('#commandText').value.length,$('#commandText').value.length);
 }
 
 async function renderEquipment(id=null){
@@ -123,16 +136,15 @@ async function renderMaterial(id){
 
 
 // Display-only scenario: never inserted into the company's cashbook.
-const homeTreasuryDemo={currency:'EUR',balance:2485000,receivable:1280000,payable:435000};
+const homeTreasuryDemo={currency:'EUR',inflows:2920000,outflows:435000,balance:2485000};
 function homeTreasuryDemoKey(){return 'aia-treasury-demo-'+me.id+'-'+company.id;}
 function showHomeTreasuryDemo(){try{return localStorage.getItem(homeTreasuryDemoKey())!=='real';}catch{return true;}}
 function homeTreasuryMarkup(state){
  const demo=showHomeTreasuryDemo(),scenario=homeTreasuryDemo;
  const balances=demo?[[scenario.currency,scenario.balance]]:Object.entries(state.widgets?.treasury?.balances_minor||{});
- const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):'<strong class="home-no-balance">Aucun mouvement</strong>';
- const receivable=demo?clean(quoteMoney(scenario.receivable,scenario.currency)):'Non renseigné';
- const payable=demo?clean(quoteMoney(scenario.payable,scenario.currency)):'Non renseigné';
- return `<article class="home-treasury"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}<div class="home-balances">${amounts}</div><small>${demo?'Solde disponible':'Solde enregistré · livre interne'}</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>${receivable}</b></div><div><span>À payer</span><b>${payable}</b></div></div></article><button type="button" class="btn home-cash-mode" data-treasury-mode>Voir mes chiffres réels</button>`;
+ const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):`<strong>${clean(quoteMoney(0))}</strong>`;
+ const formatFlow=kind=>{const totals=demo?{[scenario.currency]:scenario[kind]}:state.widgets?.treasury?.[kind+'_minor']||{};return Object.entries(totals).map(([currency,amount])=>clean(quoteMoney(amount,currency))).join('<br>')||clean(quoteMoney(0));};
+ return `<article class="home-treasury"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}</div></div><div class="home-cash-balance"><span>Solde</span><div class="home-balances">${amounts}</div></div><div class="home-cash-details"><button type="button" class="home-flow" data-home-cash="in" aria-label="Enregistrer une entrée d’argent"><span class="home-flow-heading">Entrées <span class="home-flow-plus" aria-hidden="true">+</span></span><b>${formatFlow('inflows')}</b></button><button type="button" class="home-flow" data-home-cash="out" aria-label="Enregistrer une sortie d’argent"><span class="home-flow-heading">Sorties <span class="home-flow-plus" aria-hidden="true">+</span></span><b>${formatFlow('outflows')}</b></button></div></article><button type="button" class="btn home-cash-mode" data-treasury-mode>Voir mes chiffres réels</button>`;
 }
 function refreshHomeSummary(state,cards){
  const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}

@@ -21,7 +21,7 @@ const widgetIconPaths={
  companies:'<path d="M4 22V3h16v19M2 22h20M8 7h2m4 0h2M8 11h2m4 0h2M8 15h2m4 0h2m-6 7v-4h4v4"/>',
  'company-edit':'<path d="m4 17 12-12 3 3L7 20l-4 1zM14 7l3 3M4 4h6M4 8h3M14 21h7"/>',
  team:'<circle cx="9" cy="8" r="4"/><path d="M2 22v-3a7 7 0 0 1 14 0v3M17 4a4 4 0 0 1 0 8m2 3a6 6 0 0 1 3 5v2"/>',
- treasury:'<path d="m3 8 9-5 9 5-9 5zM3 13l9 5 9-5M3 18l9 5 9-5"/>',
+ treasury:'<path d="M6 3h16v13M2 10c2 0 4-2 4-4m12 0c0 2 2 4 4 4M2 16c2 0 4 2 4 4m12 0c0-2 2-4 4-4"/><rect x="2" y="6" width="20" height="14" rx="2"/><text x="12" y="16" text-anchor="middle" font-size="9" font-weight="800" stroke="none" fill="currentColor">€</text>',
  equipment:'<path d="M9 3h6l2 5h5v13H2V8h5zM2 13h20m-13-1v4h6v-4"/>',
  risks:'<path d="m12 2 9 4v6c0 5-5 9-9 11-4-2-9-6-9-11V6zM12 7v6m0 4h.01"/>',
  scanner:'<path d="M8 2H3v5m13-5h5v5M3 17v5h5m13-5v5h-5M7 6h10v12H7zM5 12h14"/>',
