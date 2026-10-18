@@ -14,12 +14,12 @@ class HeadLinks(HTMLParser):
 def test_app_installation_metadata_and_supplied_image_icons(env):
     c=TestClient(env.app);head=HeadLinks();head.feed(c.get('/').text)
     assert head.meta['apple-mobile-web-app-capable']=='yes'
-    assert head.meta['apple-mobile-web-app-title']=='IA Studio'
+    assert head.meta['apple-mobile-web-app-title']=='Super App'
     assert head.links['manifest']['href']=='/static/manifest.webmanifest'
     response=c.get(head.links['manifest']['href']);assert response.status_code==200
     assert response.headers['content-type'].split(';')[0]=='application/manifest+json'
     manifest=response.json()
-    assert manifest['name']=='Agence IA Studio' and manifest['display']=='standalone'
+    assert manifest['name']=='Super App' and manifest['display']=='standalone'
     assert manifest['id']==manifest['start_url']==manifest['scope']=='/'
     assert manifest['orientation']=='any' and manifest['prefer_related_applications'] is False
     assert {i['sizes'] for i in manifest['icons']}=={'192x192','512x512'}
@@ -28,14 +28,12 @@ def test_app_installation_metadata_and_supplied_image_icons(env):
     for path,size in paths.items():
         r=c.get(path);assert r.status_code==200 and r.headers['content-type']=='image/png'
         img=Image.open(io.BytesIO(r.content));assert img.size==size and img.mode=='RGB'
-        # Opaque white surrounds the smaller rainbow letters, also inside A.
+        # Opaque dark artwork with light lettering and emerald highlights.
         w,h=img.size
-        for x,y in [(0,0),(.98,.98),(.39,.5),(.72,.5)]:
-            pixel=img.getpixel((int(x*(w-1)),int(y*(h-1))));assert min(pixel)>245
-        colorful=[(x,y) for y in range(h) for x in range(w) if max(img.getpixel((x,y)))-min(img.getpixel((x,y)))>80]
-        assert .72<(max(x for x,y in colorful)-min(x for x,y in colorful)+1)/w<.86
-    large=Image.open(io.BytesIO(c.get('/static/icons/app-512-v4.png').content)).convert('RGB')
-    red=large.getpixel((180,120));green=large.getpixel((90,370))
-    assert red[0]>red[1]*1.5 and green[1]>green[0]*1.5
+        assert max(img.getpixel((0,0)))<45
+        pixels=list(img.getdata())
+        assert sum(1 for red,green,blue in pixels if green>100 and green>red*1.3 and green>blue*1.2)>w*h*.01
+        assert sum(1 for red,green,blue in pixels if min(red,green,blue)>140)>w*h*.01
+    assert all('-v6.png' in path for path in paths)
     assert head.links['apple-touch-icon']['sizes']=='180x180'
     assert c.get('/api/companies').status_code==401

@@ -95,7 +95,7 @@ const {chromium}=require('playwright');
  try{
    await page.goto('http://127.0.0.1:8123',{waitUntil:'networkidle'});
    assert.equal(await page.locator('link[rel="manifest"]').getAttribute('href'),'/static/manifest.webmanifest');
-   assert.equal(await page.locator('meta[name="apple-mobile-web-app-title"]').getAttribute('content'),'IA Studio');
+   assert.equal(await page.locator('meta[name="apple-mobile-web-app-title"]').getAttribute('content'),'Super App');
    const appManifest=await (await page.request.get('http://127.0.0.1:8123/static/manifest.webmanifest')).json();
    assert.equal(appManifest.display,'standalone');assert.deepEqual(appManifest.icons.map(i=>i.sizes),['192x192','512x512']);
    assert.deepEqual(await page.evaluate(async()=>{const icon=new Image();icon.src=document.querySelector('link[rel="apple-touch-icon"]').href;await icon.decode();return [icon.naturalWidth,icon.naturalHeight];}),[180,180]);
