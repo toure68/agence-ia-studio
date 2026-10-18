@@ -7,6 +7,8 @@ def test_public_demo_isolated_and_read_only(env):
     assert c.get('/demo').status_code == 200
     assert 'data-public-demo="true"' in c.get('/demo').text
     assert c.get('/demo').headers['x-robots-tag'] == 'noindex, nofollow'
+    for path in ('/demo','/demo/','/demo?version=dark-squares-6','/demo/api/me','/static/demo.js','/static/demo-treasury.js'):
+        assert c.get(path).headers['cache-control'] == 'no-store', path
     assert c.get('/demo/api/me').json()['email'] == 'visiteur@example.test'
     assert not c.cookies
     for path in ('/api/me', '/api/companies', '/api/companies/1/treasury'):
