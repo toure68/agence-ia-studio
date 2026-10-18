@@ -59,6 +59,7 @@ async function renderTreasury(){
  const data=await api(`/api/companies/${company.id}/treasury`);
  $('#content').innerHTML=`<div class="heading"><h1>Trésorerie</h1><button class="btn primary" id="cashAdd">＋ Mouvement</button></div><p class="tiny sub">Livre interne, sans connexion bancaire.</p><div class="grid grid2">${Object.entries(data.balances_minor).map(([currency,n])=>`<article class="card"><p class="sub">Solde enregistré · ${clean(currency)}</p><strong class="stat-num">${quoteMoney(n,currency)}</strong></article>`).join('')||'<p class="empty">Aucun mouvement enregistré.</p>'}</div><div class="task-list treasury-list">${data.movements.map(m=>`<article class="task-row"><span><strong>${clean(m.label)}</strong><small>${clean(m.date)} · ${m.direction==='in'?'Entrée':'Sortie'}</small></span><span class="cash-amount">${m.direction==='in'?'+':'−'} ${quoteMoney(m.amount_minor,m.currency)}</span>${!m.checked?`<button class="btn small" data-check-cash="${m.id}">Vérifier</button>`:'<span class="badge">Vérifié</span>'}</article>`).join('')}</div>`;
  $('#cashAdd').onclick=()=>openCommand('movement');$$('[data-check-cash]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api(`/api/companies/${company.id}/treasury/${b.dataset.checkCash}/check`,{method:'POST'});await renderTreasury();}catch(e){b.disabled=false;notify(e.message);}});
+ if(typeof enhanceTreasuryPage==='function')enhanceTreasuryPage(data);
 }
 
 function dateFromCommand(text,required=false){
@@ -140,6 +141,8 @@ const homeTreasuryDemo={currency:'EUR',inflows:2920000,outflows:435000,balance:2
 function homeTreasuryDemoKey(){return 'aia-treasury-demo-'+me.id+'-'+company.id;}
 function showHomeTreasuryDemo(){try{return localStorage.getItem(homeTreasuryDemoKey())!=='real';}catch{return true;}}
 function homeTreasuryMarkup(state){
+ const treasury=state.widgets?.treasury||{};
+ if(treasury.banks?.length&&typeof bankHomeMarkup==='function')return bankHomeMarkup(treasury);
  const demo=showHomeTreasuryDemo(),scenario=homeTreasuryDemo;
  const balances=demo?[[scenario.currency,scenario.balance]]:Object.entries(state.widgets?.treasury?.balances_minor||{});
  const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):`<strong>${clean(quoteMoney(0))}</strong>`;

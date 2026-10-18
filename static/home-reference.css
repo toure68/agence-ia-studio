@@ -177,3 +177,40 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .assistant-spark svg{width:20px;height:20px}
 .reference-home .home-section-title,.reference-home .home-modules-heading h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .reference-home .home-modules-heading{justify-content:flex-end;margin:20px 0 10px}
+.reference-home .bank-home .home-treasury-top{gap:10px}
+.reference-home .bank-home .home-treasury-top>div{flex:1;min-width:0}
+.reference-home .bank-home-title{display:flex;justify-content:space-between;gap:6px;margin:0;color:var(--home-muted);font-size:12px;font-weight:600;line-height:16px}
+.reference-home .bank-home-title>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reference-home .bank-total{display:block;margin-top:2px;font-size:clamp(20px,5.3vw,24px);font-weight:800;line-height:1.1;letter-spacing:-.03em}
+.reference-home .bank-positive{color:#50ca89}
+.reference-home .bank-negative{color:#ef8a8e}
+.reference-home .bank-global-alert{display:flex;align-items:center;gap:6px;width:100%;min-height:40px;padding:8px 0 0;border:0;background:none;color:#ef8a8e;font-size:13px;font-weight:600;line-height:1.4;text-align:left;cursor:pointer}
+.reference-home .bank-global-alert span:nth-child(2){flex:1;min-width:0}
+.reference-home .bank-pills{display:flex;gap:12px;overflow-x:auto;padding:6px 4px;margin:10px 0 0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.reference-home .bank-pills::-webkit-scrollbar{display:none}
+.reference-home .bank-pill,.bank-pill-static{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;flex:0 0 44px;box-sizing:border-box;padding:0;border:1px solid #ffffff26;border-radius:13px;background:var(--bank-color,#171d22);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+.reference-home .bank-pill-all{color:var(--home-gold)}
+.reference-home .bank-pill-add{background:transparent;border-style:dashed;color:var(--home-muted);font-size:18px}
+.reference-home .bank-pill[aria-pressed="true"]{outline:2px solid #16975b;outline-offset:2px}
+.reference-home .bank-pill:focus-visible,.reference-home .bank-home button:focus-visible{outline:2px solid #e0e6ec;outline-offset:3px}
+.reference-home .bank-pill-dot{position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:#d33847;border:2px solid #101318;box-sizing:content-box}
+.reference-home .bank-home-detail[hidden]{display:none}
+.reference-home .bank-home-alert{margin-top:10px;padding:10px;border:1px solid #e46e7270;border-radius:12px;background:#e46e7208;color:#ef8a8e}
+.reference-home .bank-home-alert p{margin:0 0 8px;font-size:13px;line-height:1.5}
+.reference-home .bank-fund{width:100%;min-height:44px;padding:9px 12px;border:0;border-radius:10px;background:var(--home-green);color:#082b16;font-size:13px;font-weight:800;text-align:center;cursor:pointer}
+.reference-home .bank-detail-heading{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:var(--home-muted);font-size:12px}
+.reference-home .bank-fold{display:flex;align-items:center;justify-content:center;width:44px;height:36px;border:0;background:none;color:var(--home-text);cursor:pointer}
+.reference-home .bank-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;border-top:1px solid #ffffff0b;font-size:13px}
+.reference-home .bank-row time{flex:0 0 38px;color:var(--home-muted);font-size:12px}
+.reference-home .bank-row>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reference-home .bank-row b{white-space:nowrap}
+.reference-home .bank-empty{margin:8px 0;color:var(--home-muted);font-size:13px}
+.reference-home .bank-view-all{display:block;min-height:40px;padding:10px 0;border:0;background:none;color:var(--home-green);font-size:13px;font-weight:700;cursor:pointer}
+.bank-ledger-controls{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.bank-ledger-list{display:grid;gap:10px;margin:0 0 18px}
+.bank-ledger-card{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.bank-ledger-copy{display:flex;flex-direction:column;flex:1;min-width:0}
+.bank-ledger-copy small{color:var(--mute)}
+.bank-pill-static{cursor:default}
+.bank-positive{color:#1f8f57}.bank-negative{color:#c23b4a}
+.bank-debit-list .task-row{flex-wrap:wrap}

@@ -13,7 +13,7 @@ jobs:
       - run: pip install -r requirements.txt pytest
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng poppler-utils ffmpeg
       - run: python -m pytest -q
-      - run: node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js && node --check static/zero.js && node --check static/workspace.js && node --check static/signature.js && node --check static/assistant.js && node --check static/ai-budget.js && node --check static/context.js
+      - run: node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js && node --check static/zero.js && node --check static/banks.js && node --check static/workspace.js && node --check static/signature.js && node --check static/assistant.js && node --check static/ai-budget.js && node --check static/context.js
 
   ui:
     runs-on: ubuntu-24.04
@@ -54,6 +54,14 @@ jobs:
             exit 1
           fi
       - run: node tests/grid_proportions.cjs
+      - name: Run node tests/bank_pills.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/bank_pills.cjs 2>&1 | tee /tmp/bank-pills.log; then
+            msg=$(tail -c 3000 /tmp/bank-pills.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=bank_pills::$msg"
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

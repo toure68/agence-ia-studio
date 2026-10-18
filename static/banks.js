@@ -1,0 +1,123 @@
+'use strict';
+async function bankTry(action){try{return await action();}catch(error){notify(error.message);}}
+function bankSigned(amount,currency){return (amount<0?'−':'+')+' '+quoteMoney(Math.abs(amount),currency);}
+function bankAmountClass(amount){return amount<0?'bank-negative':amount>0?'bank-positive':'';}
+function bankToday(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function bankDate(value){return value?value.split('-').reverse().join('/'):'—';}
+function bankAmount(value){const n=String(value).trim().replace(/[ \u00a0\u202f]/g,'').replace(',','.');if(!/^-?\d+(?:\.\d{1,2})?$/.test(n))throw Error('Indiquez un montant, par exemple 1 250,00.');return n;}
+async function refreshBankViews(){
+ if(tab==='treasury')await renderTreasury();else if(tab==='dashboard')await refreshCockpit();
+}
+async function openBankEditor(id=null){
+ const cid=company.id,data=await api(`/api/companies/${cid}/banks`),bank=data.banks.find(b=>b.id===id);
+ openModal(`<h2>${bank?'Modifier la banque':'Ajouter une banque'}</h2><form id="bankEditor" class="stack"><div class="field"><label>Nom de la banque<input name="name" maxlength="100" required value="${clean(bank?.name||'')}"></label></div><div class="field"><label>Devise<select name="currency" ${bank?'disabled':''}>${options(['EUR','XOF','USD'],bank?.currency||'EUR')}</select></label></div><div class="field"><label>Solde initial<input name="opening_balance" inputmode="decimal" required value="${bank?(bank.opening_minor/100).toFixed(2).replace('.',','):'0,00'}"></label><small>Solde avant les mouvements enregistrés. Les anciennes opérations « Sans banque » restent à affecter ; ne comptez pas ces montants deux fois.</small></div><div class="field"><label>Argent réservé ou bloqué<input name="reserved" inputmode="decimal" required value="${bank?(bank.reserved_minor/100).toFixed(2).replace('.',','):'0,00'}"></label><small>Hors prélèvements prévus ci-dessous : ils sont réservés automatiquement sous sept jours.</small></div><p class="bank-form-error" role="alert"></p><button class="btn primary" type="submit">Enregistrer la banque</button></form><button class="btn" id="closeBankEditor">Annuler</button>`);
+ $('#closeBankEditor').onclick=closeModal;
+ $('#bankEditor').onsubmit=async e=>{e.preventDefault();const form=e.target,button=e.submitter;button.disabled=true;try{const payload={name:form.elements.name.value,currency:form.elements.currency.value,opening_balance:bankAmount(form.elements.opening_balance.value),reserved:bankAmount(form.elements.reserved.value)};if(bank)payload.version=bank.version;await api(`/api/companies/${cid}/banks${bank?'/'+bank.id:''}`,{method:bank?'PUT':'POST',body:JSON.stringify(payload)});try{localStorage.setItem(homeTreasuryDemoKey(),'real');}catch{}closeModal();await refreshBankViews();notify('Banque enregistrée.');}catch(error){button.disabled=false;form.querySelector('[role="alert"]').textContent=error.message;}};
+}
+async function openBankMovement(id,direction='in'){
+ const cid=company.id,data=await api(`/api/companies/${cid}/banks`);
+ if(!data.banks.length)return openCommand('movement',direction);
+ openModal(`<h2>Nouveau mouvement</h2><form id="bankMovement" class="stack"><div class="field"><label>Banque<select name="bank_id" required><option value="">Choisir la banque</option>${data.banks.map(b=>`<option value="${b.id}" ${b.id===id?'selected':''}>${clean(b.name)}</option>`).join('')}</select></label></div><div class="field"><label>Sens<select name="direction">${selectMap({in:'Entrée (+)',out:'Sortie (−)'},direction||'in')}</select></label></div><div class="field"><label>Montant <span id="bankMoveCurrency"></span><input name="amount" inputmode="decimal" required placeholder="0,00"></label></div><div class="field"><label>Motif<input name="label" minlength="2" maxlength="200" required></label></div><div class="field"><label>Date<input name="date" type="date" required value="${bankToday()}"></label></div><p class="bank-form-error" role="alert"></p><button class="btn primary" type="submit">Préparer</button><div id="bankMovementPreview"></div></form><button class="btn" id="closeBankMovement">Annuler</button>`);
+ const form=$('#bankMovement'),preview=$('#bankMovementPreview');let payload=null;const operation=crypto.randomUUID();
+ const clear=()=>{payload=null;preview.replaceChildren();form.querySelector('[role="alert"]').textContent='';const b=data.banks.find(b=>b.id===Number(form.elements.bank_id.value));$('#bankMoveCurrency').textContent=b?quoteMoney(0,b.currency).replace(/[\d ,.]/g,''):'';};
+ form.oninput=clear;form.onchange=clear;clear();$('#closeBankMovement').onclick=closeModal;
+ form.onsubmit=e=>{e.preventDefault();try{const bank=data.banks.find(b=>b.id===Number(form.elements.bank_id.value));if(!bank)throw Error('Choisissez une banque.');const amount=bankAmount(form.elements.amount.value);if(Number(amount)<=0)throw Error('Le montant doit être positif.');payload={bank_id:bank.id,currency:bank.currency,direction:form.elements.direction.value,amount,label:form.elements.label.value,date:form.elements.date.value,operation_id:operation};preview.innerHTML=`<article class="task-detail"><strong>${clean(bank.name)} · ${payload.direction==='in'?'Entrée':'Sortie'}</strong><p>${clean(quoteMoney(Math.round(Number(amount)*100),bank.currency))} · ${bankDate(payload.date)}</p><button type="button" class="btn primary" id="confirmBankMovement">Confirmer l’enregistrement</button></article>`;$('#confirmBankMovement').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{await api(`/api/companies/${cid}/treasury`,{method:'POST',body:JSON.stringify(payload)});closeModal();await refreshBankViews();notify('Mouvement enregistré sur '+bank.name+'.');}catch(error){button.disabled=false;form.querySelector('[role="alert"]').textContent=error.message;}};}catch(error){form.querySelector('[role="alert"]').textContent=error.message;}};
+}
+async function openBankFunding(targetId){
+ const cid=company.id,data=await api(`/api/companies/${cid}/banks`),target=data.banks.find(b=>b.id===Number(targetId));if(!target)return;
+ const sources=data.banks.filter(b=>b.id!==target.id&&b.currency===target.currency&&b.available_minor>0).sort((a,b)=>b.available_minor-a.available_minor);
+ if(!sources.length){openModal(`<h2>Approvisionner ${clean(target.name)}</h2><p>Aucune autre banque dans cette devise ne dispose d’un montant disponible. Vous pouvez enregistrer une entrée sur ce compte.</p><button class="btn primary" id="fundByEntry">+ Entrée</button><button class="btn" id="cancelBankFunding">Fermer</button>`);$('#fundByEntry').onclick=()=>openBankMovement(target.id,'in');$('#cancelBankFunding').onclick=closeModal;return;}
+ openModal(`<h2>Approvisionner ${clean(target.name)}</h2><p>Besoin : ${clean(quoteMoney(target.shortfall_minor,target.currency))} pour couvrir le découvert, les réserves et les prélèvements sous sept jours.</p><form id="bankFunding" class="stack"><div class="field"><label>Banque source<select name="source_id">${sources.map(b=>`<option value="${b.id}">${clean(b.name)} · ${clean(quoteMoney(b.available_minor,b.currency))} disponibles</option>`).join('')}</select></label></div><div class="field"><label>Montant à transférer<input name="amount" inputmode="decimal" required value="${(Math.min(target.shortfall_minor||sources[0].available_minor,sources[0].available_minor)/100).toFixed(2).replace('.',',')}"></label></div><p class="tiny sub">L’application ne déclenche aucun virement bancaire. Enregistrez ce transfert interne après avoir effectué le virement auprès de votre banque.</p><p class="bank-form-error" role="alert"></p><button class="btn primary" type="submit">Virement effectué : enregistrer</button></form><button class="btn" id="cancelBankFunding">Annuler</button>`);
+ $('#cancelBankFunding').onclick=closeModal;const operation=crypto.randomUUID();
+ $('#bankFunding').onsubmit=async e=>{e.preventDefault();const form=e.target,button=e.submitter;button.disabled=true;try{await api(`/api/companies/${cid}/bank-transfers`,{method:'POST',body:JSON.stringify({source_id:Number(form.elements.source_id.value),target_id:target.id,amount:bankAmount(form.elements.amount.value),operation_id:operation,confirmed:true})});closeModal();await refreshBankViews();notify('Transfert interne enregistré ; le solde total est conservé.');}catch(error){button.disabled=false;form.querySelector('[role="alert"]').textContent=error.message;}};
+}
+async function openBankDebit(){
+ const cid=company.id,data=await api(`/api/companies/${cid}/banks`);if(!data.banks.length)return openBankEditor();
+ openModal(`<h2>Prévoir un prélèvement</h2><form id="bankDebit" class="stack"><div class="field"><label>Banque<select name="bank_id">${data.banks.map(b=>`<option value="${b.id}">${clean(b.name)} · ${b.currency==='EUR'?'€':b.currency==='XOF'?'FCFA':'$'}</option>`).join('')}</select></label></div><div class="field"><label>Motif<input name="label" minlength="2" maxlength="200" required></label></div><div class="field"><label>Montant<input name="amount" inputmode="decimal" required placeholder="0,00"></label></div><div class="field"><label>Date prévue<input name="due" type="date" value="${bankToday()}" required></label></div><p class="tiny sub">Ce montant entre dans le non disponible lorsqu’il est prévu sous sept jours, y compris en retard. Aucun débit réel n’est déclenché.</p><p class="bank-form-error" role="alert"></p><button class="btn primary" type="submit">Enregistrer le prélèvement prévu</button></form><button class="btn" id="cancelBankDebit">Annuler</button>`);
+ $('#cancelBankDebit').onclick=closeModal;const operation=crypto.randomUUID();
+ $('#bankDebit').onsubmit=async e=>{e.preventDefault();const f=e.target,b=e.submitter;b.disabled=true;try{await api(`/api/companies/${cid}/bank-debits`,{method:'POST',body:JSON.stringify({bank_id:Number(f.elements.bank_id.value),label:f.elements.label.value,amount:bankAmount(f.elements.amount.value),due:f.elements.due.value,operation_id:operation})});closeModal();await refreshBankViews();notify('Prélèvement prévu enregistré.');}catch(error){b.disabled=false;f.querySelector('[role="alert"]').textContent=error.message;}};
+}
+function confirmBankDebit(debit){
+ const cid=company.id;
+ openModal(`<h2>Prélèvement effectué ?</h2><p>${clean(debit.bank_name)} · ${clean(debit.label)} · ${clean(quoteMoney(debit.amount_minor,debit.currency))}</p><p>Confirmez uniquement si le débit a réellement eu lieu. Il sera alors enregistré une seule fois dans les sorties de cette banque.</p><button class="btn primary" id="confirmPaidDebit">Confirmer le débit effectué</button><button class="btn" id="cancelPaidDebit">Annuler</button>`);
+ $('#cancelPaidDebit').onclick=closeModal;$('#confirmPaidDebit').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await api(`/api/companies/${cid}/bank-debits/${debit.id}/paid`,{method:'POST',body:JSON.stringify({confirmed:true})});closeModal();await refreshBankViews();notify('Prélèvement enregistré dans les sorties.');}catch(error){b.disabled=false;notify(error.message);}};
+}
+function cancelBankDebit(debit){
+ const cid=company.id;openModal(`<h2>Annuler cette prévision ?</h2><p>${clean(debit.bank_name)} · ${clean(debit.label)} · ${clean(quoteMoney(debit.amount_minor,debit.currency))}</p><p>Le montant ne sera plus réservé. Aucun mouvement d’argent ne sera créé.</p><button class="btn primary" id="confirmCancelDebit">Annuler la prévision</button><button class="btn" id="keepDebit">Conserver</button>`);
+ $('#keepDebit').onclick=closeModal;$('#confirmCancelDebit').onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await api(`/api/companies/${cid}/bank-debits/${debit.id}/cancel`,{method:'POST',body:JSON.stringify({confirmed:true})});closeModal();await refreshBankViews();notify('Prévision annulée.');}catch(error){b.disabled=false;notify(error.message);}};
+}
+async function assignBankMovement(movement){
+ const cid=company.id,data=await api(`/api/companies/${cid}/banks`),banks=data.banks.filter(b=>b.currency===movement.currency);
+ if(!banks.length)return openBankEditor();
+ openModal(`<h2>Affecter à une banque</h2><p>${clean(movement.label)} · ${clean(quoteMoney(movement.amount_minor,movement.currency))}</p><form id="assignBankMovement" class="stack"><div class="field"><label>Banque<select name="bank_id">${banks.map(b=>`<option value="${b.id}">${clean(b.name)}</option>`).join('')}</select></label></div><p class="tiny sub">Cette affectation conserve le montant et le solde général.</p><p class="bank-form-error" role="alert"></p><button class="btn primary" type="submit">Confirmer l’affectation</button></form><button class="btn" id="cancelAssignment">Annuler</button>`);
+ $('#cancelAssignment').onclick=closeModal;$('#assignBankMovement').onsubmit=async e=>{e.preventDefault();const f=e.target,b=e.submitter;b.disabled=true;try{await api(`/api/companies/${cid}/treasury/${movement.id}/bank`,{method:'PUT',body:JSON.stringify({bank_id:Number(f.elements.bank_id.value),confirmed:true})});closeModal();await refreshBankViews();notify('Mouvement affecté à la banque.');}catch(error){b.disabled=false;f.querySelector('[role="alert"]').textContent=error.message;}};
+}
+
+// Treasury page: bank list, planned debits and per-movement bank labels (no wheel).
+function enhanceTreasuryPage(data){
+ const content=$('#content');if(!content||!content.querySelector('.heading'))return;
+ const banks=data.banks||[],debits=data.debits||[];
+ content.querySelector('.heading').insertAdjacentHTML('afterend',`<div class="bank-ledger-controls"><button class="btn" id="addLedgerBank">＋ Banque</button>${banks.length?'<button class="btn" id="planBankDebit">Prélèvement prévu</button>':''}</div><section class="bank-ledger-list" aria-label="Vos banques">${banks.map((b,i)=>`<article class="card bank-ledger-card"><span class="bank-pill bank-pill-static" style="--bank-color:${bankColor(i)}" aria-hidden="true">${clean(bankInitials(b.name))}</span><span class="bank-ledger-copy"><strong>${clean(b.name)}</strong><small>Solde ${clean(quoteMoney(b.balance_minor,b.currency))} · Disponible <b class="${bankAmountClass(b.available_minor)}">${clean(quoteMoney(b.available_minor,b.currency))}</b></small></span><button type="button" class="btn small" data-edit-bank="${b.id}">Modifier</button></article>`).join('')||'<p class="empty">Ajoutez votre première banque pour suivre chaque compte séparément.</p>'}</section>${debits.length?`<section class="bank-debit-list"><h2>Prélèvements prévus</h2>${debits.map(d=>`<article class="task-row"><span><strong>${clean(d.bank_name)} · ${clean(d.label)}</strong><small>${bankDate(d.due)} · ${clean(quoteMoney(d.amount_minor,d.currency))}</small></span><button class="btn small" data-pay-bank-debit="${d.id}">Débit effectué</button><button class="btn small" data-cancel-bank-debit="${d.id}">Annuler la prévision</button></article>`).join('')}</section>`:''}`);
+ $('#addLedgerBank').onclick=()=>bankTry(()=>openBankEditor());
+ const plan=$('#planBankDebit');if(plan)plan.onclick=()=>bankTry(openBankDebit);
+ content.querySelectorAll('[data-edit-bank]').forEach(b=>b.onclick=()=>bankTry(()=>openBankEditor(Number(b.dataset.editBank))));
+ content.querySelectorAll('[data-pay-bank-debit]').forEach(b=>b.onclick=()=>confirmBankDebit(debits.find(d=>d.id===Number(b.dataset.payBankDebit))));
+ content.querySelectorAll('[data-cancel-bank-debit]').forEach(b=>b.onclick=()=>cancelBankDebit(debits.find(d=>d.id===Number(b.dataset.cancelBankDebit))));
+ content.querySelectorAll('.treasury-list .task-row').forEach((row,i)=>{const m=data.movements[i];if(!m)return;const label=row.querySelector('small');if(label)label.textContent+=' · '+(m.bank_name||'Sans banque')+(m.transfer_id?' · Transfert interne':'');if(!m.bank_id&&banks.length){const button=document.createElement('button');button.type='button';button.className='btn small';button.textContent='Affecter à une banque';button.onclick=()=>assignBankMovement(m);row.append(button);}});
+ const add=$('#cashAdd');if(add&&banks.length)add.onclick=()=>bankTry(()=>openBankMovement(null,'in'));
+}
+
+// Home card: bank pills. "Tous" is always the default view.
+const bankHomeSelection=new Map();
+const bankPalette=['#14765a','#246ca5','#7253a0','#a0612b','#2b7f8f','#8f2b55'];
+function bankColor(index){return bankPalette[index%bankPalette.length];}
+function bankInitials(name){return String(name).replace(/^Banque\s+/i,'').split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,2).toUpperCase()||'?';}
+function bankHomeKey(){return (me?.id||'')+'-'+(company?.id||'');}
+function bankHomeSelected(banks){const id=bankHomeSelection.get(bankHomeKey());return banks.some(b=>String(b.id)===String(id))?String(id):'all';}
+function bankShortDate(value){if(!value)return '';const tomorrow=new Date(bankToday()+'T12:00:00Z');tomorrow.setUTCDate(tomorrow.getUTCDate()+1);if(value===tomorrow.toISOString().slice(0,10))return 'demain';if(value===bankToday())return 'aujourd’hui';return 'le '+bankDate(value).slice(0,5);}
+function bankPeriod(month){return new Intl.DateTimeFormat('fr-FR',{month:'long',timeZone:'Europe/Paris'}).format(new Date((month||bankToday().slice(0,7))+'-15T12:00:00Z'));}
+function bankMoneyList(map){const rows=Object.entries(map||{});return rows.length?rows.map(([currency,amount])=>clean(quoteMoney(amount,currency))).join('<br>'):clean(quoteMoney(0));}
+function bankHomeMarkup(treasury){
+ const banks=treasury.banks||[],selected=bankHomeSelected(banks),bank=banks.find(b=>String(b.id)===selected),index=banks.indexOf(bank);
+ const alerts=banks.filter(b=>b.shortfall_minor>0);
+ const balance=bank?`<strong class="bank-total ${bank.shortfall_minor>0?'bank-negative':''}">${clean(quoteMoney(bank.balance_minor,bank.currency))}</strong>`:`<strong class="bank-total">${bankMoneyList(treasury.balances_minor)}</strong>`;
+ const incoming=bank?clean(quoteMoney(bank.month_inflows_minor||0,bank.currency)):bankMoneyList(treasury.month_inflows_minor);
+ const outgoing=bank?clean(quoteMoney(bank.month_outflows_minor||0,bank.currency)):bankMoneyList(treasury.month_outflows_minor);
+ const pills=`<div class="bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="bank-pill bank-pill-all" data-bank-pill="all" aria-pressed="${!bank}" aria-label="Toutes les banques" title="Toutes les banques"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg></button>${banks.map((b,i)=>`<button type="button" class="bank-pill" data-bank-pill="${b.id}" style="--bank-color:${bankColor(i)}" aria-pressed="${String(b.id)===selected}" aria-label="${clean(b.name)}${b.shortfall_minor>0?' · Alerte : solde insuffisant':''}" title="${clean(b.name)}"><span aria-hidden="true">${clean(bankInitials(b.name))}</span>${b.shortfall_minor>0?'<span class="bank-pill-dot" aria-hidden="true"></span>':''}</button>`).join('')}<button type="button" class="bank-pill bank-pill-add" data-bank-add aria-label="Ajouter une banque" title="Ajouter une banque"><span aria-hidden="true">＋</span></button></div>`;
+ const global=bank?'':alerts.map(b=>`<button type="button" class="bank-global-alert" data-bank-pill="${b.id}"><span aria-hidden="true">●</span><span>${clean(b.name)} à ${clean(bankSigned(b.available_minor,b.currency))}${b.next_due?' · prélèvement '+bankShortDate(b.next_due):''}</span><span aria-hidden="true">›</span></button>`).join('');
+ let detail='';
+ if(bank&&bank.shortfall_minor>0){
+  const due=(treasury.debits||[]).filter(d=>d.bank_id===bank.id&&bank.next_due&&d.due<=bank.next_due);
+  const source=banks.filter(b=>b.id!==bank.id&&b.currency===bank.currency&&b.available_minor>=bank.shortfall_minor).sort((a,c)=>c.available_minor-a.available_minor)[0];
+  detail=`<div class="bank-home-alert" role="status"><p><strong>Solde insuffisant : ${clean(bankSigned(bank.available_minor,bank.currency))}</strong>${bank.upcoming_minor?`<br>Prélèvement${due.length>1?'s':''} de ${clean(quoteMoney(bank.upcoming_minor,bank.currency))} prévu${due.length>1?'s':''} ${bankShortDate(bank.next_due)}.`:''}<br>Montant manquant : <strong>${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</strong></p><button type="button" class="bank-fund" data-bank-fund="${bank.id}">${source?`Approvisionner depuis ${clean(source.name.replace(/^Banque\s+/i,''))} · ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}`:'Approvisionner cette banque'}</button></div>`;
+ }else if(bank){
+  detail=`<div class="bank-detail-heading"><span>5 dernières transactions</span><button type="button" class="bank-fold" data-bank-pill="all" aria-label="Revenir à toutes les banques">⌃</button></div>${(bank.latest||[]).map(m=>`<div class="bank-row"><time datetime="${clean(m.date)}">${clean(bankDate(m.date).slice(0,5))}</time><span title="${clean(m.label)}">${clean(m.label)}</span><b class="${m.direction==='in'?'bank-positive':'bank-negative'}">${clean(bankSigned(m.direction==='in'?m.amount_minor:-m.amount_minor,m.currency))}</b></div>`).join('')||'<p class="bank-empty">Aucune transaction enregistrée sur cette banque.</p>'}<button type="button" class="bank-view-all" data-bank-all>Voir tout →</button>`;
+ }
+ return `<article class="home-treasury bank-home" data-bank-selected="${clean(selected)}"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2 class="bank-home-title"><span>Trésorerie · <span class="bank-home-name">${clean(bank?bank.name:'Toutes les banques')}</span></span><span>${clean(bankPeriod(treasury.month))}</span></h2>${balance}</div></div><div class="home-cash-details"><button type="button" class="home-flow" data-home-cash="in" aria-label="Enregistrer une entrée d’argent"><span class="home-flow-heading">Entrées du mois <span class="home-flow-plus" aria-hidden="true">+</span></span><b class="bank-positive">${incoming}</b></button><button type="button" class="home-flow" data-home-cash="out" aria-label="Enregistrer une sortie d’argent"><span class="home-flow-heading">Sorties du mois <span class="home-flow-plus" aria-hidden="true">+</span></span><b class="bank-negative">${outgoing}</b></button></div><div class="bank-global-alerts">${global}</div>${pills}<div class="bank-home-detail"${bank?'':' hidden'}>${detail}</div></article>`;
+}
+function bankHomeRepaint(host,focus){
+ if(!host?.treasuryState)return;host.innerHTML=homeTreasuryMarkup(host.treasuryState);
+ if(focus){const pill=host.querySelector(`[data-bank-pill="${focus}"]`);if(pill)pill.focus({preventScroll:true});}
+}
+function bankHomeSelect(host,id){
+ const banks=host.treasuryState?.widgets?.treasury?.banks||[],current=bankHomeSelected(banks);
+ const next=id!=='all'&&String(id)===current?'all':String(id);
+ bankHomeSelection.set(bankHomeKey(),next);bankHomeRepaint(host,next==='all'?'all':next);
+}
+document.addEventListener('click',e=>{
+ const host=e.target.closest('#homeTreasury');if(!host||!host.querySelector('.bank-home'))return;
+ const pill=e.target.closest('[data-bank-pill]'),add=e.target.closest('[data-bank-add]'),fund=e.target.closest('[data-bank-fund]'),all=e.target.closest('[data-bank-all]'),cash=e.target.closest('[data-home-cash]');
+ if(!pill&&!add&&!fund&&!all&&!cash)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ if(pill)return bankHomeSelect(host,pill.dataset.bankPill);
+ if(add)return bankTry(()=>openBankEditor());
+ if(fund)return bankTry(()=>openBankFunding(Number(fund.dataset.bankFund)));
+ if(all)return bankTry(()=>openTab('treasury'));
+ const banks=host.treasuryState?.widgets?.treasury?.banks||[],selected=bankHomeSelected(banks);
+ bankTry(()=>openBankMovement(selected==='all'?null:Number(selected),cash.dataset.homeCash));
+},true);
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Escape'||document.querySelector('#modalLayer:not(.hide)'))return;
+ const host=document.querySelector('#homeTreasury');if(!host?.querySelector('.bank-home[data-bank-selected]:not([data-bank-selected="all"])'))return;
+ e.preventDefault();bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
+});
