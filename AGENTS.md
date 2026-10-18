@@ -26,3 +26,4 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Event/required-date command preparation offers an explicit date picker, keeps dates written in the command working, and displays validation errors inline without hiding the Prepare button behind a toast. Creating a record still requires explicit confirmation.
 
 - Home section titles ("À faire maintenant", "Vos modules") are visually hidden but kept for screen readers; blocks are separated by spacing only. Keep the column-chooser button visible.
+- Home treasury uses bank pills (docs/BANKS.md): "Tous" is always the default view, alerts expand automatically for a bank in deficit, other banks show their 5 latest movements. Do not reintroduce the bank wheel.
