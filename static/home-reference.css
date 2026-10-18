@@ -240,3 +240,7 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .row-step:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
 .reference-home .row-value{min-width:26px;text-align:center;color:var(--home-text);font-size:17px;font-weight:800}
 .reference-home .module-reserve-launch~.home-sector{margin:24px 0 20px}
+.bank-pill-logo{display:block;width:100%;height:100%;object-fit:cover;border-radius:12px}
+.bank-logo-preview{display:flex;justify-content:center;margin:8px 0 14px}
+.bank-logo-preview .bank-pill{width:88px;height:88px;min-width:88px;border-radius:22px;font-size:26px;background:#171d22;color:#fff}
+.bank-logo-preview .bank-pill-logo{border-radius:21px}

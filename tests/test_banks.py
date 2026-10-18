@@ -91,3 +91,21 @@ def test_home_snapshot_month_flows_and_latest_movements(env):
     assert rows[b]['latest'][0]['transfer_id'] is not None
     assert rows[a]['balance_minor']==50000+30000+20000-5000+500-1000
     cockpit=c.get(base+'/cockpit',headers=h).json()['widgets']['treasury'];assert len(cockpit['banks'])==2 and cockpit['month_inflows_minor']=={'EUR':20500}
+
+def test_bank_logo_upload_is_recropped_private_and_removable(env):
+    import base64,io
+    from PIL import Image
+    c,h=owner(env);base='/api/companies/1';b=bank(c,h,'Banque Logo','10')
+    buf=io.BytesIO();Image.new('RGB',(300,200),(20,120,80)).save(buf,format='JPEG')
+    image='data:image/jpeg;base64,'+base64.b64encode(buf.getvalue()).decode()
+    assert c.put(base+f'/banks/{b}/logo',json={'image':image}).status_code==403
+    r=c.put(base+f'/banks/{b}/logo',headers=h,json={'image':image});assert r.status_code==200,r.text
+    logo=r.json()['logo'];assert logo.startswith('data:image/png;base64,')
+    stored=Image.open(io.BytesIO(base64.b64decode(logo.split(',',1)[1])));assert stored.size==(128,128)
+    rows={x['id']:x for x in c.get(base+'/banks').json()['banks']};assert rows[b]['logo']==logo
+    svg='data:image/svg+xml;base64,'+base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').decode()
+    assert c.put(base+f'/banks/{b}/logo',headers=h,json={'image':svg}).status_code==422
+    assert c.put(base+f'/banks/{b}/logo',headers=h,json={'image':'data:image/png;base64,'+base64.b64encode(b'not an image at all, really').decode()}).status_code==422
+    assert c.put(base+'/banks/999999/logo',headers=h,json={'image':image}).status_code==404
+    assert c.delete(base+f'/banks/{b}/logo',headers=h).status_code==200
+    rows={x['id']:x for x in c.get(base+'/banks').json()['banks']};assert rows[b]['logo'] is None
