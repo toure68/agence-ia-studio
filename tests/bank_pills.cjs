@@ -26,6 +26,10 @@ const {chromium}=require('playwright');
   });
   await page.reload({waitUntil:'networkidle'});
   const card=page.locator('#homeTreasury .bank-home');await card.waitFor();
+  // Airy typography: small TRÉSORERIE label with the bank name on the right, large balance, readable flows.
+  const typo=await page.evaluate(()=>{const q=s=>document.querySelector('#homeTreasury '+s),r=e=>e.getBoundingClientRect(),label=q('.treasury-label'),name=q('.bank-home-name'),total=q('.bank-total'),flow=q('.home-flow b');return {label:label.textContent,labelSize:parseFloat(getComputedStyle(label.parentElement).fontSize),sameRow:Math.abs(r(label).top-r(name).top)<6,nameRight:r(name).right>r(label).right,total:parseFloat(getComputedStyle(total).fontSize),flow:parseFloat(getComputedStyle(flow).fontSize),gap:r(total).top-r(label).bottom};});
+  assert.equal(typo.label,'Trésorerie');assert(typo.labelSize<=14&&typo.sameRow&&typo.nameRight,'Header row: label left, bank right '+JSON.stringify(typo));
+  assert(typo.total>=30&&typo.flow>=17&&typo.gap>=14,'Large balance, readable flows, airy spacing '+JSON.stringify(typo));
   // Default view is always "Tous", with the alert visible without any click.
   assert.equal(await card.getAttribute('data-bank-selected'),'all');
   assert.equal(await page.locator('[data-bank-pill="all"].bank-pill').getAttribute('aria-pressed'),'true');
