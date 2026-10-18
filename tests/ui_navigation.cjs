@@ -42,6 +42,7 @@ const {chromium}=require('playwright');
    await backHome();await page.locator('#assistantDock').click();await page.locator('#assistantMessage').waitFor({state:'visible'});
  }
  async function layout(){
+   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length>0);
    // 2 columns: at most 3 rows (5 modules + the + cell), more only for modules with an action to do.
    const cells=await page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,tiles:el.querySelectorAll('.module-tile').length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length,addLast:el.lastElementChild.classList.contains('module-add-card')}));
    assert(cells.tiles>0&&cells.addLast&&cells.cells%2===0&&cells.cells<=Math.max(6,Math.ceil((cells.urgent+1)/2)*2),'Home grid respects the 2-column row cap: '+JSON.stringify(cells));
