@@ -62,7 +62,8 @@ def test_identity_photo_to_form_to_saved_profile(env,kind,number):
     assert 'legal_name' not in f and 'address' not in f
     assert c.get('/api/companies/1/profile').json()['fields']=={}
     assert c.post(path+'/confirm',headers=h,json={'confirmed':True,'profile_fields':f}).status_code==200
-    assert c.get('/api/companies/1/profile').json()['fields']==f
+    from document_routes import checked_fields
+    assert c.get('/api/companies/1/profile').json()['fields']==checked_fields(f)
     assert c.post(path+'/reanalyze',headers=h).status_code==409
 
 def test_existing_identity_reanalysis_scope_and_preserved_source(env,monkeypatch):
@@ -80,3 +81,4 @@ def test_existing_identity_reanalysis_scope_and_preserved_source(env,monkeypatch
     assert c.get('/api/companies/1/profile').json()['fields']=={}
     cid=c.post('/api/companies',headers=h,json={'name':'Autre','city':'Paris','headline':'Test isolation'}).json()['id']
     assert c.post(f'/api/companies/{cid}/documents/{did}/reanalyze',headers=h).status_code==404
+

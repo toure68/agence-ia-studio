@@ -10,6 +10,7 @@ from xml.sax.saxutils import escape
 from fastapi import HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
+from display_formats import person_name
 from signature_routes import content_hash,signature_for,init_schema as init_signature_schema,install as install_signatures
 
 
@@ -33,9 +34,9 @@ class Quotation(BaseModel):
 
     @field_validator('customer_name','title')
     @classmethod
-    def nonempty(cls,value):
+    def nonempty(cls,value,info):
         if len(value.strip())<2:raise ValueError('Champ obligatoire')
-        return value.strip()
+        return person_name(value) if info.field_name=='customer_name' else value.strip()
 
     @field_validator('customer_email')
     @classmethod
@@ -181,3 +182,4 @@ def install(app, db, require, own_company, utcnow, secret=None):
         return Response(output.getvalue(),media_type='application/pdf',headers={'Content-Disposition':f'{disposition}; filename="{q["reference"]}.pdf"','Cache-Control':'no-store'})
 
     install_signatures(app,db,require,get,utcnow,secret)
+

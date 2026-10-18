@@ -8,6 +8,7 @@ import json
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
+from display_formats import person_name
 
 
 class ClientInput(BaseModel):
@@ -23,7 +24,7 @@ class ClientInput(BaseModel):
     def real_name(cls, value):
         if len(value.strip()) < 2:
             raise ValueError('Nom obligatoire')
-        return value.strip()
+        return person_name(value)
 
     @field_validator('email')
     @classmethod
@@ -216,3 +217,4 @@ def install(app, db, require, own_company, utcnow):
         require(req, owner=True)
         with db() as con:
             return [dict(r) for r in con.execute('SELECT d.*,p.name AS prospect_name FROM drafts d JOIN prospects p ON p.id=d.prospect_id ORDER BY d.id DESC')]
+

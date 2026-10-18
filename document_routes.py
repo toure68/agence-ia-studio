@@ -19,6 +19,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, ValidationError, field_validator
+from display_formats import person_name
 from starlette.concurrency import run_in_threadpool
 from document_understanding import IDENTITY_KINDS, interpret_document, read_mrz
 
@@ -56,6 +57,8 @@ def valid_iban(value):
 def checked_fields(fields):
     if any(k not in PROFILE_KEYS for k in fields):raise HTTPException(422,'Champ de profil inconnu')
     result={k:str(v).strip() for k,v in fields.items()}
+    for key in ('first_name','last_name','representative','document_holder'):
+        if key in result:result[key]=person_name(result[key])
     if any(len(v)>600 for v in result.values()):raise HTTPException(422,'Champ trop long')
     if result.get('siret'):
         result['siret']=re.sub(r'\s','',result['siret'])
@@ -369,3 +372,4 @@ def install(app,db,require,own_company,utcnow,secret):
         with db() as con:
             own_company(con,cid)
             return [dict(r) for r in con.execute('SELECT id,description,unit_price_minor,currency,unit FROM imported_tariffs WHERE company_id=? ORDER BY id DESC',(cid,))]
+

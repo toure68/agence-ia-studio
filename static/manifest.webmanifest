@@ -13,16 +13,17 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/static/icons/app-192-v6.png",
+      "src": "/static/icons/app-192-v7.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/icons/app-512-v6.png",
+      "src": "/static/icons/app-512-v7.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
   ]
 }
+

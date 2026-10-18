@@ -51,11 +51,12 @@ body:has(.reference-home) .main-body{padding:12px 20px max(110px,env(safe-area-i
 .reference-home .priority-description{display:block;color:var(--home-muted);font-size:14px;line-height:1.4;white-space:normal}
 .priority-cta{display:flex;justify-content:center;align-items:center;width:100%;min-height:48px;padding:12px 14px;background:var(--home-green);color:#082b16;border-radius:14px;font-size:15px;font-weight:800;text-align:center}
 .reference-home .priority-dismiss{position:absolute;top:6px;right:6px;width:44px;height:44px;min-width:44px;min-height:44px;display:grid;place-items:center;background:transparent;border:0;color:var(--home-muted);font-size:23px;z-index:3}
-.reference-home .priority-card>.voice-button{position:relative;right:auto;bottom:auto;float:none;margin:0 0 6px 14px;min-height:44px;min-width:44px;color:var(--home-muted)}
+.reference-home .priority-card>.voice-button{position:absolute;right:14px;bottom:14px;float:none;margin:0;height:48px;width:44px;min-height:44px;min-width:44px;color:var(--home-muted);z-index:3}
+.reference-home .priority-cta{width:calc(100% - 54px)}
 .reference-home .home-all-actions{width:100%;margin:12px 0 0}
 .reference-home .home-sector{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .reference-home .home-sector>div{flex:1;min-width:130px}
-.reference-home .home-sector h2{font-size:14px;font-weight:800;color:var(--home-muted);margin:0 0 3px}
+.reference-home .home-sector h2{font-size:14px;font-weight:800;color:var(--home-text);margin:0 0 3px}
 .reference-home .home-sector p{font-size:14px;line-height:1.4;margin:0}
 .reference-home .home-sector .btn{border-color:var(--home-blue);color:var(--home-blue)}
 .home-modules-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 14px}
@@ -141,3 +142,13 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 .reference-home .home-cash-details b{font-size:18px}
 .reference-home .home-demo-note{margin-top:8px;line-height:1.3}
 @media(max-width:359px){.reference-home .home-cash-details>div{padding:8px}.reference-home .home-cash-details b{font-size:17px}}
+
+/* One semantic accent drives the rim AND the glyph; no global gold override. */
+.reference-home :is(.module-card,.priority-card){--alert-color:var(--tile-accent,var(--home-blue));--beam-highlight:var(--tile-accent,var(--home-blue));border-color:color-mix(in srgb,var(--tile-accent,var(--home-blue)) 55%,transparent)}
+.reference-home :is(.module-grid .module-tile,.priority-tile) .module-icon{border-color:var(--tile-accent,var(--home-blue))!important;color:var(--tile-accent,var(--home-blue))!important}
+.reference-home :is(.module-grid>.module-card,.priority-stack>.priority-card):has(>.state-danger,>.state-warning){--alert-color:var(--tile-accent);--beam-highlight:var(--tile-accent)}
+.reference-home .priority-labels .importance{color:var(--tile-accent);background:color-mix(in srgb,var(--tile-accent) 12%,transparent)}
+.reference-home .priority-tile{filter:none;outline:0}
+.reference-home .priority-cta{background:var(--tile-accent);color:#07090d}
+.reference-home .home-modules-heading .btn{width:44px;padding:0}
+#companySelect{text-overflow:ellipsis;min-width:0;max-width:100%}

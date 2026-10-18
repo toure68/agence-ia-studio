@@ -190,7 +190,7 @@ def risk_cards(con,cid):
     for r in con.execute("SELECT * FROM equipment WHERE company_id=? AND condition IN ('worn','broken') AND quantity>0 ORDER BY id",(cid,)):
         result.append({'key':f"condition-{r['id']}-{r['updated']}",'kind':'urgent',
           'title':('Réparer : ' if r['condition']=='broken' else 'Remplacer : ')+r['name'],
-          'description':f"{r['quantity']} unité(s) : "+('en panne' if r['condition']=='broken' else 'à remplacer'),
+          'description':f"{r['quantity']} "+('en panne' if r['condition']=='broken' else 'à remplacer'),
           'action':{'type':'equipment','id':r['id']},'action_label':'Contrôler le matériel','rank':1,'due':None,'state':'danger' if r['condition']=='broken' else 'warning','state_label':'En panne' if r['condition']=='broken' else 'À remplacer'})
     for r in con.execute("SELECT id,title FROM work_items WHERE company_id=? AND status IN ('todo','doing','waiting')",(cid,)):
         check=material_check(con,cid,r['id'])
@@ -370,3 +370,4 @@ def install(app,db,require,own_company,utcnow):
             con.execute('UPDATE risk_obligations SET title=?,kind=?,due=?,responsible=?,completed=?,updated=? WHERE id=? AND company_id=?',
               (data.title,data.kind,data.due.isoformat(),data.responsible,int(data.completed),utcnow(),rid,cid))
             return scoped_row(con,'risk_obligations',cid,rid)
+

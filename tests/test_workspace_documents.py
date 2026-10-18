@@ -128,7 +128,8 @@ def test_two_column_kbis_ocr_saved_fields_and_legacy_document(env):
     assert c.get(path).json()['proposal']['fields']==fields
     assert c.get('/api/companies/1/profile').json()['fields']=={}
     assert c.post(path+'/confirm',headers=h,json={'confirmed':True,'profile_fields':fields}).status_code==200
-    assert c.get('/api/companies/1/profile').json()['fields']==fields
+    from document_routes import checked_fields
+    assert c.get('/api/companies/1/profile').json()['fields']==checked_fields(fields)
 
 def test_label_values_next_line_and_document_specific_fields():
     text='\n'.join(x for row in KBIS_ROWS for x in row)
@@ -149,7 +150,8 @@ def test_identity_save_encryption_and_quote_privacy(env,monkeypatch):
     fields=c.get(f'/api/companies/1/documents/{did}').json()['proposal']['fields']
     assert fields['last_name']=='MARTIN' and fields['document_number']=='ABC123456'
     assert c.post(f'/api/companies/1/documents/{did}/confirm',headers=h,json={'confirmed':True,'profile_fields':fields}).status_code==200
-    assert c.get('/api/companies/1/profile').json()['fields']==fields
+    from document_routes import checked_fields
+    assert c.get('/api/companies/1/profile').json()['fields']==checked_fields(fields)
     with env.db() as con:assert b'ABC123456' not in con.execute('SELECT payload FROM company_profiles WHERE company_id=1').fetchone()['payload']
     q=c.post('/api/companies/1/quotations',headers=h,json={'customer_name':'Client test','title':'Devis test identité','lines':[{'description':'Prestation','quantity':1,'unit_price':'10'}]}).json()
     assert 'document_number' not in q['issuer'] and 'personal_address' not in q['issuer'] and 'last_name' not in q['issuer']
@@ -211,3 +213,4 @@ def test_dynamic_home_usage_ten_day_boundary_and_isolation(env,monkeypatch):
     assert m.post(f'/api/companies/{cid}/workspace/usage/clients',headers=mh).status_code==403
     assert not c.get(f'/api/companies/{cid}/workspace').json()['inactive']
     env.init_db();assert c.get(path).json()['dynamic'] is False and 'clients' not in c.get(path).json()['inactive']
+

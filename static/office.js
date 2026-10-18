@@ -1,6 +1,6 @@
 'use strict';
 const quoteStates={draft:'Brouillon',sent:'Envoyé',accepted:'Accepté',declined:'Refusé'};
-function quoteMoney(minor,currency='EUR'){return new Intl.NumberFormat('fr-FR',{style:'currency',currency,minimumFractionDigits:2}).format(minor/100);}
+function quoteMoney(minor,currency='EUR'){return new Intl.NumberFormat('fr-FR',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(minor/100).replace(/[\u00a0\u202f]/g,' ');}
 async function renderQuotations(){
  const records=await api(`/api/companies/${company.id}/quotations`);
  $('#content').innerHTML='<div class="heading"><h1>Devis</h1><a class="btn primary" data-go="quote-new" href="#/quote-new">＋ Devis</a></div><div class="list-filters"><input id="quoteSearch" class="control" type="search" aria-label="Rechercher un devis" placeholder="Rechercher"><a class="btn" data-go="incoming" href="#/incoming">Demandes reçues</a></div><div class="task-list" id="quoteList"></div>';
@@ -64,3 +64,4 @@ async function renderEmail(id){
  $('#mailReplyForm').onsubmit=async e=>{e.preventDefault();try{const saved=await api(`/api/companies/${cid}/mail/messages/${id}/reply`,{method:'PUT',body:JSON.stringify({subject:$('#mailReplySubject').value,body:$('#mailReplyBody').value})});savedRevision=saved.revision;$('#sendMailReply').disabled=!m.reply_to;notify('Brouillon enregistré. Vérifiez le texte avant envoi.');}catch(err){notify(err.message);}};
  $('#sendMailReply').onclick=async e=>{if(!savedRevision)return;const button=e.currentTarget;button.disabled=true;try{await api(`/api/companies/${cid}/mail/messages/${id}/send`,{method:'POST',body:JSON.stringify({confirmed:true,revision:savedRevision})});await renderEmail(id);notify('Réponse envoyée.');}catch(err){notify(err.message);await renderEmail(id);}};
 }
+

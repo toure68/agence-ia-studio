@@ -9,7 +9,7 @@ async function api(path,opts={}){const {keepAfterPanelClose=false,...requestOpti
 function options(items,selected){return items.map(x=>`<option value="${clean(x)}" ${selected===x?'selected':''}>${clean(x)}</option>`).join('');}
 function showApp(){me&&$('#auth').classList.add('hide');$('#shell').classList.remove('hide');$('#userEmail').textContent=me.email;document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));}
 function showAuth(){restoreCockpit();closeModal();cleanupAssistant();assistantDrafts.clear();$('#content').replaceChildren();company=null;companies=[];leads=[];prospects=[];me=null;csrf='';$('#auth').classList.remove('hide');$('#shell').classList.add('hide');}
-async function refreshCompanies(){companies=await api('/api/companies');const mailCompany=Number(new URLSearchParams(location.search).get('mail_company'));if(mailCompany&&companies.some(c=>c.id===mailCompany))company=companies.find(c=>c.id===mailCompany);if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name+' · '+c.city;option.selected=company?.id===c.id;return option;}));}
+async function refreshCompanies(){companies=await api('/api/companies');const mailCompany=Number(new URLSearchParams(location.search).get('mail_company'));if(mailCompany&&companies.some(c=>c.id===mailCompany))company=companies.find(c=>c.id===mailCompany);if(!company||!companies.some(c=>c.id===company.id))company=companies[0]||null;$('#companySelect').replaceChildren(...companies.map(c=>{let option=document.createElement('option');option.value=c.id;option.textContent=c.name.length>27?c.name.slice(0,26).trimEnd()+'…':c.name;option.title=c.name;option.selected=company?.id===c.id;return option;}));$('#companySelect').title=company?.name||'Choisir une entreprise';}
 function finishForm(parent){
  if(history.state?.aiaFrom===parent&&(history.state?.aiaDepth||0)>0){history.back();return;}
  return openTab(parent,{replaceHistory:true});
@@ -182,3 +182,4 @@ $('#accountSpeech').onclick=openSpeechSettings;
 $('#accountAudit').classList.toggle('hide',!operationsEnabled);
 $('#accountAudit').onclick=()=>openTab('conformity');
 start();
+

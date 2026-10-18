@@ -14,7 +14,7 @@ def test_operations_priorities_reports_and_migration(env):
     w = c.post(base+'/activities', headers=h, json=payload)
     assert w.status_code == 201, w.text
     wid = w.json()['id']
-    assert w.json()['client_name'] == 'Client test'
+    assert w.json()['client_name'] == 'Client Test'
     cards = c.get(base+'/priorities').json()
     card = next(x for x in cards if x['action']['type'] == 'activity')
     assert card['action']['id'] == wid
@@ -60,3 +60,4 @@ def test_operations_company_isolation_and_draft_role(env):
     d = owner.post(f"/api/prospects/{p['id']}/drafts", headers=h, json={'objective':'premier_contact'})
     assert d.status_code == 201
     assert owner.get('/api/drafts').json()[0]['prospect_name'] == 'Prospect test'
+

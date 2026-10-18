@@ -28,12 +28,13 @@ def test_app_installation_metadata_and_supplied_image_icons(env):
     for path,size in paths.items():
         r=c.get(path);assert r.status_code==200 and r.headers['content-type']=='image/png'
         img=Image.open(io.BytesIO(r.content));assert img.size==size and img.mode=='RGB'
-        # Opaque dark artwork with light lettering and emerald highlights.
+        # Opaque black artwork with a single bright emerald symbol (no white wordmark).
         w,h=img.size
         assert max(img.getpixel((0,0)))<45
         pixels=list(img.getdata())
         assert sum(1 for red,green,blue in pixels if green>100 and green>red*1.3 and green>blue*1.2)>w*h*.01
-        assert sum(1 for red,green,blue in pixels if min(red,green,blue)>140)>w*h*.01
-    assert all('-v6.png' in path for path in paths)
+        assert sum(1 for red,green,blue in pixels if green>160)>w*h*.03
+    assert all('-v7.png' in path for path in paths)
     assert head.links['apple-touch-icon']['sizes']=='180x180'
     assert c.get('/api/companies').status_code==401
+

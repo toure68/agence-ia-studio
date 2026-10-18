@@ -5,7 +5,8 @@ const assetStates={ready:'Disponible',worn:'À remplacer',broken:'En panne'};
 
 function refreshHomeBadges(badges,riskCards=[],states={}){
  if(tab!=='dashboard')return;
- badges={...badges,equipment:riskCards.filter(c=>c.action.type==='equipment'||c.action.type==='material').length,risks:riskCards.filter(c=>c.action.type==='risk').length};
+ badges={...badges};
+ document.querySelectorAll('.module-grid .module-count').forEach(b=>b.remove());
  for(const [key,count] of Object.entries(badges)){
   const tile=document.querySelector(`.module-grid [data-go="${key}"]`);if(!tile)continue;
   tile.querySelector('.module-count')?.remove();
@@ -15,6 +16,7 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
   const key=tile.dataset.go,p=modulePresentation(key,{badges,module_states:states});
   for(const state of tileStates)tile.classList.toggle('state-'+state,state===p.state);
   tile.dataset.state=p.state;
+  const tone=semanticTone(key,p);for(const name of ['blue','green','gold','red','purple']){tile.classList.toggle('tone-'+name,name===tone);tile.closest('.module-card').classList.toggle('tone-'+name,name===tone);}
   tile.setAttribute('aria-label',(tile.dataset.moduleLabel||tile.querySelector('strong').textContent)+' · '+p.label);
  });
 }
@@ -23,8 +25,16 @@ async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
  $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header>${assistantDockMarkup()}<section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><article class="home-sector"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('reports')}</span><div><h2>Votre secteur cette semaine</h2><p>Votre veille métier reste à configurer.</p></div><button class="btn" id="homeSectorInfo">En savoir plus</button></article><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
- $('#homeTreasury').addEventListener('click',e=>{const button=e.target.closest('[data-treasury-mode]');if(!button)return;e.preventDefault();try{localStorage.setItem(homeTreasuryDemoKey(),showHomeTreasuryDemo()?'real':'demo');const host=$('#homeTreasury');host.innerHTML=homeTreasuryMarkup(host.treasuryState||state);}catch{notify('Impossible de mémoriser ce choix sur cet appareil.');}});
- $('#homeSectorInfo').onclick=()=>{openModal('<h2>Votre veille métier</h2><p>La veille sectorielle n’est pas encore connectée. Aucune actualité n’est inventée.</p><button class="btn" id="closeSectorInfo">Fermer</button>');$('#closeSectorInfo').onclick=closeModal;};
+ $('#homeTreasury').addEventListener('click',e=>{if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
+ const greeting=$('.home-heading h1');greeting.textContent=greeting.textContent.replace(/Bonjour (\p{L})/u,(_,letter)=>'Bonjour '+letter.toLocaleUpperCase('fr'));
+ $('#homeSectorInfo').textContent='Choisir mon métier';
+ $('#homeSectorInfo').onclick=async()=>{
+  const settings=await api(`/api/companies/${cid}/workspace`);
+  openModal(`<h2>Choisir mon métier</h2><div class="field"><label for="homeSectorChoice">Mon secteur d’activité</label><select id="homeSectorChoice">${selectMap(settings.domains,settings.domain)}</select></div><p class="tiny sub">Ce choix adapte vos modules. La veille n’est pas encore connectée.</p><button class="btn primary" id="saveHomeSector">Enregistrer</button><button class="btn" id="cancelHomeSector">Annuler</button>`);
+  $('#cancelHomeSector').onclick=closeModal;
+  $('#saveHomeSector').onclick=async e=>{const button=e.currentTarget;button.disabled=true;try{await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:$('#homeSectorChoice').value,visible:settings.visible,columns:settings.columns,dynamic:settings.dynamic,version:settings.version})});closeModal();await renderPriorities();notify('Votre métier est enregistré.');}catch(error){button.disabled=false;notify(error.message);}};
+ };
+ const gridButton=$('.home-modules-heading [data-go="module-library"]');gridButton.setAttribute('aria-label','Choisir le nombre de colonnes');gridButton.title='Choisir le nombre de colonnes';gridButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
 
@@ -123,10 +133,9 @@ function homeTreasuryMarkup(state){
  const amounts=balances.length?balances.map(([currency,amount])=>`<strong>${clean(quoteMoney(amount,currency))}</strong>`).join(''):'<strong class="home-no-balance">Aucun mouvement</strong>';
  const receivable=demo?clean(quoteMoney(scenario.receivable,scenario.currency)):'Non renseigné';
  const payable=demo?clean(quoteMoney(scenario.payable,scenario.currency)):'Non renseigné';
- return `<a class="home-treasury" data-go="treasury" href="#/treasury" aria-label="Ouvrir les mouvements réels de la trésorerie"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}<div class="home-balances">${amounts}</div><small>${demo?'Solde disponible · exemple':'Solde enregistré · livre interne'}</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>${receivable}</b></div><div><span>À payer</span><b>${payable}</b></div></div>${demo?'<p class="home-demo-note">Aperçu fictif. Touchez la carte pour ouvrir vos mouvements réels.</p>':''}</a><button type="button" class="btn home-cash-mode" data-treasury-mode aria-pressed="${demo}">${demo?'Voir mes chiffres réels':'Afficher les chiffres de démonstration'}</button>`;
+ return `<article class="home-treasury"><div class="home-treasury-top"><span class="module-icon tone-blue" aria-hidden="true">${moduleIcon('treasury')}</span><div><h2>Trésorerie</h2>${demo?'<span class="home-demo-badge">Démonstration · chiffres fictifs</span>':''}<div class="home-balances">${amounts}</div><small>${demo?'Solde disponible':'Solde enregistré · livre interne'}</small></div></div><div class="home-cash-details"><div><span>À encaisser</span><b>${receivable}</b></div><div><span>À payer</span><b>${payable}</b></div></div></article><button type="button" class="btn home-cash-mode" data-treasury-mode>Voir mes chiffres réels</button>`;
 }
 function refreshHomeSummary(state,cards){
- const grid=document.querySelector('#content .module-grid'),setting=document.querySelector('.home-modules-heading [data-go="module-library"]');if(grid&&setting)setting.textContent='Grille · '+grid.dataset.columns;
  const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}
  const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.textContent=date.charAt(0).toUpperCase()+date.slice(1)+' · '+(count?count+' action'+(count>1?'s':'')+' à traiter':'Vos priorités sont à jour');}
 }
