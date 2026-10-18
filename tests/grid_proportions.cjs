@@ -30,13 +30,12 @@ const {chromium}=require('playwright');
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const geometry=await page.locator('.module-grid').evaluate(grid=>{
      const bounds=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
-     return {overflow:document.documentElement.scrollWidth>innerWidth,add:(()=>{const a=grid.querySelector('.module-add-card');return a?{height:a.getBoundingClientRect().height,last:grid.lastElementChild===a}:null;})(),cards:[...grid.querySelectorAll('.module-card:not(.module-add-card)')].map(card=>{
+     return {overflow:document.documentElement.scrollWidth>innerWidth,cards:[...grid.children].map(card=>{
       const tile=card.querySelector('.module-tile'),icon=card.querySelector('.module-icon'),text=card.querySelector('.module-copy'),label=card.querySelector('strong'),metric=card.querySelector('.widget-metric');
       return {card:bounds(card),tile:bounds(tile),icon:bounds(icon),text:bounds(text),font:parseFloat(getComputedStyle(label).fontSize),metricFont:parseFloat(getComputedStyle(metric).fontSize),padding:parseFloat(getComputedStyle(tile).paddingTop)};
      })};
     });
     assert(!geometry.overflow,`No horizontal overflow at ${width}/${columns}`);
-    assert(geometry.add&&geometry.add.last&&Math.abs(geometry.add.height-geometry.cards[0].card.height)<.1,'The + reserve cell closes the grid at module size');
     for(const c of geometry.cards){
      assert(Math.abs(c.card.height-geometry.cards[0].card.height)<.1,'Equal card heights');
      assert(c.tile.bottom<=c.card.bottom+.1,'Button stays within card bottom');

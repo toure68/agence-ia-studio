@@ -31,9 +31,9 @@ const {chromium}=require('playwright');
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
    if(await tile.count())await tile.click();
-   else if(await page.locator('#content .module-grid .module-add').count()&&(await page.evaluate(async r=>{const cid=company.id,[w,c]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);return w.modules.some(m=>m.key===r);},route))){
+   else if(await page.locator('#content .module-reserve-launch').count()&&(await page.evaluate(async r=>{const cid=company.id,[w,c]=await Promise.all([api(`/api/companies/${cid}/workspace`),api(`/api/companies/${cid}/cockpit`)]);return w.modules.some(m=>m.key===r);},route))){
      // Modules beyond the row cap are opened from the + reserve panel.
-     await page.locator('#content .module-grid .module-add').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${route}"]`);await link.waitFor();await link.click();
+     await page.locator('#content .module-reserve-launch').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${route}"]`);await link.waitFor();await link.click();
    }
    else{await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();await page.locator('.tool-list [data-go="'+route+'"]').click();}
  }
@@ -43,9 +43,10 @@ const {chromium}=require('playwright');
  }
  async function layout(){
    await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length>0);
-   // 2 columns: at most 3 rows (5 modules + the + cell), more only for modules with an action to do.
-   const cells=await page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,tiles:el.querySelectorAll('.module-tile').length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length,addLast:el.lastElementChild.classList.contains('module-add-card')}));
-   assert(cells.tiles>0&&cells.addLast&&cells.cells%2===0&&cells.cells<=Math.max(6,Math.ceil((cells.urgent+1)/2)*2),'Home grid respects the 2-column row cap: '+JSON.stringify(cells));
+   // 2 columns: at most 3 rows (6 functions), more only for functions with an action to do.
+   const cells=await page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,tiles:el.querySelectorAll('.module-tile').length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length,onlyFunctions:[...el.children].every(c=>c.querySelector('.module-tile'))}));
+   assert(cells.tiles>0&&cells.onlyFunctions&&cells.cells%2===0&&cells.cells<=Math.max(6,Math.ceil(cells.urgent/2)*2),'Home grid respects the 2-column row cap: '+JSON.stringify(cells));
+   assert(await page.locator('#content .module-reserve-launch').isVisible(),'Réserve button below the grid');
    assert.equal(await page.locator('.sidebar,#sideNav,#mobileNav').count(),0);
    const g=await page.locator('#content .module-grid').evaluate(el=>{
      const c=[...el.children].map(x=>x.getBoundingClientRect());
@@ -192,7 +193,7 @@ const {chromium}=require('playwright');
    const allModules=['requests','clients','activities','leads','emails','prospects','calendar','reports','drafts','companies','company-edit','team','treasury','equipment','risks','scanner'];assert((await page.locator('#content .module-grid .module-tile[data-go]').evaluateAll(nodes=>nodes.map(n=>n.dataset.go))).every(k=>allModules.includes(k)));
    assert.equal(await page.locator('.more-functions').count(),1);
    // Company-scoped links keep their company id, on the grid or in the + reserve panel.
-   const moduleLink=async key=>{const inGrid=page.locator(`#content .module-grid [data-go="${key}"]`);if(await inGrid.count())return {href:await inGrid.getAttribute('href'),cid:await inGrid.getAttribute('data-company-id')};await page.locator('#content .module-grid .module-add').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${key}"]`);await link.waitFor();const found={href:await link.getAttribute('href'),cid:await link.getAttribute('data-company-id')};await backHome();return found;};
+   const moduleLink=async key=>{const inGrid=page.locator(`#content .module-grid [data-go="${key}"]`);if(await inGrid.count())return {href:await inGrid.getAttribute('href'),cid:await inGrid.getAttribute('data-company-id')};await page.locator('#content .module-reserve-launch').click();const link=page.locator(`#contextPanel .module-reserve [data-go="${key}"]`);await link.waitFor();const found={href:await link.getAttribute('href'),cid:await link.getAttribute('data-company-id')};await backHome();return found;};
    assert.equal((await moduleLink('company-edit')).href,'#/company-edit/1');
    assert.equal((await moduleLink('team')).cid,'1');
    assert.equal(await page.locator('#mobileNav').count(),0);
@@ -560,11 +561,11 @@ const {chromium}=require('playwright');
    await openModuleLibrary();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
    await page.locator('#suggestModules').click();assert.equal(await page.locator('[data-module-key="equipment"]').isChecked(),true);assert.equal(await page.locator('[data-module-key="prospects"]').isChecked(),false);
    await page.locator('#clearModules').click();await page.locator('[data-module-key="clients"]').check();await page.locator('#saveModules').click();
-   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===1);
-   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),1);
+   await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length===2);
+   await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('#content .module-grid .module-tile').count(),2);
    await openModuleLibrary();await page.locator('#clearModules').click();await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('.more-functions')&&document.querySelectorAll('#content .module-grid .module-tile').length===0);
-   assert.equal(await page.locator('.more-functions').isVisible(),false);assert(await page.locator('#content .module-grid .module-add').isVisible(),'The + reserve cell stays reachable');
+   assert.equal(await page.locator('.more-functions').isVisible(),false);assert(await page.locator('#content .module-reserve-launch').isVisible(),'The Réserve button stays reachable');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
    await openModuleLibrary();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
@@ -591,7 +592,7 @@ const {chromium}=require('playwright');
        return {columns,count:filled.modules.length,keys:filled.modules.map(m=>m.key),automatic:filled.modules.filter(m=>m.automatic).length,unchanged:JSON.stringify(input)===before,empty:none.modules.length,allowed:filled.modules.every(m=>source.modules.some(a=>a.key===m.key)),fullCount:full.modules.length};
      });
    });
-   for(const result of fillCases){const rows={2:3,3:3,4:2}[result.columns];assert.equal(result.count,result.columns-1,'One row: modules plus the + cell');assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-2);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,rows*result.columns-1,'Row cap leaves room for the + cell');}
+   for(const result of fillCases){const rows={2:3,3:3,4:2}[result.columns];assert.equal(result.count,result.columns,'One complete row');assert.equal(new Set(result.keys).size,result.count);assert.equal(result.automatic,result.columns-1);assert(result.unchanged&&result.allowed);assert.equal(result.empty,0);assert.equal(result.fullCount,rows*result.columns,'Row cap');}
    const widgetRefresh=await page.evaluate(async()=>{
      const state=await api('/api/companies/1/cockpit'),tile=document.querySelector('#content .module-grid .module-tile[data-go]:not([data-go="treasury"])'),key=tile.dataset.go;
      const icon=tile.querySelector('svg');tile.dataset.identity='widget-kept';
@@ -608,7 +609,7 @@ const {chromium}=require('playwright');
      const manual=homeGridModules({...input,dynamic:false}).modules.map(m=>m.key);
      return {urgent,quiet:quiet.length,manual};
    });
-   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,2,'3 columns: 2 modules + the + cell keep the row complete');assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
+   assert.equal(dynamics.urgent[0],'calendar');assert(!dynamics.urgent.includes('equipment'));assert.equal(dynamics.urgent.length,3);assert.equal(dynamics.quiet,0);assert(dynamics.manual.includes('equipment'));
    // Column choice survives closing the panel and reload without changing modules.
    for(const columns of [2,3,4]){
      await openModuleLibrary();await page.locator('#homeColumns').selectOption(String(columns));await page.locator('#saveModules').click();

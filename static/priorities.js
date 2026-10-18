@@ -177,7 +177,7 @@ document.addEventListener('visibilitychange',()=>{
 function refreshHomeMessages(cards,cockpit){
  if(tab!=='dashboard')return;
  const routes={task:'calendar',activity:'activities',client:'clients',document:'scanner',quote:'leads',email:'emails',social:'social',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment',lead:'requests'};
- document.querySelectorAll('#content .module-card:not(.module-add-card)').forEach(tile=>{
+ document.querySelectorAll('#content .module-card').forEach(tile=>{
   const key=tile.dataset.module,card=cards.find(c=>!c.example&&!c.fallback&&routes[c.action.type]===key);
   const label=modulePresentation(key,cockpit).label;
   const message=card?card.title:label==='Normal'?'':label;
