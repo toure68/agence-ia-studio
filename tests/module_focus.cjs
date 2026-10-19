@@ -36,6 +36,13 @@ const {chromium}=require('playwright');
   // Tapping a function opens its full window directly (no summary step), on the function frame, app strip below.
   await page.locator('#content .module-grid [data-go="clients"]').click();await waitWindow('clients');
   await page.locator('#contextPanel').getByText('Client Cadran Fonction').first().waitFor();
+  // Windows open maximized by default: home blurred behind, app strip at the bottom; ⤡ puts it back on the frame.
+  const full=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),b=document.querySelector('#dockAppBar')?.getBoundingClientRect(),cs=getComputedStyle(document.querySelector('#contextLayer'));return {on:document.body.classList.contains('dock-expanded'),w:p.width,bottom:p.bottom,bar:b&&{top:b.top,h:b.height,bottom:b.bottom},blur:cs.backdropFilter||cs.webkitBackdropFilter||'',vw:innerWidth,vh:innerHeight};});
+  assert(full.on&&full.w>=full.vw-40,'Maximized by default '+JSON.stringify(full));
+  assert(full.bar&&full.bar.h>20&&full.bar.bottom<=full.vh+1&&full.bottom<=full.bar.top+1,'App strip under the maximized window '+JSON.stringify(full));
+  assert(/blur/.test(full.blur),'Home blurred behind the window '+JSON.stringify(full));
+  await page.locator('#dockExpand').click();
+  assert(!await page.evaluate(()=>document.body.classList.contains('dock-expanded')),'⤡ puts the window back on the frame');
   const g=await geo();
   assert(Math.abs(g.win.x-g.frame.x)<=2&&Math.abs(g.win.w-g.frame.w)<=2&&g.win.y<=Math.max(8,g.frame.y)+1,'Window on the function frame '+JSON.stringify(g));
   assert(g.strip.top+g.strip.h<=g.vh+1,'App strip fully on screen '+JSON.stringify(g));
@@ -156,9 +163,8 @@ const {chromium}=require('playwright');
    const known=await page.evaluate(m=>(homeLayout.workspace?.modules||[]).some(x=>x.key===m)&&!!document.querySelector(`#content .module-grid [data-go="${m}"]`),module);
    if(known){
     await card.locator('[data-priority-open]').click();await waitWindow(module);
-    const w=await geo();
-    assert(Math.abs(w.win.x-w.frame.x)<=2&&Math.abs(w.win.w-w.frame.w)<=2,'Action window docked on the function frame '+JSON.stringify(w));
-    assert(w.strip&&Math.abs(w.win.bottom-(w.strip.top-6))<=2,'App strip under the action window');
+    if(await page.locator('#contextPanel').count())assert(await page.evaluate(()=>document.body.classList.contains('dock-expanded')&&!!document.querySelector('#dockAppBar [data-focus-app]')),'Action window maximized, app strip at the bottom');
+    else{const w=await geo();assert(Math.abs(w.win.x-w.frame.x)<=2&&Math.abs(w.win.w-w.frame.w)<=2,'Action list docked on the function frame '+JSON.stringify(w));}
     await toGrid();
    }
   }
@@ -166,6 +172,7 @@ const {chromium}=require('playwright');
   // stays available docked AND in full screen (⤢), and the full-screen strip switches window.
   {
    const keys=await page.evaluate(()=>(homeLayout.workspace?.modules||[]).map(m=>m.key));
+   await page.evaluate(()=>{moduleDock.preferExpanded=false;}); // checked on the frame here; maximized is checked above
    const report=[],checked=[];
    for(const key of keys){
     const inStrip=page.locator(`#moduleFocus [data-focus-app="${key}"]`),docked=await page.evaluate(()=>!!document.querySelector('#contextPanel')&&document.body.classList.contains('dock-to-focus'));
@@ -209,7 +216,8 @@ const {chromium}=require('playwright');
    await page.waitForFunction(()=>document.querySelector('#dockExpand'));
    await page.locator('#dockExpand').click();await page.locator(`#dockAppBar [data-focus-app="${second}"]`).click();
    await waitWindow(second);
-   assert.equal(await page.locator('#dockAppBar').count(),0);assert(!await page.evaluate(()=>document.body.classList.contains('dock-expanded')));
+   assert(await page.evaluate(()=>document.body.classList.contains('dock-expanded')&&!!document.querySelector('#dockAppBar')),'Next window maximized too, strip at the bottom');
+   await page.locator('#dockExpand').click();
    console.log('Function windows checked:',checked.join(', '));
    // No white frame around the current app of the strip (keyboard focus = green ring on the icon only).
    const ring=await page.locator('#moduleFocus .focus-app.is-current').evaluate(b=>{b.focus();const cs=getComputedStyle(b);return {outline:cs.outlineStyle,width:cs.outlineWidth};});

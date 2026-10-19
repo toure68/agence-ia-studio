@@ -571,3 +571,8 @@ body.dock-to-focus .context-header .dock-assistant-hint{color:#9aa6b2;overflow:h
 @media (max-width:360px){body.dock-to-focus .context-header .dock-assistant-hint{display:none}}
 /* Swipe-back from the left edge (static/edge-back.js): a round chevron follows the finger. */
 .edge-back-hint{position:fixed;left:calc(4px + env(safe-area-inset-left,0px));top:50%;z-index:60;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#1c2129ee;border:1px solid #ffffff26;color:#f2f5f7;pointer-events:none;opacity:0;transform:translate(0,-50%) scale(.7)}
+/* Windows open maximized by default: the home behind is blurred, only the window and the app strip stay sharp. */
+body.dock-to-focus.dock-expanded .context-layer{background:rgba(5,7,10,.45)!important;-webkit-backdrop-filter:blur(16px) saturate(140%)!important;backdrop-filter:blur(16px) saturate(140%)!important}
+/* Typing in a maximized window: the keyboard takes the bottom, the strip steps aside until it closes. */
+body.dock-expanded.dock-keyboard .dock-app-bar{display:none}
+body.dock-expanded.dock-keyboard .context-layer{padding-bottom:12px!important}
