@@ -116,7 +116,9 @@ function moduleFocusWindow(key,open){
  if(!moduleFocusOpen(key))return false;
  const frame=document.querySelector('#moduleFocus');
  const r=frame.getBoundingClientRect();
- if(r.top<8||r.bottom>innerHeight-8)frame.scrollIntoView({block:r.height>innerHeight-16?'start':'center'});
+ // The app strip must be on screen: a frame taller than the screen is aligned on its bottom (window above the strip).
+ if(r.height>innerHeight-16){if(r.bottom>innerHeight-4||r.bottom<innerHeight-40)frame.scrollIntoView({block:'end'});}
+ else if(r.top<8||r.bottom>innerHeight-8)frame.scrollIntoView({block:'center'});
  if(!moduleFocusDock()){moduleFocusClose();return false;} // too little room: the normal full window opens instead
  frame.classList.add('is-direct');moduleDock.direct=true;
  if(open)open();
