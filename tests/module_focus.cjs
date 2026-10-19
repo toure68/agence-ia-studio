@@ -100,6 +100,19 @@ const {chromium}=require('playwright');
   await page.evaluate(()=>{Object.defineProperty(window,'visualViewport',{configurable:true,value:window.__realVV});syncDialogViewport();document.activeElement.blur();moduleDockKeyboard();});
   const back=await page.locator('#contextPanel').boundingBox();assert(Math.abs(back.y-dockedBox.y)<=2&&Math.abs(back.height-dockedBox.height)<=2,'Back onto the frame when the keyboard closes');
   await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
+  // Guided entry: "Suivant" key moves to the next field, a complete phone number moves on by itself,
+  // the validate button stays visible at the bottom, a small progress shows where you are.
+  await page.locator('#moduleFocus [data-focus-go="client-new"]').click();await page.locator('#clientName').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#clientName')?.getAttribute('enterkeyhint')==='next');
+  await page.locator('#clientName').focus();await page.keyboard.type('Client Guidé');await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.activeElement.id),'clientEmail','Enter goes to the next field');
+  await page.keyboard.type('guide@example.test');await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.activeElement.id),'clientPhone');
+  await page.keyboard.type('0612345678');await page.waitForFunction(()=>document.activeElement.id==='clientAddress');
+  const guide=await page.evaluate(()=>{const b=document.querySelector('#clientForm .fg-primary');return {sticky:b&&getComputedStyle(b).position==='sticky',current:!!document.querySelector('#clientAddress').closest('.fg-current'),progress:document.querySelector('#clientForm .fg-progress span')?.textContent||''};});
+  assert(guide.sticky&&guide.current&&/\d+ \/ \d+/.test(guide.progress),'Guided entry '+JSON.stringify(guide));
+  assert.equal(await page.evaluate(async()=>(await api(`/api/companies/${company.id}/clients`)).some(c=>c.name==='Client Guidé')),false,'Never submits on its own');
+  await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
   // Forms opened from home buttons (e.g. "Traiter l'activité") are dark and nothing overflows.
   await page.evaluate(()=>openCommand('task'));await page.locator('#commandText').waitFor();await page.waitForTimeout(150);
   assert.deepEqual(await lightCheck('#modalLayer .modal'),[],'Readable dark form');

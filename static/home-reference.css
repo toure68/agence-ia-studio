@@ -477,3 +477,14 @@ html,body{max-width:100%;overflow-x:clip}
 /* Keyboard open in a docked window: use the whole visible area above the keyboard (below the camera). */
 body.dock-to-focus.dock-keyboard .context-panel,body.dock-to-focus.dock-keyboard #modalLayer .modal{top:calc(var(--dialog-top,0px) + env(safe-area-inset-top,0px) + 6px)!important;height:calc(var(--dialog-height,100dvh) - env(safe-area-inset-top,0px) - 12px)!important;animation:none!important}
 body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
+/* Guided entry in windows: current field outlined, progress, validate button always visible at the bottom. */
+:is(.context-panel,#modalLayer .modal) .fg-current{outline:2px solid #4ade80;outline-offset:4px;border-radius:12px;transition:outline-color .2s}
+:is(.context-panel,#modalLayer .modal) .fg-progress{position:relative;display:flex;align-items:center;justify-content:flex-end;height:18px;margin:0 0 10px;border-radius:9px;background:#ffffff0a;overflow:hidden}
+:is(.context-panel,#modalLayer .modal) .fg-progress i{position:absolute;left:0;top:0;bottom:0;background:#4ade8040;transition:width .3s}
+:is(.context-panel,#modalLayer .modal) .fg-progress span{position:relative;padding:0 8px;color:#c9d0d9;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+:is(.context-panel,#modalLayer .modal) .fg-primary{position:sticky;bottom:8px;z-index:3;box-shadow:0 -10px 24px #10141a,0 8px 18px #0008}
+:is(.context-panel,#modalLayer .modal) .fg-primary.fg-waiting{background:#2a3038!important;border-color:#3a414c!important;color:#9aa6b2!important}
+:is(.context-panel,#modalLayer .modal) .fg-primary.fg-pulse{animation:fg-pulse 1s ease 2}
+@keyframes fg-pulse{50%{box-shadow:0 0 0 7px #4ade8040,0 8px 18px #0008}}
+@media(prefers-reduced-motion:reduce){:is(.context-panel,#modalLayer .modal) .fg-primary.fg-pulse{animation:none}:is(.context-panel,#modalLayer .modal) .fg-progress i{transition:none}}
+:is(.context-panel .context-scroll,#modalLayer .modal){scroll-padding-bottom:76px}
