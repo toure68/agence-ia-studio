@@ -534,6 +534,7 @@ const {chromium}=require('playwright');
    await goModule('activities');
    await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');
    await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();
+   await page.locator('.tool-list [data-go="conformity"]').waitFor();
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    assert.equal(await page.locator('[data-priority-complete],.module-grid button').count(),0);
