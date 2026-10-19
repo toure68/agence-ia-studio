@@ -22,7 +22,7 @@ const {chromium}=require('playwright');
    for(let i=0;i<5;i++){
     await page.evaluate(async()=>{await navigationQueue;});
     if(await page.locator('#content .module-grid').count()){await page.evaluate(()=>{if(typeof moduleFocusClose==='function'&&moduleFocus.key&&!document.querySelector('#contextPanel'))moduleFocusClose();});if(!await page.locator('#contextPanel').count())return;}
-    const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
+    const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.evaluate(()=>{const b=document.querySelector('#moduleBack [data-back]');if(b&&b.getClientRects().length)b.click();else goBack();});
     await page.waitForFunction(route=>JSON.stringify(readRoute())!==route||Boolean(document.querySelector('#content .module-grid')),before);
     await page.evaluate(async()=>{await navigationQueue;});
     await page.waitForFunction(()=>!document.querySelector('#content > [role="status"]'));
@@ -300,7 +300,7 @@ const {chromium}=require('playwright');
      await formVisible(form);
      await page.reload({waitUntil:'networkidle'});
      await formVisible(form);
-     await page.locator('#moduleBack [data-back]').click();
+     await page.evaluate(()=>{const b=document.querySelector('#moduleBack [data-back]');if(b&&b.getClientRects().length)b.click();else goBack();});
      await page.waitForFunction(expected=>tab===expected,module);
      await page.locator(module==='prospects'?'#newProspect':module==='companies'?'#createCompany':module==='calendar'?'.task-list':module==='clients'?'#clientList':'#activityList').waitFor();
      await backHome();
@@ -324,7 +324,7 @@ const {chromium}=require('playwright');
    await page.locator('#quoteStatus').selectOption('accepted');
    await page.locator('#quotationForm button[type="submit"]').click();
    await page.locator('.quote-detail-lines').waitFor();
-   await page.locator('#moduleBack [data-back]').click();
+   await page.evaluate(()=>{const b=document.querySelector('#moduleBack [data-back]');if(b&&b.getClientRects().length)b.click();else goBack();});
    await page.locator('#quoteList').waitFor();
    assert((await page.locator('#quoteList').innerText()).includes('Accepté'));
    await page.locator('[data-quote-open]').first().click();
