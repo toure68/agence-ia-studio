@@ -521,8 +521,8 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 .dock-app-bar .focus-app.is-current{opacity:1}
 .dock-app-bar .focus-app-name{display:block;width:56px;height:18px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#9fb2ad;font-size:10px;font-weight:700}
 .dock-app-bar .focus-app.is-current .focus-app-name{color:#fff}
-body.dock-expanded .context-layer{padding-bottom:calc(var(--dock-bar-h,84px) + 6px)!important;align-items:flex-end}
-body.dock-expanded .context-panel{max-height:calc(var(--dialog-height,100dvh) - var(--dock-bar-h,84px) - 14px)!important}
+body.dock-expanded .context-layer{align-items:flex-end}
+
 
 /* No white frame around the current app in the strips: keyboard focus shows as the green ring on the icon only. */
 .reference-home .focus-app:focus,.reference-home .focus-app:focus-visible,.dock-app-bar .focus-app:focus{outline:none!important}
@@ -638,3 +638,19 @@ body[data-wall] .context-panel :is(.context-header,.context-footer,.context-scro
 body[data-wall] :is(.context-panel,#modalLayer .modal) .task-row:not(.row-todo):not(.row-quiet){background:#ffffff0c!important;border-color:#ffffff1f!important}
 body[data-wall] :is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:rgba(0,0,0,.28)!important;border-color:#ffffff29!important}
 body[data-wall].dock-to-focus.dock-expanded .context-layer{background:rgba(5,7,10,.22)!important}
+/* Assistant composer: the text starts inside the field (not on its edge), and the "+" is a clean round button
+   without a square block behind it. */
+:is(.context-panel,#modalLayer .modal) #assistantMessage{padding:12px 14px!important;line-height:1.4;border-radius:16px}
+body :is(.context-panel,#modalLayer .modal) .chat-attach-menu.chat-attach-menu,body :is(.context-panel,#modalLayer .modal) .chat-attach-menu>summary{background-color:transparent!important;background-image:none!important;box-shadow:none!important}
+:is(.context-panel,#modalLayer .modal) .chat-attach-menu{border:0!important;padding:0!important;border-radius:50%}
+:is(.context-panel,#modalLayer .modal) .chat-attach-menu>summary{border:1px solid #ffffff2b!important;border-radius:50%!important;list-style:none}
+/* Assistant composer: clear space between the text field and the row of buttons below it (+, micro, send). */
+:is(.context-panel,#modalLayer .modal) #assistantMessage+.chat-attachments{margin-top:10px}
+:is(.context-panel,#modalLayer .modal) .chat-toolbar{margin-top:12px;gap:10px}
+
+/* The app strip lives INSIDE the open window (last row of the window, like on the function frame), never over it:
+   it can no longer hide a button. In a form sheet it stays pinned at the bottom of the sheet while the form scrolls. */
+.dock-app-bar{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;z-index:1!important;flex:none;border-radius:0;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:#0b1013f0!important}
+.context-panel>.dock-app-bar{border-top:1px solid #ffffff14;padding:6px 10px max(8px,env(safe-area-inset-bottom,0px))!important}
+#modalLayer .modal>.dock-app-bar{position:sticky!important;bottom:0!important;margin-top:14px;border-top:1px solid #ffffff14;padding:6px 10px max(8px,env(safe-area-inset-bottom,0px))!important}
+#modalLayer .modal:has(>.dock-app-bar){padding-bottom:0!important}
