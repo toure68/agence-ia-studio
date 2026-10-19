@@ -138,7 +138,14 @@ document.addEventListener('keydown',e=>{
 });
 // Second window (full function, form): opens exactly on the frame — same place, same size —
 // with a back arrow and a "Déployer" button for when the whole screen is needed.
-const moduleDock={armed:0,seen:false,direct:false,switching:false};
+const moduleDock={armed:0,seen:false,direct:false,switching:false,preferExpanded:true};
+function moduleDockSetExpanded(on,remember){
+ document.body.classList.toggle('dock-expanded',on);if(remember)moduleDock.preferExpanded=on;
+ const shell=document.querySelector('#shell');if(shell&&document.querySelector('#contextLayer'))shell.inert=on;
+ moduleDockBar(on);
+ const expand=document.querySelector('#dockExpand');
+ if(expand){expand.textContent=on?'⤡':'⤢';expand.setAttribute('aria-label',on?'Réduire sur le cadre':'Déployer en plein écran');expand.title=expand.getAttribute('aria-label');}
+}
 function moduleFocusDock(){
  const frame=document.querySelector('#moduleFocus');if(!frame)return false;
  // The app strip stays visible under the window: wherever you are, the other functions are one tap away.
@@ -163,7 +170,7 @@ function moduleDockSync(){
   const header=layer?.querySelector('.context-header');
   if(header&&!header.querySelector('#dockExpand')){
    const expand=document.createElement('button');expand.type='button';expand.id='dockExpand';expand.className='dock-expand';expand.setAttribute('aria-label','Déployer en plein écran');expand.title='Déployer en plein écran';expand.textContent='⤢';
-   expand.onclick=()=>{document.body.classList.toggle('dock-expanded');const shell=document.querySelector('#shell');if(shell)shell.inert=document.body.classList.contains('dock-expanded');moduleDockBar(document.body.classList.contains('dock-expanded'));expand.textContent=document.body.classList.contains('dock-expanded')?'⤡':'⤢';expand.setAttribute('aria-label',document.body.classList.contains('dock-expanded')?'Revenir au cadre':'Déployer en plein écran');};
+   expand.onclick=()=>moduleDockSetExpanded(!document.body.classList.contains('dock-expanded'),true);
    header.append(expand);
    const apps=document.createElement('button');apps.type='button';apps.id='dockApps';apps.className='dock-apps';apps.setAttribute('aria-label','Toutes les fonctions');apps.title='Toutes les fonctions';
    apps.innerHTML=document.querySelector('#moduleFocus .focus-apps-button')?.innerHTML||'⋯';
@@ -177,6 +184,9 @@ function moduleDockSync(){
    assistant.innerHTML='<span class="dock-assistant-spark" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="m9 2 2 5 5 2-5 2-2 5-2-5-5-2 5-2zM18 13l1.3 3.2 3.2 1.3-3.2 1.3L18 22l-1.3-3.2-3.2-1.3 3.2-1.3z"/></svg></span><b>Assistant IA</b><span class="dock-assistant-hint">· Poser une question</span>';
    assistant.onclick=()=>{if(typeof tab!=='undefined'&&tab==='assistant')return;openTab('assistant');};
    back.after(assistant);moduleDockCount();
+   // Windows open maximized by default (background blurred, everything visible); ⤡ puts them back on the frame,
+   // and that choice is kept for the next windows until the app is reloaded.
+   if(moduleDock.preferExpanded)moduleDockSetExpanded(true);
    new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
  }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct&&!moduleDock.switching){moduleDock.direct=false;moduleFocusClose();}}
