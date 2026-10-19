@@ -27,7 +27,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  Object.assign(labels,{veille:'Veille métier','module-reserve':'Réserve','module-library':'Mes fonctions',scanner:'Documents & profil',document:'Vérifier le document'});
  ownerTabs.add('scanner');ownerTabs.add('document');
  Object.assign(labels,{social:'Publications','social-new':'Préparer une publication','social-post':'Vérifier la publication'});
- labels.assistant='Assistant IA';
+ labels.assistant='Assistant IA';labels.actions='Actions à faire';
  labels['ai-usage']='Budget IA';ownerTabs.add('ai-usage');
  ['social','social-new','social-post'].forEach(key=>ownerTabs.add(key));
  const recordRoutes=new Set(['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material']);
@@ -70,6 +70,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  try{
    if(next==='dashboard')await dashboard();
    else if(next==='assistant')renderAssistantPanel();
+   else if(next==='actions')await renderPriorityGroupPanel();
    else if(next==='veille')await renderVeille();
    else if(next==='module-reserve')await renderModuleReserve();
    else if(next==='module-library')await renderModuleLibrary();
