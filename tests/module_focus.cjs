@@ -84,6 +84,22 @@ const {chromium}=require('playwright');
   await page.evaluate(async()=>{await navigationQueue;});
   assert.equal(await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),false,'Dock released after closing');
   assert(await frame.isVisible(),'Frame kept after the full view');
+  // Keyboard open while typing in a docked form: the form leaves the frame and fills the visible area above
+  // the keyboard, with the field in view; it returns onto the frame when the keyboard closes.
+  await page.locator('#moduleFocus [data-focus-go="client-new"]').click();await page.locator('#contextPanel input').first().waitFor();
+  await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus'));
+  const dockedBox=await page.locator('#contextPanel').boundingBox();
+  const field=page.locator('#contextPanel input:not([type=hidden])').first();await field.focus();
+  const kb=await page.evaluate(()=>{const real=window.visualViewport;Object.defineProperty(window,'visualViewport',{configurable:true,value:{height:innerHeight-340,width:innerWidth,offsetTop:0,offsetLeft:0,addEventListener(){}}});
+   document.documentElement.style.setProperty('--dialog-height',(innerHeight-340)+'px');document.documentElement.style.setProperty('--dialog-top','0px');moduleDockKeyboard();
+   const r=document.querySelector('#contextPanel').getBoundingClientRect(),f=document.activeElement.getBoundingClientRect();
+   window.__realVV=real;return {on:document.body.classList.contains('dock-keyboard'),top:r.top,bottom:r.bottom,limit:innerHeight-340,field:{top:f.top,bottom:f.bottom}};});
+  assert(kb.on&&kb.top<=12&&kb.bottom<=kb.limit+1,'Form fills the space above the keyboard '+JSON.stringify(kb));
+  await page.waitForTimeout(300);
+  const fieldBox=await field.boundingBox();assert(fieldBox.y>=0&&fieldBox.y+fieldBox.height<=kb.limit+1,'Active field visible above the keyboard');
+  await page.evaluate(()=>{Object.defineProperty(window,'visualViewport',{configurable:true,value:window.__realVV});syncDialogViewport();document.activeElement.blur();moduleDockKeyboard();});
+  const back=await page.locator('#contextPanel').boundingBox();assert(Math.abs(back.y-dockedBox.y)<=2&&Math.abs(back.height-dockedBox.height)<=2,'Back onto the frame when the keyboard closes');
+  await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
   // Forms opened from home buttons (e.g. "Traiter l'activité") are dark and nothing overflows.
   await page.evaluate(()=>openCommand('task'));await page.locator('#commandText').waitFor();await page.waitForTimeout(150);
   assert.deepEqual(await lightCheck('#modalLayer .modal'),[],'Readable dark form');
