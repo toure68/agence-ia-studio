@@ -221,6 +221,27 @@ const {chromium}=require('playwright');
    console.log('Function windows checked:',checked.join(', '));
    await page.locator('#moduleFocus [data-focus-close]').click();
   }
+  // No white frame around the current app of the strip (keyboard focus = green ring on the icon only).
+  {
+   await page.locator('#content .module-grid .module-tile[data-go]').first().click();await page.locator('#moduleFocus').waitFor();
+   const ring=await page.locator('#moduleFocus .focus-app.is-current').evaluate(b=>{b.focus();const cs=getComputedStyle(b);return {outline:cs.outlineStyle,width:cs.outlineWidth};});
+   assert(ring.outline==='none'||ring.width==='0px','No white frame around the current app '+JSON.stringify(ring));
+   await page.locator('#moduleFocus [data-focus-close]').click();
+  }
+  // Glass design: wallpaper chosen from the account menu, saved on the account, glass cards over it.
+  {
+   assert.equal(await page.evaluate(()=>document.body.dataset.wall),'nuit','Default wallpaper: Uni nuit');
+   await page.locator('.account-menu summary').click();await page.locator('#accountWallpaper').click();
+   await page.locator('#modalLayer [data-wallpaper="aurore"]').click();
+   await page.waitForFunction(()=>document.body.dataset.wall==='aurore'&&me.wallpaper==='aurore');
+   await page.evaluate(()=>closeModal());
+   await page.evaluate(()=>{try{localStorage.removeItem('aia-wallpaper')}catch(e){}});
+   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').first().waitFor({state:'attached'});
+   await page.waitForFunction(()=>document.body.dataset.wall==='aurore');
+   const glass=await page.evaluate(()=>{const t=document.querySelector('.reference-home .home-treasury,.reference-home .module-focus,.reference-home .module-grid>.module-card');const cs=getComputedStyle(t);const w=getComputedStyle(document.querySelector('#appWall'));return {blur:(cs.backdropFilter||cs.webkitBackdropFilter||''),wall:w.display,img:w.backgroundImage};});
+   assert(/blur/.test(glass.blur),'Frosted glass cards '+JSON.stringify(glass));assert(glass.wall==='block'&&/gradient/.test(glass.img),'Wallpaper behind the home '+JSON.stringify(glass));
+   await page.evaluate(async()=>{await api('/api/me/wallpaper',{method:'PUT',body:JSON.stringify({wallpaper:'nuit'})});applyWallpaper('nuit');});
+  }
   // Preview endpoint is company-scoped and read-only.
   const peek=await page.evaluate(async()=>api(`/api/companies/${company.id}/module-peek/clients`));
   assert(peek.items.length>=1&&peek.items.length<=3);

@@ -184,3 +184,13 @@ def test_stay_signed_in_for_six_months(env):
     assert r.status_code==200
     assert 'Max-Age=15552000' in r.headers['set-cookie']
     assert env.SESSION_SECONDS==15552000
+
+
+def test_wallpaper_is_saved_per_user(env):
+    client=TestClient(env.app)
+    headers=auth(client,'owner@demo.test','correct horse battery staple')
+    assert client.get('/api/me').json()['wallpaper']=='nuit'
+    assert client.put('/api/me/wallpaper',json={'wallpaper':'aurore'}).status_code==403  # CSRF required
+    assert client.put('/api/me/wallpaper',json={'wallpaper':'inconnu'},headers=headers).status_code==400
+    assert client.put('/api/me/wallpaper',json={'wallpaper':'aurore'},headers=headers).json()['wallpaper']=='aurore'
+    assert client.get('/api/me').json()['wallpaper']=='aurore'
