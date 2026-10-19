@@ -109,10 +109,20 @@ const {chromium}=require('playwright');
   await page.keyboard.type('guide@example.test');await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement.id),'clientPhone');
   await page.keyboard.type('0612345678');await page.waitForFunction(()=>document.activeElement.id==='clientAddress');
-  const guide=await page.evaluate(()=>{const b=document.querySelector('#clientForm .fg-primary');return {sticky:b&&getComputedStyle(b).position==='sticky',current:!!document.querySelector('#clientAddress').closest('.fg-current'),progress:document.querySelector('#clientForm .fg-progress span')?.textContent||''};});
+  const guide=await page.evaluate(()=>{const b=document.querySelector('#clientForm .fg-primary');const typing=getComputedStyle(b).position;const cur=document.activeElement;cur.blur();const idle=getComputedStyle(b).position;cur.focus();return {sticky:typing==='static'&&idle==='sticky',current:!!document.querySelector('#clientAddress').closest('.fg-current'),progress:document.querySelector('#clientForm .fg-progress span')?.textContent||''};});
   assert(guide.sticky&&guide.current&&/\d+ \/ \d+/.test(guide.progress),'Guided entry '+JSON.stringify(guide));
   assert.equal(await page.evaluate(async()=>(await api(`/api/companies/${company.id}/clients`)).some(c=>c.name==='Client Guidé')),false,'Never submits on its own');
+  const ring=await page.evaluate(()=>{const f=document.querySelector('#clientAddress');f.focus();const w=f.closest('.fg-current'),cs=getComputedStyle(f);return {wrapOutline:w?getComputedStyle(w).outlineStyle:'none',inputOutline:cs.outlineStyle,shadow:cs.boxShadow};});
+  assert(ring.wrapOutline==='none'&&ring.inputOutline==='none'&&ring.shadow!=='none','One single ring on the active field '+JSON.stringify(ring));
   await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
+  // Exports stay inside the app: the CSV goes to the share sheet, the page does not navigate to a file.
+  await page.evaluate(()=>{openTab('prospects');});await page.locator('a[href="/api/prospects-export"]').waitFor();
+  const urlBefore=page.url();
+  await page.evaluate(()=>{navigator.canShare=()=>true;navigator.share=async d=>{window.__shared=d.files[0].name+':'+d.files[0].size;};});
+  await page.locator('a[href="/api/prospects-export"]').click();await page.waitForFunction(()=>window.__shared);
+  assert.equal(page.url(),urlBefore,'No navigation to a bare file page');
+  assert((await page.evaluate(()=>window.__shared)).startsWith('prospects-agence-ia.csv:'));
+  await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
   // Forms opened from home buttons (e.g. "Traiter l'activité") are dark and nothing overflows.
   await page.evaluate(()=>openCommand('task'));await page.locator('#commandText').waitFor();await page.waitForTimeout(150);
   assert.deepEqual(await lightCheck('#modalLayer .modal'),[],'Readable dark form');

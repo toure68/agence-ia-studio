@@ -14,6 +14,11 @@
    const cs=getComputedStyle(el),bg=rgb(cs.backgroundColor);
    if((bg&&bg.a>0.3&&lum(bg)>0.78)||lightGradient(cs.backgroundImage))el.classList.add('surface-was-light'); // tagged elements are skipped above, so no mutation loop
   }
+  // Light buttons/chips (e.g. a pale "Vérifié" pill with light text): tint them for the dark universe.
+  for(const el of root.querySelectorAll('.btn,.badge,[class*="chip"],[class*="pill"],button')){
+   if(el.classList.contains('tint-was-light')||el.matches('.primary,.fg-primary,[type=submit]'))continue;
+   const bg=rgb(getComputedStyle(el).backgroundColor);if(bg&&bg.a>0.3&&lum(bg)>0.78)el.classList.add('tint-was-light');
+  }
   for(const el of root.querySelectorAll('*')){
    if(skip.has(el.tagName.toUpperCase())||el.closest('svg')||el.matches('.btn,.badge,[class*="chip"],[class*="pill"],.text-was-dark')||el.closest('.btn,.badge'))continue;
    if(!el.childNodes.length||![...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))continue;

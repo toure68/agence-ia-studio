@@ -70,12 +70,13 @@
     box.addEventListener('focusin',e=>{if(e.target.matches?.(FIELD)){current(box,e.target);reveal(wrap(e.target)||e.target);}});
     box.addEventListener('change',e=>{
      const f=e.target;if(!f.matches?.(FIELD))return;progress(box);const was=f.dataset.fgDone==='1';ready(box);
-     if(f.matches('select,input[type=date],input[type=time],input[type=datetime-local],input[type=month]')&&filled(f)&&!was){f.dataset.fgDone='1';setTimeout(()=>next(box,f),200);}
+     // Only when the person is still on that field (never steal focus from a tap elsewhere, e.g. on Valider).
+     if(f.matches('select,input[type=date],input[type=time],input[type=datetime-local],input[type=month]')&&filled(f)&&!was){f.dataset.fgDone='1';setTimeout(()=>{if(document.activeElement===f)next(box,f);},200);}
     });
     box.addEventListener('input',e=>{
      const f=e.target;if(!f.matches?.(FIELD))return;progress(box);ready(box);
      const digits=String(f.value).replace(/\D/g,'');
-     if((isPhone(f)&&/^0\d{9}$/.test(digits))||(isPostal(f)&&/^\d{5}$/.test(digits))){if(f.dataset.fgDone!=='1'){f.dataset.fgDone='1';setTimeout(()=>next(box,f),200);}}
+     if((isPhone(f)&&/^0\d{9}$/.test(digits))||(isPostal(f)&&/^\d{5}$/.test(digits))){if(f.dataset.fgDone!=='1'){f.dataset.fgDone='1';setTimeout(()=>{if(document.activeElement===f)next(box,f);},200);}}
      else delete f.dataset.fgDone;
     });
    }

@@ -446,7 +446,7 @@ body.dock-to-focus .context-header #closeContext{order:-1}
 :is(.context-panel,#modalLayer .modal) :is(.sub,.tiny,.muted,.hint,small){color:#9aa6b2!important}
 :is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:#1a1f27!important;color:#f2f5f7!important;-webkit-text-fill-color:#f2f5f7;border:1px solid #ffffff24!important;border-radius:12px;color-scheme:dark}
 :is(.context-panel,#modalLayer .modal) :is(input,textarea)::placeholder{color:#5c6773!important;-webkit-text-fill-color:#5c6773}
-:is(.context-panel,#modalLayer .modal) :is(input,select,textarea):focus{outline:2px solid #4ade8099;outline-offset:1px;border-color:#4ade80!important}
+
 :is(.context-panel,#modalLayer .modal) :is(.card,.stack,.form-page>.stack,.task-row,.library-card,.tool-list>*,.tablewrap,details,fieldset,.field-group,.msg,.panel,.box,li.row){background:#ffffff08!important;border-color:#ffffff14!important;color:#f2f5f7!important;box-shadow:none!important}
 :is(.context-panel,#modalLayer .modal) .btn,:is(.context-panel,#modalLayer .modal) button:not(.dock-expand):not(#closeContext):not(.back-circle){background:#1c2129;color:#e6eaef;border:1px solid #3a414c}
 :is(.context-panel,#modalLayer .modal) :is(.btn.primary,button.primary,[type=submit].btn){background:#4ade80!important;color:#06240f!important;border-color:#4ade80!important}
@@ -478,7 +478,13 @@ html,body{max-width:100%;overflow-x:clip}
 body.dock-to-focus.dock-keyboard .context-panel,body.dock-to-focus.dock-keyboard #modalLayer .modal{top:calc(var(--dialog-top,0px) + env(safe-area-inset-top,0px) + 6px)!important;height:calc(var(--dialog-height,100dvh) - env(safe-area-inset-top,0px) - 12px)!important;animation:none!important}
 body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 /* Guided entry in windows: current field outlined, progress, validate button always visible at the bottom. */
-:is(.context-panel,#modalLayer .modal) .fg-current{outline:2px solid #4ade80;outline-offset:4px;border-radius:12px;transition:outline-color .2s}
+:is(.context-panel,#modalLayer .modal) .fg-current{outline:none}
+:is(.context-panel,#modalLayer .modal) .fg-current>label,:is(.context-panel,#modalLayer .modal) label.fg-current{color:#4ade80!important}
+/* One single, clean ring on the active field (no double outline). */
+:is(.context-panel,#modalLayer .modal) :is(input,select,textarea):focus{outline:none!important;border-color:#4ade80!important;box-shadow:0 0 0 3px #4ade8033!important}
+/* While typing, the validate button stays in the flow so it never covers the next field. */
+/* Only while a FIELD has focus (not the button itself, or pressing it would move it away mid-tap). */
+:is(.context-panel,#modalLayer .modal) :is(form,.modal):has(:is(input,select,textarea):focus) .fg-primary{position:static;box-shadow:none}
 :is(.context-panel,#modalLayer .modal) .fg-progress{position:relative;display:flex;align-items:center;justify-content:flex-end;height:18px;margin:0 0 10px;border-radius:9px;background:#ffffff0a;overflow:hidden}
 :is(.context-panel,#modalLayer .modal) .fg-progress i{position:absolute;left:0;top:0;bottom:0;background:#4ade8040;transition:width .3s}
 :is(.context-panel,#modalLayer .modal) .fg-progress span{position:relative;padding:0 8px;color:#c9d0d9;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -488,3 +494,5 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 @keyframes fg-pulse{50%{box-shadow:0 0 0 7px #4ade8040,0 8px 18px #0008}}
 @media(prefers-reduced-motion:reduce){:is(.context-panel,#modalLayer .modal) .fg-primary.fg-pulse{animation:none}:is(.context-panel,#modalLayer .modal) .fg-progress i{transition:none}}
 :is(.context-panel .context-scroll,#modalLayer .modal){scroll-padding-bottom:76px}
+:is(.context-panel,#modalLayer .modal) .tint-was-light{background:#ffffff14!important;background-image:none!important;border-color:#ffffff24!important;color:#f2f5f7!important}
+:is(.context-panel,#modalLayer .modal) .badge{background:#1f3a2c!important;border:1px solid #4ade8055!important;color:#bbf7d0!important}
