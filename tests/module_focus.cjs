@@ -20,6 +20,7 @@ const {chromium}=require('playwright');
    if(!w.visible.includes('clients'))await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:['clients',...w.visible],version:w.version,columns:w.columns||2,rows:10})});
   });
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid [data-go="clients"]').waitFor();
+  await page.locator('#content .module-grid [data-go="clients"]').scrollIntoViewIfNeeded();
   const before=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#content .module-grid').getBoundingClientRect().top,url:location.href,tiles:document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-tile').length}));
   await page.locator('#content .module-grid [data-go="clients"]').click();
   const frame=page.locator('#moduleFocus');await frame.waitFor();

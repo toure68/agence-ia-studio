@@ -59,7 +59,8 @@ function moduleFocusOpen(key){
  frame.classList.remove('is-entering','is-switching');void frame.offsetWidth;frame.classList.add(switching?'is-switching':'is-entering');
  const reserve=home.querySelector('#homeReserve');if(reserve&&!reserve.hidden){reserve.hidden=true;home.querySelector('[data-reserve-toggle]')?.setAttribute('aria-expanded','false');}
  moduleFocusLoad(key);
- const current=frame.querySelector('.focus-app.is-current');if(current)current.scrollIntoView({block:'nearest',inline:'center'});
+ // Center the current function in the strip without moving the page.
+ const current=frame.querySelector('.focus-app.is-current'),strip=frame.querySelector('.focus-apps');if(current&&strip)strip.scrollLeft=Math.max(0,current.offsetLeft-(strip.clientWidth-current.offsetWidth)/2);
  (switching?frame.querySelector(`[data-focus-app="${key}"]`):frame.querySelector('[data-focus-close]'))?.focus({preventScroll:true});
  return true;
 }
