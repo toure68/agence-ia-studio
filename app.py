@@ -224,7 +224,13 @@ async def headers(request: Request, call_next):
     if APP_ENV == 'production':
         response.headers['Strict-Transport-Security'] = 'max-age=31536000'
     demo_path = request.url.path == '/demo' or request.url.path.startswith('/demo/') or request.url.path in ('/static/demo.js', '/static/demo-treasury.js')
-    response.headers['Cache-Control'] = 'no-store' if demo_path or request.url.path.startswith('/api/') else 'public, max-age=300'
+    if demo_path or request.url.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store'
+    elif response.headers.get('content-type', '').startswith('text/html'):
+        # Pages are checked on every opening, so a new version shows at once (scripts and styles are versioned).
+        response.headers['Cache-Control'] = 'no-cache'
+    else:
+        response.headers['Cache-Control'] = 'public, max-age=300'
     return response
 
 

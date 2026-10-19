@@ -103,6 +103,20 @@ const {chromium}=require('playwright');
   assert.equal(await page.evaluate(async()=>(await api(`/api/companies/${company.id}/clients`)).some(c=>c.name==='Client Guidé')),false,'Never submits on its own');
   const ring=await page.evaluate(()=>{const f=document.querySelector('#clientAddress');f.focus();const w=f.closest('.fg-current'),cs=getComputedStyle(f);return {wrapOutline:w?getComputedStyle(w).outlineStyle:'none',inputOutline:cs.outlineStyle,shadow:cs.boxShadow};});
   assert(ring.wrapOutline==='none'&&ring.inputOutline==='none'&&ring.shadow!=='none','One single ring on the active field '+JSON.stringify(ring));
+  // Swipe from the left edge to the right = back one step; at the first step it closes the window (home grid).
+  const edgeSwipe=(dx=150,dy=4)=>page.evaluate(([dx,dy])=>{window.__edgeBackForce=true;const el=document.elementFromPoint(6,420)||document.body,mk=(x,y)=>new Touch({identifier:7,target:el,clientX:x,clientY:y});
+   el.dispatchEvent(new TouchEvent('touchstart',{touches:[mk(6,420)],changedTouches:[mk(6,420)],bubbles:true,cancelable:true}));
+   el.dispatchEvent(new TouchEvent('touchmove',{touches:[mk(6+dx/2,420+dy/2)],changedTouches:[mk(6+dx/2,420+dy/2)],bubbles:true,cancelable:true}));
+   el.dispatchEvent(new TouchEvent('touchend',{touches:[],changedTouches:[mk(6+dx,420+dy)],bubbles:true,cancelable:true}));},[dx,dy]);
+  await page.evaluate(()=>document.activeElement?.blur());
+  await edgeSwipe(30,200);await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(()=>document.querySelector('#dockBack')?.dataset.n),'2','A vertical move is a scroll, never a back');
+  await edgeSwipe();
+  await page.waitForFunction(()=>document.querySelector('#dockBack')?.dataset.n==='1'&&!document.querySelector('#clientForm'));
+  await page.evaluate(async()=>{await navigationQueue;});
+  await edgeSwipe();
+  await page.waitForFunction(()=>!document.querySelector('#contextPanel')&&!document.querySelector('#moduleFocus'));
+  await page.evaluate(async()=>{await navigationQueue;});
   // Closing the window returns to the home grid, with the assistant back in its place.
   await toGrid();
   assert(await page.locator('#content .module-grid [data-go="clients"]').isVisible(),'Grid back');
