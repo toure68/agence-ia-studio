@@ -94,7 +94,7 @@ function sizeHomeGrid(grid){
   const columns=Number(grid.dataset.columns)||2,gap=parseFloat(getComputedStyle(grid).columnGap)||0;
   const reference=(width-gap)/2,cell=(width-gap*(columns-1))/columns,scale=cell/reference;
   grid.style.setProperty('--home-grid-scale',String(scale));
-  grid.style.setProperty('--home-grid-height',`${(matchMedia('(max-width:750px)').matches?112:132)*scale}px`);
+  grid.style.setProperty('--home-grid-height',`${(matchMedia('(max-width:750px)').matches?120:140)*scale}px`);
   return;
  }
  const reference=(width-12)/2,cell=(width-16)/3,scale=cell/reference;

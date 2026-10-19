@@ -39,7 +39,7 @@ const {chromium}=require('playwright');
     for(const c of geometry.cards){
      assert(Math.abs(c.card.height-geometry.cards[0].card.height)<.1,'Equal card heights');
      assert(c.tile.bottom<=c.card.bottom+.1,'Button stays within card bottom');
-     assert(c.icon.y>=c.tile.y-.1&&c.icon.bottom<=c.tile.bottom+.1,'Icon contained vertically');
+     assert(c.icon.y>=c.tile.y-.1&&c.icon.bottom<=c.tile.bottom+.1,`Icon contained vertically at ${width}/${columns}: `+JSON.stringify({tile:c.tile,icon:c.icon,text:c.text,font:c.font,padding:c.padding}));
      assert(c.icon.bottom<=c.text.y+.1,'Icon is above the label');
      assert(c.text.bottom<=c.tile.bottom+.1,'Text contained vertically');
      assert(Math.abs(c.icon.width-c.icon.height)<.1,'Square icon badge');

@@ -293,3 +293,11 @@ body[data-public-demo] .reference-home .home-modules-heading>[data-go],body[data
 #homeTreasury .bank-pills,#homeTreasury .demo-bank-pills{margin-top:14px}
 @media(max-width:359px){#homeTreasury .home-treasury{padding:16px}#homeTreasury .home-flow{padding:12px}}
 body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-flow{text-align:left;align-items:flex-start}
+.reference-home .module-grid[data-columns]{--home-grid-icon:52px;--home-grid-height:120px}
+@media(min-width:751px){.reference-home .module-grid[data-columns]{--home-grid-icon:58px;--home-grid-height:140px}}
+.reference-home .module-grid[data-columns] .module-icon{border-radius:calc(16px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-icon svg{width:calc(30px * var(--home-grid-scale));height:calc(32px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-tile{padding:calc(12px * var(--home-grid-scale));gap:calc(8px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns] .module-copy strong{line-height:1.22;letter-spacing:-.005em}
+.reference-home .module-grid[data-columns="4"] .module-tile{gap:calc(5px * var(--home-grid-scale))}
+.reference-home .module-grid[data-columns="4"] .module-copy strong{line-height:1.15}
