@@ -30,7 +30,7 @@ const {chromium}=require('playwright');
  async function goModule(route){
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
-   if(await tile.count()){await page.evaluate(()=>{if(moduleFocus.key)moduleFocusClose();});await page.evaluate(r=>openTab(r),route);await page.evaluate(()=>navigationQueue);}
+   if(await tile.count()){await page.evaluate(()=>{if(moduleFocus.key)moduleFocusClose();});const cid=await tile.getAttribute('data-company-id');await page.evaluate(([r,c])=>openTab(r,{companyId:c?Number(c):null}),[route,cid]);await page.evaluate(()=>navigationQueue);}
    else if(await page.evaluate(async r=>(await api(`/api/companies/${company.id}/workspace`)).modules.some(m=>m.key===r),route)){
      // Functions kept in the reserve open through their own route.
      await page.evaluate(r=>openTab(r),route);await page.evaluate(()=>navigationQueue);
