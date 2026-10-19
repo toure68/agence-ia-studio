@@ -21,14 +21,16 @@ const {chromium}=require('playwright');
   });
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid [data-go="clients"]').waitFor();
   await page.locator('#content .module-grid [data-go="clients"]').scrollIntoViewIfNeeded();
-  const before=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#content .module-grid').getBoundingClientRect().top,height:Math.round(document.querySelector('#content .module-grid').getBoundingClientRect().height),url:location.href,tiles:document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-tile').length}));
+  const before=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#content .module-grid').getBoundingClientRect().top,height:Math.round(document.querySelector('.module-reserve-launch').getBoundingClientRect().bottom-document.querySelector('#content .module-grid').getBoundingClientRect().top),page:document.documentElement.scrollHeight,url:location.href,tiles:document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-tile').length}));
   await page.locator('#content .module-grid [data-go="clients"]').click();
   const frame=page.locator('#moduleFocus');await frame.waitFor();
   const after=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#moduleFocus').getBoundingClientRect().top,url:location.href}));
   assert.equal(after.url,before.url,'No screen change');assert(Math.abs(after.scroll-before.scroll)<2,'No scroll');assert(Math.abs(after.top-before.top)<2,'Same place as the grid '+JSON.stringify({before,after}));
   assert(await page.locator('#content .module-grid:not(.module-reserve-grid-inline)').isHidden(),'Grid hidden');
   const frameHeight=()=>frame.evaluate(e=>Math.round(e.getBoundingClientRect().height));
-  assert(Math.abs(await frameHeight()-before.height)<=1,'Frame keeps exactly the grid size '+JSON.stringify({grid:before.height,frame:await frameHeight()}));
+  assert(Math.abs(await frameHeight()-before.height)<=1,'Frame covers exactly the function block (grid + Réserve) '+JSON.stringify({block:before.height,frame:await frameHeight()}));
+  assert(Math.abs(await page.evaluate(()=>document.documentElement.scrollHeight)-before.page)<=1,'Nothing below moves');
+  assert.equal(await page.locator('#moduleFocus [data-focus-close]').getAttribute('aria-label'),'Toutes les fonctions','Apps button instead of a back arrow on the first level');
   assert(await page.locator('.module-reserve-launch').isHidden(),'Reserve button hidden');
   assert(await page.locator('#homeTreasury').isVisible(),'Treasury dial stays above');
   assert.equal(await page.locator('#moduleFocus .focus-title-main').innerText(),'Clients');
@@ -46,8 +48,20 @@ const {chromium}=require('playwright');
   for(const b of buttons)assert(b.color!==b.bg&&b.h>=40,'Readable button '+JSON.stringify(b));
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
   // "Voir tout" opens the full function; closing it comes back to the same frame.
+  const frameBox=await frame.boundingBox();
   await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();
+  await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&document.querySelector('#dockExpand'));
+  // Second window: exactly on the frame, dark universe, back arrow and Déployer.
+  const panelBox=await page.locator('#contextPanel').boundingBox();
+  const vh=await page.evaluate(()=>innerHeight),top=Math.max(8,frameBox.y),visible={x:frameBox.x,y:top,width:frameBox.width,height:Math.min(vh-8,frameBox.y+frameBox.height)-top};
+  for(const k of ['x','y','width','height'])assert(Math.abs(panelBox[k]-visible[k])<=2,'Second window on the (visible) frame '+JSON.stringify({visible,panelBox}));
+  const dark=await page.locator('#contextPanel').evaluate(e=>{const m=getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number);return (m[0]+m[1]+m[2])/3;});assert(dark<60,'Dark window '+dark);
+  assert.equal(await page.locator('#closeContext').getAttribute('aria-label'),'Revenir à la fonction');
+  await page.locator('#dockExpand').click();
+  assert((await page.locator('#contextPanel').boundingBox()).width>frameBox.width,'Déployer widens the window');
+  await page.locator('#dockExpand').click();
   await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});
+  assert.equal(await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),false,'Dock released after closing');
   assert(await frame.isVisible(),'Frame kept after the full view');
   // Escape and the back arrow restore the grid.
   await page.keyboard.press('Escape');assert.equal(await page.locator('#moduleFocus').count(),0);
@@ -57,7 +71,7 @@ const {chromium}=require('playwright');
   // Tiny grid (4 columns, 1 row): the frame still keeps the grid's size; content adapts.
   await page.evaluate(async()=>{const cid=company.id,w=await api(`/api/companies/${cid}/workspace`);await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:w.visible,version:w.version,columns:4,rows:1})});});
   await page.reload({waitUntil:'networkidle'});const small=page.locator('#content .module-grid .module-tile').first();await small.waitFor();
-  const smallGrid=await page.locator('#content .module-grid').evaluate(e=>Math.round(e.getBoundingClientRect().height));
+  const smallGrid=await page.evaluate(()=>Math.round(document.querySelector('.module-reserve-launch').getBoundingClientRect().bottom-document.querySelector('#content .module-grid').getBoundingClientRect().top));
   await small.click();await frame.waitFor();
   assert(Math.abs(await frameHeight()-smallGrid)<=1,'Small grid: same size '+JSON.stringify({grid:smallGrid,frame:await frameHeight()}));
   assert(await frame.locator('[data-focus-open]').isVisible(),'Voir tout stays reachable');
