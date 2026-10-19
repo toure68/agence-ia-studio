@@ -70,7 +70,9 @@ const {chromium}=require('playwright');
   await page.locator('#dockExpand').click();
   assert((await page.locator('#contextPanel').boundingBox()).width>frameBox.width,'Déployer widens the window');
   await page.locator('#dockExpand').click();
-  await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});
+  // The single visible back arrow returns to the function frame.
+  await page.locator('#contextPanel .context-header :is(#closeContext,#moduleBack [data-back])').filter({visible:true}).first().click();await page.locator('#contextPanel').waitFor({state:'detached'});
+  await page.evaluate(async()=>{await navigationQueue;});
   assert.equal(await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),false,'Dock released after closing');
   assert(await frame.isVisible(),'Frame kept after the full view');
   // Forms opened from home buttons (e.g. "Traiter l'activité") are dark and nothing overflows.
