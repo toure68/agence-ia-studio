@@ -103,10 +103,18 @@ function bankDialRows(treasury,bank,tab){
  if(!items.length)return '<li class="dial-empty">Aucune opération enregistrée</li>';
  return items.map((m,i)=>{const incoming=m.direction==='in',where=!bank?'<span class="dial-where"> · '+clean(bankDialShort(m.bank.name))+'</span>':'';return `<li class="bank-row dial-row ${incoming?'is-in':'is-out'}" style="--i:${i}"><span class="dial-dot" aria-hidden="true"></span><span class="dial-label" title="${clean(m.label)}">${clean(m.label)}</span><small><time datetime="${clean(m.date)}">${clean(bankDialDay(m.date))}</time>${where}</small><b class="${incoming?'bank-positive':'bank-negative'}">${clean(bankSigned(incoming?m.amount_minor:-m.amount_minor,m.currency))}</b></li>`;}).join('');
 }
+function bankDialTab(bank){return bankHomeTab==='alert'&&!(bank&&bank.shortfall_minor>0)?'last':bankHomeTab;}
+function bankDialAlert(treasury,bank){
+ const banks=treasury.banks||[],due=(treasury.debits||[]).filter(d=>String(d.bank_id)===String(bank.id)&&bank.next_due&&d.due<=bank.next_due);
+ const source=banks.filter(b=>b.id!==bank.id&&b.currency===bank.currency&&b.available_minor>=bank.shortfall_minor).sort((a,c)=>c.available_minor-a.available_minor)[0];
+ const when=bank.next_due?' · prélèvement '+bankShortDate(bank.next_due):'';
+ return `<div class="bank-home-alert dial-alert" role="status"><p>Manque <strong>${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</strong>${when}${due.length>1?' ('+due.length+')':''}</p><button type="button" class="bank-fund" data-bank-fund="${bank.id}" aria-label="Approvisionner ${clean(bank.name)} de ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}${source?' depuis '+clean(source.name):''}">${source?`Approvisionner depuis ${clean(bankDialShort(source.name))}`:'Approvisionner cette banque'}</button></div>`;
+}
+function bankDialPanel(treasury,bank){const tab=bankDialTab(bank);return tab==='alert'?bankDialAlert(treasury,bank):`<ul class="dial-list" aria-live="polite">${bankDialRows(treasury,bank,tab)}</ul>`;}
 function bankDialTabs(treasury,bank){
- const debits=(treasury.debits||[]).filter(d=>!bank||String(d.bank_id)===String(bank.id)),risk=debits.some(d=>bankDialRisk((treasury.banks||[]).find(b=>String(b.id)===String(d.bank_id)),d));
- const tab=(id,label,extra='')=>`<button type="button" class="dial-tab" data-dial-tab="${id}" aria-pressed="${bankHomeTab===id}">${label}${extra}</button>`;
- return `<div class="dial-tabs" role="group" aria-label="Opérations">${tab('last','Derniers')}${tab('next','À venir',debits.length?`<span class="dial-tab-dot${risk?' is-risk':''}" aria-label="${debits.length} prélèvement${debits.length>1?'s':''} prévu${debits.length>1?'s':''}${risk?', dont un à couvrir':''}"></span>`:'')}</div><ul class="dial-list" aria-live="polite">${bankDialRows(treasury,bank,bankHomeTab)}</ul>`;
+ const current=bankDialTab(bank),debits=(treasury.debits||[]).filter(d=>!bank||String(d.bank_id)===String(bank.id)),risk=debits.some(d=>bankDialRisk((treasury.banks||[]).find(b=>String(b.id)===String(d.bank_id)),d));
+ const tab=(id,label,extra='')=>`<button type="button" class="dial-tab" data-dial-tab="${id}" aria-pressed="${current===id}">${label}${extra}</button>`;
+ return `<div class="dial-tabs" role="group" aria-label="Opérations">${tab('last','Derniers')}${tab('next','À venir',debits.length?`<span class="dial-tab-dot${risk?' is-risk':''}" aria-label="${debits.length} prélèvement${debits.length>1?'s':''} prévu${debits.length>1?'s':''}${risk?', dont un à couvrir':''}"></span>`:'')}<button type="button" class="dial-more bank-view-all" data-bank-all title="Ouvrir la Trésorerie${bank?' de '+clean(bankDialShort(bank.name)):''}">Voir tout →</button></div><div class="dial-panel">${bankDialPanel(treasury,bank)}</div>`;
 }
 function bankDialCount(key,minor,currency){return `<span data-dial-count="${Number(minor)||0}" data-dial-key="${key}" data-dial-currency="${clean(currency)}">${clean(quoteMoney(minor,currency))}</span>`;}
 function bankHomeMarkup(treasury){
@@ -124,19 +132,14 @@ function bankHomeMarkup(treasury){
  const month=new Intl.DateTimeFormat('fr-FR',{month:'short',timeZone:'Europe/Paris'}).format(new Date((treasury.month||bankToday().slice(0,7))+'-15T12:00:00Z'));
  const ring=`<div class="dial-ring-wrap" aria-hidden="true"><svg class="dial-ring" viewBox="0 0 84 84"><circle class="dial-track" cx="42" cy="42" r="37"/>${arc('dial-arc-in',37,inMinor)}<circle class="dial-track dial-track-inner" cx="42" cy="42" r="27"/>${arc('dial-arc-out',27,outMinor)}</svg><span class="dial-month">${clean(month)}</span></div>`;
  let status;
- if(bank)status=bank.shortfall_minor>0?`<span class="dial-status is-alert"><i class="dial-pulse" aria-hidden="true"></i><span>Manque ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</span></span>`:'<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
+ if(bank)status=bank.shortfall_minor>0?'<span class="dial-status is-alert"><i class="dial-pulse" aria-hidden="true"></i><span>Alerte</span></span>':'<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
  else if(alerts.length){const a=alerts[0];status=`<button type="button" class="dial-status is-alert bank-global-alert" data-bank-pill="${a.id}" aria-label="Alerte : ${clean(a.name)} à ${clean(bankSigned(a.available_minor,a.currency))}${a.next_due?', prélèvement '+bankShortDate(a.next_due):''}"><i class="dial-pulse" aria-hidden="true"></i><span>${clean(bankDialShort(a.name))}${a.next_due?' · '+bankShortDate(a.next_due):''}${alerts.length>1?' +'+(alerts.length-1):''}</span></button>`;}
  else status='<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
- let body;
- if(bank&&bank.shortfall_minor>0){
-  const due=(treasury.debits||[]).filter(d=>String(d.bank_id)===String(bank.id)&&bank.next_due&&d.due<=bank.next_due);
-  const source=banks.filter(b=>b.id!==bank.id&&b.currency===bank.currency&&b.available_minor>=bank.shortfall_minor).sort((a,c)=>c.available_minor-a.available_minor)[0];
-  body=`<div class="bank-home-alert dial-alert" role="status"><p>${bank.upcoming_minor?`Prélèvement${due.length>1?'s':''} de ${clean(quoteMoney(bank.upcoming_minor,bank.currency))} ${bankShortDate(bank.next_due)}<br>`:'Solde insuffisant<br>'}Montant manquant : <strong>${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</strong></p><button type="button" class="bank-fund" data-bank-fund="${bank.id}">${source?`Approvisionner depuis ${clean(bankDialShort(source.name))} · ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}`:'Approvisionner cette banque'}</button></div>`;
- }else body=bankDialTabs(treasury,bank);
+ const body=bankDialTabs(treasury,bank);
  const pills=`<div class="bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="bank-pill bank-pill-all" data-bank-pill="all" aria-pressed="${!bank}" aria-label="Toutes les banques" title="Toutes les banques"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg></button>${banks.map((b,i)=>`<button type="button" class="bank-pill" data-bank-pill="${b.id}" style="--bank-color:${bankColor(i)}" aria-pressed="${String(b.id)===selected}" aria-label="${clean(b.name)}${b.shortfall_minor>0?' · Alerte : solde insuffisant':''}" title="${clean(b.name)}">${bankPillFace(b)}${b.shortfall_minor>0?'<span class="bank-pill-dot" aria-hidden="true"></span>':''}</button>`).join('')}<button type="button" class="bank-pill bank-pill-add" data-bank-add aria-label="Ajouter une banque" title="Ajouter une banque"><span aria-hidden="true">＋</span></button></div>`;
  const back=bank?'<button type="button" class="bank-fold bank-back" data-bank-pill="all" aria-label="Revenir à toutes les banques">‹</button>':'';
  queueMicrotask(()=>bankDialAnimate(document.querySelector('#homeTreasury')));
- return `<article class="home-treasury bank-home bank-dial${bank?' is-bank':''}" data-bank-selected="${clean(selected)}"><div class="home-treasury-top dial-head">${back}<h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name" title="${clean(bank?bank.name:'Toutes les banques')}">${clean(bank?bankDialShort(bank.name):'Toutes')}</span></h2>${status}</div><div class="dial-mid">${ring}<div class="dial-balance"><span class="sr-only">Solde</span>${balance}${flows}</div></div><div class="dial-body">${body}</div><div class="dial-foot">${pills}<button type="button" class="bank-view-all dial-all" data-bank-all>Voir tout →</button></div></article>`;
+ return `<article class="home-treasury bank-home bank-dial${bank?' is-bank':''}" data-bank-selected="${clean(selected)}"><div class="home-treasury-top dial-head">${back}<h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name" title="${clean(bank?bank.name:'Toutes les banques')}">${clean(bank?bankDialShort(bank.name):'Toutes')}</span></h2>${status}</div><div class="dial-mid">${ring}<div class="dial-balance"><span class="sr-only">Solde</span>${balance}${flows}</div></div><div class="dial-body">${body}</div><div class="dial-foot">${pills}</div></article>`;
 }
 function bankDialReduced(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch{return false;}}
 function bankDialAnimate(host){
@@ -156,7 +159,8 @@ function bankHomeRepaint(host,focus){
 }
 function bankHomeSelect(host,id){
  const banks=host.treasuryState?.widgets?.treasury?.banks||[],current=bankHomeSelected(banks);
- const next=id!=='all'&&String(id)===current?'all':String(id);
+ const next=id!=='all'&&String(id)===current?'all':String(id),bank=banks.find(b=>String(b.id)===next);
+ bankHomeTab=bank&&bank.shortfall_minor>0?'alert':'last';
  bankHomeSelection.set(bankHomeKey(),next);bankHomeRepaint(host,next);
 }
 function bankHomeShowTab(host,tab){
@@ -164,7 +168,7 @@ function bankHomeShowTab(host,tab){
  bankHomeTab=tab==='next'?'next':'last';
  const bank=(treasury.banks||[]).find(b=>String(b.id)===bankHomeSelected(treasury.banks||[]));
  host.querySelectorAll('[data-dial-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.dialTab===bankHomeTab)));
- const list=host.querySelector('.dial-list');if(list)list.innerHTML=bankDialRows(treasury,bank,bankHomeTab);
+ const panel=host.querySelector('.dial-panel');if(panel)panel.innerHTML=bankDialPanel(treasury,bank);
 }
 document.addEventListener('click',e=>{
  const host=e.target.closest('#homeTreasury');if(!host||!host.querySelector('.bank-home'))return;
@@ -180,7 +184,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||document.querySelector('#modalLayer:not(.hide)'))return;
  const host=document.querySelector('#homeTreasury');if(!host?.querySelector('.bank-home[data-bank-selected]:not([data-bank-selected="all"])'))return;
- e.preventDefault();bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
+ e.preventDefault();bankHomeTab='last';bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
 });
 
 // Bank logos: uploaded by the user for their own accounts, re-cropped server-side, never part of the code.
