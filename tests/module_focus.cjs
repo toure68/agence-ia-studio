@@ -34,7 +34,7 @@ const {chromium}=require('playwright');
   assert(await page.locator('.module-reserve-launch').isHidden(),'Reserve button hidden');
   assert(await page.locator('#homeTreasury').isVisible(),'Treasury dial stays above');
   assert.equal(await page.locator('#moduleFocus .focus-title-main').innerText(),'Clients');
-  await page.locator('#moduleFocus .focus-row',{hasText:'Client Cadran Fonction'}).waitFor();
+  await page.locator('#moduleFocus li.focus-row',{hasText:'Client Cadran Fonction'}).waitFor();
   assert(await page.locator('#moduleFocus .focus-row').count()<=3,'Three lines at most');
   // Small strip of the other functions at the bottom; switching stays in the same frame.
   const strip=page.locator('#moduleFocus .focus-app');assert.equal(await strip.count(),before.tiles);
@@ -155,6 +155,9 @@ const {chromium}=require('playwright');
     await card.locator('[data-priority-open]').click();
     await page.locator('#moduleFocus').waitFor();
     assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),module,'Same function as in the dial');
+    // Same as the dial's own button: no extra window; the card's actions are listed first in the dial.
+    assert.equal(await page.locator('#contextPanel').count(),0);assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
+    await page.locator('#moduleFocus [data-focus-priority]').first().click();
     await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')));
     const win=await page.evaluate(()=>{const w=(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')).getBoundingClientRect(),f=document.querySelector('#moduleFocus').getBoundingClientRect();return {dx:Math.abs(w.left-f.left),dw:Math.abs(w.width-f.width)};});
     assert(win.dx<=2&&win.dw<=2,'Action window docked on the function frame '+JSON.stringify(win));

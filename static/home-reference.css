@@ -506,3 +506,6 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 /* "Préparer" (command form): the main action, spaced from the field, full width, green — like every primary button. */
 #modalLayer .modal #previewCommand{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;margin:18px 0 6px;border:0!important;border-radius:14px;background:#4ade80!important;color:#06240f!important;font-size:16px;font-weight:800;box-shadow:none}
 #modalLayer .modal #previewCommand.fg-waiting{background:#2a3038!important;color:#9aa6b2!important}
+.reference-home .focus-list li{list-style:none}
+.reference-home .focus-row.is-action{width:100%;border:0;border-radius:10px;background:#ffffff08;color:var(--home-text);font:inherit;text-align:left;cursor:pointer;padding:0 8px;margin:0 0 4px;height:34px}
+.reference-home .focus-row.is-action b{color:var(--home-muted);font-size:16px;min-width:0}
