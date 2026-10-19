@@ -19,7 +19,7 @@ const {chromium}=require('playwright');
  async function backHome(){
    for(let i=0;i<5;i++){
     await page.evaluate(async()=>{await navigationQueue;});
-    if(await page.locator('#content .module-grid').count())return;
+    if(await page.locator('#content .module-grid').count()){await page.evaluate(()=>{if(typeof moduleFocusClose==='function'&&moduleFocus.key&&!document.querySelector('#contextPanel'))moduleFocusClose();});if(!await page.locator('#contextPanel').count())return;}
     const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
     await page.waitForFunction(route=>JSON.stringify(readRoute())!==route||Boolean(document.querySelector('#content .module-grid')),before);
     await page.evaluate(async()=>{await navigationQueue;});
@@ -30,7 +30,7 @@ const {chromium}=require('playwright');
  async function goModule(route){
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
-   if(await tile.count())await tile.click();
+   if(await tile.count()){await page.evaluate(()=>{if(moduleFocus.key)moduleFocusClose();});await tile.click();await page.locator('#moduleFocus [data-focus-open]').click();}
    else if(await page.evaluate(async r=>(await api(`/api/companies/${company.id}/workspace`)).modules.some(m=>m.key===r),route)){
      // Functions kept in the reserve open through their own route.
      await page.evaluate(r=>openTab(r),route);await page.evaluate(()=>navigationQueue);
@@ -144,7 +144,7 @@ const {chromium}=require('playwright');
    await openAssistant();assert.equal(await page.locator('#assistantMessage').inputValue(),'Brouillon à conserver');assert.equal(await page.locator('.chat-file').count(),1);
    await page.locator('.chat-file button').click();await backHome();
    await page.evaluate(()=>{document.querySelector('#assistantChat').dataset.identity='same-cockpit';});
-   await page.locator('#content [data-go="clients"]').click();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
+   await page.locator('#content .module-grid [data-go="clients"]').click();await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
    assert((await page.locator('#cockpitContent .module-grid .module-card').count())>=2,'Cockpit grid stays mounted behind the panel');
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/panel-mobile.png',animations:'disabled'});
    await page.setViewportSize({width:1280,height:900});assert.equal(await page.locator('#contextPanel').count(),1);await page.screenshot({path:'/tmp/ui-images/panel-desktop.png',animations:'disabled'});await page.setViewportSize({width:390,height:844});
