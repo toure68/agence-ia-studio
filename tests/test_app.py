@@ -156,3 +156,23 @@ def test_prospect_action_requires_human_at_agreement(env):
     assert suggested['draft_objective'] is None
     client.patch(f'/api/prospects/{pid}',headers=owner,json={'stage':'Refus'})
     assert 'Ne plus relancer' in client.get(f'/api/prospects/{pid}/next-action').json()['recommended_action']
+
+
+def test_owner_password_recovery_from_host_variables(env,monkeypatch):
+    client=TestClient(env.app)
+    auth(client,'owner@demo.test','correct horse battery staple')
+    # Without the flag, changing ADMIN_PASSWORD does nothing to an existing owner.
+    monkeypatch.setenv('ADMIN_PASSWORD','a brand new recovery password')
+    env.init_db()
+    assert TestClient(env.app).post('/api/login',json={'email':'owner@demo.test','password':'a brand new recovery password'}).status_code!=200
+    # With the flag, the owner's password is replaced and old sessions are revoked.
+    monkeypatch.setenv('ADMIN_PASSWORD_RESET','1')
+    env.init_db()
+    assert client.get('/api/me').status_code==401
+    fresh=TestClient(env.app)
+    assert fresh.post('/api/login',json={'email':'owner@demo.test','password':'correct horse battery staple'}).status_code!=200
+    auth(fresh,'owner@demo.test','a brand new recovery password')
+    # Too short a password is ignored.
+    monkeypatch.setenv('ADMIN_PASSWORD','short')
+    env.init_db()
+    auth(TestClient(env.app),'owner@demo.test','a brand new recovery password')

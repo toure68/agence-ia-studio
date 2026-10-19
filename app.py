@@ -141,6 +141,12 @@ def init_db():
         if not con.execute("SELECT 1 FROM users WHERE role='owner'").fetchone() and email and len(pwd) >= 12:
             con.execute('INSERT INTO users(email,password_hash,role,company_id,created) VALUES (?,?,?,?,?)',
                         (email, make_hash(pwd), 'owner', None, utcnow()))
+        # Owner recovery (no e-mail service needed): set ADMIN_PASSWORD_RESET=1 with ADMIN_EMAIL and a new
+        # ADMIN_PASSWORD (12+ characters) in the host's variables, redeploy, sign in, then remove the flag.
+        # Only the owner account with that e-mail is affected; every existing session of it is revoked.
+        if os.environ.get('ADMIN_PASSWORD_RESET', '').strip().lower() in ('1', 'true', 'yes', 'oui') and email and len(pwd) >= 12:
+            con.execute("UPDATE users SET password_hash=?, auth_version=auth_version+1 WHERE lower(email)=? AND role='owner'",
+                        (make_hash(pwd), email))
 
     from business_routes import init_schema as init_business_schema
     init_business_schema(db)
