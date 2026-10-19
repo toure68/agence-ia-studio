@@ -424,3 +424,31 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 @container (max-height:250px){.reference-home .focus-body{display:none}.reference-home .focus-inner{justify-content:space-between}}
 @container (max-height:170px){.reference-home .focus-apps{display:none}.reference-home .focus-inner{padding:10px 12px}}
 @container (max-height:120px){.reference-home .focus-inner{flex-direction:row;align-items:center;gap:8px;padding:8px 10px}.reference-home .focus-head{flex:1;min-width:0}.reference-home .focus-head .module-icon,.reference-home .focus-status,.reference-home .focus-actions .is-primary{display:none}.reference-home .focus-actions{display:flex}.reference-home .focus-btn{min-height:36px;font-size:13px}}
+/* Function dial windows: the full function / form opens exactly on the function frame (same place, same size),
+   in the app's dark universe; "⤢" deploys it full screen when needed. */
+.reference-home .focus-apps-button svg{display:block;margin:auto}
+body.dock-to-focus:not(.dock-expanded) .context-layer,body.dock-to-focus:not(.dock-expanded) #modalLayer.modal-wrap{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important}
+body.dock-to-focus:not(.dock-expanded) .context-panel,body.dock-to-focus:not(.dock-expanded) #modalLayer .modal{position:fixed!important;top:var(--dock-top)!important;left:var(--dock-left)!important;width:var(--dock-width)!important;height:var(--dock-height)!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:22px!important;box-shadow:0 18px 40px #0009;animation:focus-in .3s cubic-bezier(.2,.8,.2,1) both}
+body.dock-to-focus:not(.dock-expanded) #modalLayer .modal{overflow:auto;padding:16px}
+body.dock-to-focus:not(.dock-expanded) .context-panel .sheet-handle,body.dock-to-focus:not(.dock-expanded) .context-footer{display:none}
+body.dock-to-focus:not(.dock-expanded) .context-header #closeContext{font-size:0}
+body.dock-to-focus:not(.dock-expanded) .context-header #closeContext::before{content:"‹";font-size:26px;line-height:1}
+body.dock-to-focus .context-header{order:0}
+body.dock-to-focus .dock-expand{flex:0 0 36px;width:36px;height:36px;border:1px solid #3a414c;border-radius:50%;background:#1c2129;color:#e6eaef;font-size:16px;line-height:1;cursor:pointer}
+body.dock-to-focus .context-header #closeContext{order:-1}
+/* Dark universe for these windows and their forms. */
+body.dock-to-focus :is(.context-panel,#modalLayer .modal){--ink:#f2f5f7;--mute:#9aa6b2;--white:#151a21;--line:#ffffff1f;--bg:#0d1116;--pale:#1f3a2c;--green:#4ade80;--green2:#3fc574;--shadow:none;background:#10141a!important;border:1px solid #ffffff1a!important;color:#f2f5f7!important}
+body.dock-to-focus :is(.context-header,.context-footer){background:#10141a!important;border-color:#ffffff14!important;color:#f2f5f7}
+body.dock-to-focus .context-header #contextTitle,body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(h1,h2,h3,h4,strong,b,label,legend,th,dt){color:#f2f5f7!important}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(p,small,.sub,.tiny,.muted,td,dd,time,span){color:inherit}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(.sub,.tiny,.muted,.hint,small){color:#9aa6b2!important}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:#1a1f27!important;color:#f2f5f7!important;-webkit-text-fill-color:#f2f5f7;border:1px solid #ffffff24!important;border-radius:12px;color-scheme:dark}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(input,textarea)::placeholder{color:#5c6773!important;-webkit-text-fill-color:#5c6773}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(input,select,textarea):focus{outline:2px solid #4ade8099;outline-offset:1px;border-color:#4ade80!important}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(.card,.stack,.form-page>.stack,.task-row,.library-card,.tool-list>*,.tablewrap,details,fieldset,.field-group,.msg,.panel,.box,li.row){background:#ffffff08!important;border-color:#ffffff14!important;color:#f2f5f7!important;box-shadow:none!important}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) .btn,body.dock-to-focus :is(.context-panel,#modalLayer .modal) button:not(.dock-expand):not(#closeContext):not(.back-circle){background:#1c2129;color:#e6eaef;border:1px solid #3a414c}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(.btn.primary,button.primary,[type=submit].btn){background:#4ade80!important;color:#06240f!important;border-color:#4ade80!important}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) .back-circle,body.dock-to-focus .context-header #closeContext,body.dock-to-focus .context-header #moduleBack .back-circle{background:#ffffff12!important;border:0!important;color:#f2f5f7!important;box-shadow:none!important}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) a:not(.btn){color:#7ee2a8}
+body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(table,th,td,hr){border-color:#ffffff14!important}
+@media(prefers-reduced-motion:reduce){body.dock-to-focus .context-panel,body.dock-to-focus #modalLayer .modal{animation:dial-dissolve .2s linear both!important}}

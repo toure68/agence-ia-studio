@@ -40,7 +40,7 @@ function moduleFocusMarkup(key){
  const statusTone=count||['danger','warning'].includes(p.state)?(p.state==='danger'?'is-danger':'is-warning'):'is-ok';
  const create=moduleFocusNew[key]?`<a class="focus-btn is-primary" data-focus-go="${moduleFocusNew[key]}" href="#/${moduleFocusNew[key]}">＋ ${clean(moduleFocusNewLabel[key])}</a>`:'';
  const strip=modules.map(m=>`<button type="button" class="focus-app tone-${moduleTone(m.key)}${m.key===key?' is-current':''}" data-focus-app="${m.key}" aria-label="${clean(m.label)}" aria-pressed="${m.key===key}" title="${clean(m.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span></button>`).join('');
- return `<div class="focus-head"><button type="button" class="focus-back" data-focus-close aria-label="Revenir aux fonctions">‹</button><span class="module-icon tone-${moduleTone(key)}" aria-hidden="true">${moduleIcon(key)}</span><h2 class="focus-title-main">${clean(module.label)}</h2><span class="focus-status ${statusTone}"><i aria-hidden="true"></i>${clean(status)}</span></div>
+ return `<div class="focus-head"><button type="button" class="focus-back focus-apps-button" data-focus-close aria-label="Toutes les fonctions" title="Toutes les fonctions"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></g></svg></button><span class="module-icon tone-${moduleTone(key)}" aria-hidden="true">${moduleIcon(key)}</span><h2 class="focus-title-main">${clean(module.label)}</h2><span class="focus-status ${statusTone}"><i aria-hidden="true"></i>${clean(status)}</span></div>
 <div class="focus-kpis"><div><span>${clean(widget.label)}</span><b>${clean(widget.value)}</b></div><div><span>À traiter</span><b>${count}</b></div><div><span>État</span><b class="focus-state">${clean(p.label==='Normal'?'Normal':p.label)}</b></div></div>
 <div class="focus-body" data-focus-rows>${moduleFocusRows(key)}</div>
 <div class="focus-actions${create?'':' is-single'}"><a class="focus-btn" data-focus-go="${key}" data-focus-open href="#/${key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>Voir tout →</a>${create}</div>
@@ -49,11 +49,15 @@ function moduleFocusMarkup(key){
 // The frame takes exactly the grid's size (measured with the grid briefly shown, before any paint),
 // whatever the function's content: the content adapts, the frame never grows.
 function moduleFocusSize(){
+ // The frame covers the whole function block (grid + "Réserve de fonctions" button): nothing around it moves.
  const home=moduleFocusHome(),grid=home?.querySelector('.module-grid:not(.module-reserve-grid-inline)'),frame=home?.querySelector('#moduleFocus');if(!grid||!frame)return;
  const key=home.dataset.moduleFocus;delete home.dataset.moduleFocus;frame.hidden=true;
- const height=Math.round(grid.getBoundingClientRect().height);
+ const launch=home.querySelector('.module-reserve-launch'),top=grid.getBoundingClientRect().top;
+ const bottom=launch&&launch.getClientRects().length?launch.getBoundingClientRect().bottom:grid.getBoundingClientRect().bottom;
+ const after=launch&&launch.getClientRects().length?parseFloat(getComputedStyle(launch).marginBottom)||0:parseFloat(getComputedStyle(grid).marginBottom)||0;
  frame.hidden=false;if(key)home.dataset.moduleFocus=key;
- if(height)frame.style.height=height+'px';
+ const height=Math.round(bottom-top);
+ if(height>0){frame.style.height=height+'px';frame.style.marginBottom=after+'px';}
 }
 addEventListener('resize',()=>{if(moduleFocus.key)moduleFocusSize();});
 function moduleFocusOpen(key){
@@ -87,7 +91,7 @@ document.addEventListener('click',e=>{
  e.preventDefault();e.stopImmediatePropagation();
  if(close)return moduleFocusClose();
  // Own attribute (not data-go) so the frame's buttons never clash with the full function's own links.
- if(go){const route=go.dataset.focusGo;if(['task-new','activity-new'].includes(route))return openCommand(route==='task-new'?'task':'activity');return openTab(route,{companyId:go.dataset.companyId?Number(go.dataset.companyId):null});}
+ if(go){moduleFocusDock();const route=go.dataset.focusGo;if(['task-new','activity-new'].includes(route))return openCommand(route==='task-new'?'task':'activity');return openTab(route,{companyId:go.dataset.companyId?Number(go.dataset.companyId):null});}
  const key=(tile||app).dataset.go||(tile||app).dataset.focusApp;
  if(!moduleFocusOpen(key))openTab(key);
 },true);
@@ -95,5 +99,33 @@ document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||!moduleFocus.key||document.querySelector('#modalLayer:not(.hide)')||document.querySelector('#contextPanel'))return;
  e.preventDefault();moduleFocusClose();
 });
+// Second window (full function, form): opens exactly on the frame — same place, same size —
+// with a back arrow and a "Déployer" button for when the whole screen is needed.
+const moduleDock={armed:0,seen:false};
+function moduleFocusDock(){
+ const frame=document.querySelector('#moduleFocus');if(!frame)return;
+ const r=frame.getBoundingClientRect(),top=Math.max(8,r.top),bottom=Math.min(innerHeight-8,r.bottom);
+ if(bottom-top<260)return; // not enough visible room: the window opens full screen
+ const s=document.documentElement.style;
+ s.setProperty('--dock-top',top+'px');s.setProperty('--dock-left',r.left+'px');s.setProperty('--dock-width',r.width+'px');s.setProperty('--dock-height',(bottom-top)+'px');
+ document.body.classList.add('dock-to-focus');document.body.classList.remove('dock-expanded');
+ moduleDock.armed=Date.now();moduleDock.seen=false;
+}
+function moduleDockSync(){
+ if(!document.body.classList.contains('dock-to-focus'))return;
+ const layer=document.querySelector('#contextLayer'),modal=document.querySelector('#modalLayer:not(.hide)');
+ if(layer||modal){
+  moduleDock.seen=true;
+  const header=layer?.querySelector('.context-header');
+  if(header&&!header.querySelector('#dockExpand')){
+   const expand=document.createElement('button');expand.type='button';expand.id='dockExpand';expand.className='dock-expand';expand.setAttribute('aria-label','Déployer en plein écran');expand.title='Déployer en plein écran';expand.textContent='⤢';
+   expand.onclick=()=>{document.body.classList.toggle('dock-expanded');expand.textContent=document.body.classList.contains('dock-expanded')?'⤡':'⤢';expand.setAttribute('aria-label',document.body.classList.contains('dock-expanded')?'Revenir au cadre':'Déployer en plein écran');};
+   header.append(expand);
+   const close=layer.querySelector('#closeContext');if(close)close.setAttribute('aria-label','Revenir à la fonction');
+  }
+ }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded');moduleDock.seen=false;}
+}
+new MutationObserver(moduleDockSync).observe(document.body,{childList:true,subtree:false});
+{const m=document.querySelector('#modalLayer');if(m)new MutationObserver(moduleDockSync).observe(m,{attributes:true,attributeFilter:['class']});}
 // The home is rebuilt when the dashboard is opened again: start from the grid.
 new MutationObserver(()=>{if(moduleFocus.key&&!document.querySelector('#moduleFocus'))moduleFocus.key=null;}).observe(document.documentElement,{childList:true,subtree:true});
