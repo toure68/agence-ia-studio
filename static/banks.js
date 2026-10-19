@@ -92,7 +92,12 @@ function bankHomeMarkup(treasury){
   const source=banks.filter(b=>b.id!==bank.id&&b.currency===bank.currency&&b.available_minor>=bank.shortfall_minor).sort((a,c)=>c.available_minor-a.available_minor)[0];
   detail=`<div class="bank-home-alert" role="status"><p><strong>Solde insuffisant : ${clean(bankSigned(bank.available_minor,bank.currency))}</strong>${bank.upcoming_minor?`<br>Prélèvement${due.length>1?'s':''} de ${clean(quoteMoney(bank.upcoming_minor,bank.currency))} prévu${due.length>1?'s':''} ${bankShortDate(bank.next_due)}.`:''}<br>Montant manquant : <strong>${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</strong></p><button type="button" class="bank-fund" data-bank-fund="${bank.id}">${source?`Approvisionner depuis ${clean(source.name.replace(/^Banque\s+/i,''))} · ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}`:'Approvisionner cette banque'}</button></div>`;
  }else if(bank){
-  detail=`<div class="bank-detail-heading"><span>5 dernières transactions</span><button type="button" class="bank-fold" data-bank-pill="all" aria-label="Revenir à toutes les banques">⌃</button></div>${(bank.latest||[]).map(m=>`<div class="bank-row"><time datetime="${clean(m.date)}">${clean(bankDate(m.date).slice(0,5))}</time><span title="${clean(m.label)}">${clean(m.label)}</span><b class="${m.direction==='in'?'bank-positive':'bank-negative'}">${clean(bankSigned(m.direction==='in'?m.amount_minor:-m.amount_minor,m.currency))}</b></div>`).join('')||'<p class="bank-empty">Aucune transaction enregistrée sur cette banque.</p>'}<button type="button" class="bank-view-all" data-bank-all>Voir tout →</button>`;
+  detail=`<div class="bank-detail-heading"><span>Dernières transactions</span></div>${(bank.latest||[]).slice(0,3).map(m=>`<div class="bank-row"><time datetime="${clean(m.date)}">${clean(bankDate(m.date).slice(0,5))}</time><span title="${clean(m.label)}">${clean(m.label)}</span><b class="${m.direction==='in'?'bank-positive':'bank-negative'}">${clean(bankSigned(m.direction==='in'?m.amount_minor:-m.amount_minor,m.currency))}</b></div>`).join('')||'<p class="bank-empty">Aucune transaction enregistrée sur cette banque.</p>'}<button type="button" class="bank-view-all" data-bank-all>Voir tout →</button>`;
+ }
+ if(bank){
+  // Focus view: same card, same size as the summary; only this bank's essentials, pills stay at the bottom.
+  const height=bankHomeHeight?` style="height:${bankHomeHeight}px"`:'';
+  return `<article class="home-treasury bank-home bank-focus" data-bank-selected="${clean(selected)}"${height}><div class="home-treasury-top bank-focus-head"><button type="button" class="bank-fold bank-back" data-bank-pill="all" aria-label="Revenir à toutes les banques">‹</button><h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name">${clean(bank.name)}</span></h2></div><div class="treasury-balance-row">${balance}<span class="treasury-period">${clean(bankPeriod(treasury.month))}</span></div><p class="bank-focus-flows"><span class="bank-positive">↓ ${incoming}</span><span class="bank-negative">↑ ${outgoing}</span></p><div class="bank-home-detail">${detail}</div>${pills}</article>`;
  }
  return `<article class="home-treasury bank-home" data-bank-selected="${clean(selected)}"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name">${clean(bank?bank.name:'Toutes les banques')}</span></h2></div><div class="treasury-balance-row">${balance}<span class="treasury-period">${clean(bankPeriod(treasury.month))}</span></div><div class="home-cash-details"><button type="button" class="home-flow" data-home-cash="in" aria-label="Enregistrer une entrée d’argent"><span class="home-flow-heading">Entrées du mois <span class="home-flow-plus" aria-hidden="true">+</span></span><b class="bank-positive">${incoming}</b></button><button type="button" class="home-flow" data-home-cash="out" aria-label="Enregistrer une sortie d’argent"><span class="home-flow-heading">Sorties du mois <span class="home-flow-plus" aria-hidden="true">+</span></span><b class="bank-negative">${outgoing}</b></button></div><div class="bank-global-alerts">${global}</div>${pills}<div class="bank-home-detail"${bank?'':' hidden'}>${detail}</div></article>`;
 }
@@ -100,9 +105,13 @@ function bankHomeRepaint(host,focus){
  if(!host?.treasuryState)return;host.innerHTML=homeTreasuryMarkup(host.treasuryState);
  if(focus){const pill=host.querySelector(`[data-bank-pill="${focus}"]`);if(pill)pill.focus({preventScroll:true});}
 }
+let bankHomeHeight=null;
+addEventListener('resize',()=>{bankHomeHeight=null;const card=document.querySelector('#homeTreasury .bank-focus');if(card)card.style.height='';});
 function bankHomeSelect(host,id){
  const banks=host.treasuryState?.widgets?.treasury?.banks||[],current=bankHomeSelected(banks);
+ if(current==='all'){const card=host.querySelector('.bank-home');if(card)bankHomeHeight=Math.round(card.getBoundingClientRect().height);}
  const next=id!=='all'&&String(id)===current?'all':String(id);
+ if(next==='all')bankHomeHeight=null;
  bankHomeSelection.set(bankHomeKey(),next);bankHomeRepaint(host,next==='all'?'all':next);
 }
 document.addEventListener('click',e=>{
@@ -120,7 +129,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||document.querySelector('#modalLayer:not(.hide)'))return;
  const host=document.querySelector('#homeTreasury');if(!host?.querySelector('.bank-home[data-bank-selected]:not([data-bank-selected="all"])'))return;
- e.preventDefault();bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
+ e.preventDefault();bankHomeHeight=null;bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
 });
 
 // Bank logos: uploaded by the user for their own accounts, re-cropped server-side, never part of the code.

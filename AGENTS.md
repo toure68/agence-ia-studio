@@ -33,3 +33,4 @@ Preserve working behavior and approved design. A request to add a feature does n
 - Bank logos are user-uploaded per bank (private to the company, re-encoded server-side as 128px PNG). Never ship third-party bank logos in the code or the public demo.
 - Action (priority) cards: the speaker button sits in the top-right corner next to the close cross; the green action button spans the full card width, centered.
 - Home greeting is centered; under it the date and the status are two chips: green "À jour" when nothing is pending, orange "N action(s) à traiter" otherwise.
+- Treasury bank view: tapping a bank keeps the card at the exact size of the "Tous" summary and swaps its content in place (back arrow, bank name, balance, month flows, alert or 3 latest movements, pills at the bottom); the detail scrolls inside the card if needed.

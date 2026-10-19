@@ -42,7 +42,11 @@ const {chromium}=require('playwright');
   for(const pill of await page.locator('.bank-pill').all()){const box=await pill.boundingBox();assert.equal(Math.round(box.width),44);assert.equal(Math.round(box.height),44);assert(await pill.getAttribute('aria-label'));}
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
   // Bank in alert: balance in red and alert expanded automatically.
+  const summaryHeight=await page.locator('#homeTreasury .bank-home').evaluate(e=>Math.round(e.getBoundingClientRect().height));
   const rivage=page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"]');await rivage.click();
+  // The card keeps exactly the summary size; the bank view replaces its content in place.
+  assert(Math.abs(await page.locator('#homeTreasury .bank-home').evaluate(e=>e.getBoundingClientRect().height)-summaryHeight)<=1,'Card size unchanged in the bank view');
+  assert(await page.locator('#homeTreasury .bank-focus .bank-back').isVisible(),'Back arrow at the top');
   assert((await page.locator('.bank-home-name').innerText()).toLowerCase().includes('rivage'));
   assert(await page.locator('.bank-total.bank-negative').isVisible());
   const fund=page.locator('.bank-home-alert .bank-fund');assert(await fund.isVisible());
@@ -53,10 +57,12 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
   // Bank without alert: month flows and the 5 latest movements.
   await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').click();
-  assert.equal(await page.locator('.bank-row').count(),5);
+  assert(Math.abs(await page.locator('#homeTreasury .bank-home').evaluate(e=>e.getBoundingClientRect().height)-summaryHeight)<=1,'Same size for a bank without alert');
+  assert.equal(await page.locator('.bank-row').count(),3,'Focus view keeps the 3 latest movements');
   assert(await page.locator('.bank-view-all').isVisible());
   assert.equal(await page.locator('.bank-home-alert').count(),0);
-  assert((await page.locator('.home-flow').first().innerText()).includes('60,00'));
+  assert((await page.locator('.bank-focus-flows').innerText()).includes('60,00'));
+  assert.equal(await page.locator('#homeTreasury .home-flow').count(),0,'Summary details are hidden in the bank view');
   // Escape and the fold button both return to "Tous".
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');

@@ -301,3 +301,22 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 .reference-home .module-grid[data-columns] .module-copy strong{line-height:1.22;letter-spacing:-.005em}
 .reference-home .module-grid[data-columns="4"] .module-tile{gap:calc(5px * var(--home-grid-scale))}
 .reference-home .module-grid[data-columns="4"] .module-copy strong{line-height:1.15}
+#homeTreasury .bank-focus{display:flex;flex-direction:column;overflow:hidden;animation:bank-focus-in .22s ease-out}
+#homeTreasury .bank-focus .bank-back{width:36px;height:36px;flex:0 0 36px;margin:-4px 0 -4px -6px;font-size:26px;line-height:1;color:var(--home-text)}
+#homeTreasury .bank-focus .treasury-balance-row{margin:12px 0 4px}
+#homeTreasury .bank-focus-flows{display:flex;gap:14px;margin:0 0 8px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+#homeTreasury .bank-focus .bank-home-detail{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#homeTreasury .bank-focus .bank-home-alert{margin-top:4px}
+#homeTreasury .bank-focus .bank-detail-heading{margin-top:2px}
+#homeTreasury .bank-focus .bank-row{min-height:36px}
+#homeTreasury .bank-focus .bank-view-all{min-height:36px;padding:6px 0}
+#homeTreasury .bank-focus .bank-pills{flex:0 0 auto;margin-top:auto;padding-top:10px}
+@keyframes bank-focus-in{from{opacity:.4;transform:translateX(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#homeTreasury .bank-focus{animation:none}}
+#homeTreasury .demo-multibank:not(.bank-focus) .bank-back{display:none}
+#homeTreasury .demo-multibank.bank-focus .home-treasury-top .module-icon,#homeTreasury .demo-multibank.bank-focus .home-cash-details,#homeTreasury .demo-multibank.bank-focus .demo-global-alerts{display:none}
+#homeTreasury .demo-multibank.bank-focus .treasury-balance-row{order:2}
+#homeTreasury .demo-multibank.bank-focus .demo-bank-detail{order:5;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#homeTreasury .demo-multibank.bank-focus .demo-bank-scroll{max-height:none;overflow:visible}
+#homeTreasury .demo-multibank.bank-focus .demo-bank-pills{order:10;margin-top:auto;padding-top:10px}
+#homeTreasury .demo-multibank.bank-focus .home-treasury-top{order:1}
