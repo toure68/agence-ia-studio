@@ -194,7 +194,14 @@ const {chromium}=require('playwright');
    const module=await card.getAttribute('data-priority-module');
    const known=await page.evaluate(m=>(homeLayout.workspace?.modules||[]).some(x=>x.key===m)&&!!document.querySelector(`#content .module-grid [data-go="${m}"]`),module);
    if(known){
-    await card.locator('[data-priority-open]').click();await waitWindow(module);
+    await card.locator('[data-priority-open]').click();
+    await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')||document.querySelector('.priority-card .inline-panel'));
+    if(await page.locator('.priority-card .inline-panel').count()&&!await page.locator('#contextPanel').count()){
+     // Option C: the action unfolds on its card (details + buttons), nothing opens until "Voir le détail".
+     assert(await page.locator('.priority-card .inline-panel [data-inline-run="0"]').isVisible(),'Finish button right on the card');
+     await page.locator('.priority-card .inline-panel [data-inline-detail]').click();
+    }
+    await waitWindow(module);
     if(await page.locator('#contextPanel').count())assert(await page.evaluate(()=>document.body.classList.contains('dock-expanded')&&!!document.querySelector('#dockAppBar [data-focus-app]')),'Action window maximized, app strip at the bottom');
     else{const w=await geo();assert(Math.abs(w.win.x-w.frame.x)<=2&&Math.abs(w.win.w-w.frame.w)<=2,'Action list docked on the function frame '+JSON.stringify(w));}
     await toGrid();

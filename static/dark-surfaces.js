@@ -10,7 +10,7 @@
  function scan(root){
   if(!root||!root.isConnected)return;
   for(const el of root.querySelectorAll('*')){
-   if(skip.has(el.tagName.toUpperCase())||el.closest('svg,.wall-swatch,.chat-attach-menu')||el.matches('.badge,.btn,[class*="chip"],[class*="pill"],[class*="tag"],.surface-was-light'))continue;
+   if(skip.has(el.tagName.toUpperCase())||el.closest('svg,.wall-swatch')||el.matches('.chat-attach-menu')||el.matches('.badge,.btn,[class*="chip"],[class*="pill"],[class*="tag"],.surface-was-light'))continue;
    const cs=getComputedStyle(el),bg=rgb(cs.backgroundColor);
    if((bg&&bg.a>0.3&&lum(bg)>0.78)||lightGradient(cs.backgroundImage))el.classList.add('surface-was-light'); // tagged elements are skipped above, so no mutation loop
   }

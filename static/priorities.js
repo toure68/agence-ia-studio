@@ -74,6 +74,8 @@ async function renderPriorities(initial={}) {
     const group=displayCards[Number(btn.dataset.priorityOpen)];
     // The green button opens the action's window directly, docked on the function frame with the app strip below
     // (several actions: their list opens there).
+    // One action that can be finished here (repair, revision, control, task, client check): it unfolds in place.
+    if(group.members.length===1&&typeof inlineActions!=='undefined'&&inlineActions.toggle(btn,group.members[0]))return;
     const real=group.members.some(c=>!c.fallback&&!c.example);
     if(real&&typeof moduleFocusFromPriority==='function'&&await moduleFocusFromPriority(group.module,()=>group.members.length===1?openPriorityAction(group.members[0]):openPriorityGroup(group,cid)))return;
     if(group.members.length===1)return openPriorityAction(group.members[0]);
@@ -127,7 +129,7 @@ async function renderPriorityGroupPanel(){
  const view=priorityGroupView&&priorityGroupView.cid===company?.id?priorityGroupView:{module:'all',keys:null};
  const members=view.keys?view.keys.map(k=>priorityCards.find(c=>c.key===k)).filter(Boolean):priorityCards.filter(c=>!c.fallback&&!c.example);
  $('#content').innerHTML=`<h1>${clean(names[view.module]||'Actions à faire')}</h1><p class="sub">${members.length} action${members.length>1?'s':''} à traiter</p><div class="task-list priority-group-list">${members.map((card,i)=>`<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}${card.description?' · '+clean(priorityFriendly(card.description)):''}</small></span><span aria-hidden="true">›</span></button>`).join('')||'<p class="sub">Rien à traiter pour le moment.</p>'}</div>`;
- $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=()=>openPriorityAction(members[Number(btn.dataset.priorityItemOpen)]));
+ $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=()=>{const card=members[Number(btn.dataset.priorityItemOpen)];if(typeof inlineActions!=='undefined'&&inlineActions.toggle(btn,card))return;openPriorityAction(card);});
 }
 
 function renderCalendarPage(html) {

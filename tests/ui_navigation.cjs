@@ -20,7 +20,9 @@ const {chromium}=require('playwright');
  // the function frame when there is room for it.
  async function openPriority(card){
    await (card||page.locator('[data-priority-open]')).click();
-   await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));
+   await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')||document.querySelector('.priority-card .inline-panel'));
+   // Option C: an action finished in place unfolds on its card; its "Voir le détail" opens the full window.
+   if(!await page.locator('#contextPanel').count()&&await page.locator('.priority-card .inline-panel').count()){await page.locator('.priority-card .inline-panel [data-inline-detail]').first().click();await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));}
    await page.evaluate(async()=>{await navigationQueue;});
  }
  async function closeDial(){await page.evaluate(()=>{if(typeof moduleFocus!=='undefined'&&moduleFocus.key&&!document.querySelector('#contextPanel')&&document.querySelector('#modalLayer.hide'))moduleFocusClose();});}
@@ -503,7 +505,8 @@ const {chromium}=require('playwright');
    await page.locator('#contextPanel [data-priority-item-open]').first().waitFor();
    assert.equal(await page.locator('#modalLayer:not(.hide) .modal').count(),0,'Several actions open as a window like the others, not as a small sheet');
    assert.equal(await page.locator('#contextPanel [data-priority-item-open]').count(),6,'All same-function actions remain available');
-   const choice=page.locator('#contextPanel [data-priority-item-open]').last(),choiceTitle=await choice.locator('strong').first().innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
+   const choice=page.locator('#contextPanel [data-priority-item-open]').last(),choiceTitle=await choice.locator('strong').first().innerText();await choice.click();
+   if(await page.locator('#contextPanel .inline-panel [data-inline-detail]').count())await page.locator('#contextPanel .inline-panel [data-inline-detail]').click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
    await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
 
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
@@ -551,7 +554,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    assert.equal(await page.locator('[data-priority-complete],.module-grid button').count(),0);
-   await openPriority(page.locator('[data-priority-open]').first());if(await page.locator('#contextPanel [data-priority-item-open]').count())await page.locator('#contextPanel [data-priority-item-open]').first().click();await page.locator('#completeTask').waitFor();
+   await openPriority(page.locator('[data-priority-open]').first());if(await page.locator('#contextPanel [data-priority-item-open]').count()){await page.locator('#contextPanel [data-priority-item-open]').first().click();if(await page.locator('#contextPanel .inline-panel [data-inline-detail]').count())await page.locator('#contextPanel .inline-panel [data-inline-detail]').click();}await page.locator('#completeTask').waitFor();
    const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
    await page.locator('#completeTask').click();await completed;await backHome();
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
@@ -567,8 +570,14 @@ const {chromium}=require('playwright');
    // A row waiting for you stands out with a readable chip; once handled it becomes quiet (grey).
    await page.waitForFunction(()=>document.querySelector('[data-asset]')?.classList.contains('row-todo')&&document.querySelector('[data-asset] .row-chip'));
    assert(await page.locator('[data-asset] .row-chip').isVisible(),'Equipment to handle shows a readable chip');
-   await page.locator('[data-asset]').click();await page.locator('#assetForm select[name="condition"]').selectOption('ready');
-   await page.locator('#assetForm button.btn.primary').click();await page.locator('[data-asset]').waitFor();
+   // Option C: touching the row unfolds it in place (details + buttons); "Réparé" finishes it without another window.
+   await page.locator('[data-asset]').click();await page.locator('.inline-panel [data-inline-run="0"]').waitFor();
+   assert.equal(await page.locator('#assetForm').count(),0,'No other window to finish the action');
+   assert.equal((await page.locator('.inline-panel [data-inline-run="0"]').innerText()).trim(),'Réparé');
+   await page.locator('.inline-panel [data-inline-run="0"]').click();await page.locator('.inline-done').waitFor();
+   assert.equal((await page.evaluate(()=>api('/api/companies/1/equipment'))).find(a=>a.name==='Perceuse').condition,'ready');
+   await page.waitForFunction(()=>document.querySelector('[data-asset]')?.classList.contains('row-quiet'));
+   await page.evaluate(()=>openTab('equipment',{replaceHistory:true}));await page.locator('[data-asset]').waitFor();
    assert((await page.locator('#content').innerText()).includes('Disponible'));
    await page.waitForFunction(()=>document.querySelector('[data-asset]')?.classList.contains('row-quiet')&&!document.querySelector('[data-asset] .row-chip'));
    await backHome();
