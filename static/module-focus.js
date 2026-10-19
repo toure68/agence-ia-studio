@@ -18,12 +18,22 @@ function moduleFocusDate(value){
  if(diff===0)return 'aujourd’hui';if(diff===1)return 'demain';if(diff===-1)return 'hier';
  return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',timeZone:'Europe/Paris'}).format(d);
 }
+// Actions to do for this function (the same ones as the home action cards), shown first and tappable:
+// a tap opens the action's window docked on the frame. Then the read-only lines.
+function moduleFocusActions(key){return (typeof priorityCards!=='undefined'?priorityCards:[]).filter(c=>c.module===key&&!c.fallback&&!c.example);}
 function moduleFocusRows(key){
+ const actions=moduleFocusActions(key);
+ const actionRows=actions.map((c,i)=>`<li><button type="button" class="focus-row is-action tone-${clean((typeof priorityPresentation==='function'?priorityPresentation(c).state:'warning')||'warning')}" data-focus-priority="${i}" style="--i:${i}"><span class="focus-dot" aria-hidden="true"></span><span class="focus-title" title="${clean(c.title)}">${clean(c.title)}</span><small>${clean(typeof priorityPresentation==='function'?priorityPresentation(c).label:'À traiter')}</small><b aria-hidden="true">›</b></button></li>`).join('');
  const peek=moduleFocus.peek.get(key);
- if(!peek)return '<ul class="focus-list is-loading" aria-busy="true"><li class="focus-skeleton"></li><li class="focus-skeleton"></li><li class="focus-skeleton"></li></ul>';
- if(peek.error)return `<p class="focus-empty">${clean(peek.error)}</p>`;
- if(!peek.items.length)return '<p class="focus-empty">Rien à signaler pour le moment.</p>';
- return `<ul class="focus-list">${peek.items.map((it,i)=>`<li class="focus-row tone-${clean(it.tone||'neutral')}" style="--i:${i}"><span class="focus-dot" aria-hidden="true"></span><span class="focus-title" title="${clean(it.title)}">${clean(it.title)}</span><small>${clean(it.meta.replace(/\d{4}-\d{2}-\d{2}/g,moduleFocusDate))}</small>${it.amount_minor!=null?`<b>${clean(moduleFocusMoney(it.amount_minor,it.currency))}</b>`:''}</li>`).join('')}</ul>`;
+ let lines='';
+ if(!peek)lines=actions.length?'':'<li class="focus-skeleton"></li><li class="focus-skeleton"></li><li class="focus-skeleton"></li>';
+ else if(peek.error)lines=actions.length?'':`<li class="focus-empty">${clean(peek.error)}</li>`;
+ else{
+  const titles=new Set(actions.map(c=>String(c.title).toLowerCase()));
+  lines=peek.items.filter(it=>!titles.has(String(it.title).toLowerCase())).slice(0,Math.max(0,3-actions.length)).map((it,i)=>`<li class="focus-row tone-${clean(it.tone||'neutral')}" style="--i:${actions.length+i}"><span class="focus-dot" aria-hidden="true"></span><span class="focus-title" title="${clean(it.title)}">${clean(it.title)}</span><small>${clean(it.meta.replace(/\d{4}-\d{2}-\d{2}/g,moduleFocusDate))}</small>${it.amount_minor!=null?`<b>${clean(moduleFocusMoney(it.amount_minor,it.currency))}</b>`:''}</li>`).join('');
+  if(!actions.length&&!lines)return '<p class="focus-empty">Rien à signaler pour le moment.</p>';
+ }
+ return `<ul class="focus-list${!peek&&!actions.length?' is-loading':''}">${actionRows}${lines}</ul>`;
 }
 async function moduleFocusLoad(key){
  if(moduleFocus.peek.has(key)&&!moduleFocus.peek.get(key).error)return;
@@ -85,13 +95,15 @@ function moduleFocusClose(){
 document.addEventListener('click',e=>{
  const home=e.target.closest('#content .reference-home,#cockpitContent .reference-home');if(!home)return;
  const tile=e.target.closest('.module-grid:not(.module-reserve-grid-inline) .module-tile[data-go]'),app=e.target.closest('[data-focus-app]'),close=e.target.closest('[data-focus-close]'),go=e.target.closest('[data-focus-go]');
- if(!tile&&!app&&!close&&!go)return;
+ const act=e.target.closest('[data-focus-priority]');
+ if(!tile&&!app&&!close&&!go&&!act)return;
  if(tile&&(e.metaKey||e.ctrlKey||e.shiftKey))return;
  if(tile&&tile.getAttribute('aria-disabled')==='true')return;
  e.preventDefault();e.stopImmediatePropagation();
  // A docked window is open over the frame: the app strip below it switches function directly.
  if(home.closest('#cockpitContent')){if(!app)return;closeContext();}
  if(close)return moduleFocusClose();
+ if(act){const card=moduleFocusActions(moduleFocus.key)[Number(act.dataset.focusPriority)];if(card){moduleFocusDock();openPriorityAction(card);}return;}
  // Own attribute (not data-go) so the frame's buttons never clash with the full function's own links.
  if(go){moduleFocusDock();const route=go.dataset.focusGo;if(['task-new','activity-new'].includes(route))return openCommand(route==='task-new'?'task':'activity');return openTab(route,{companyId:go.dataset.companyId?Number(go.dataset.companyId):null});}
  const key=(tile||app).dataset.go||(tile||app).dataset.focusApp;
@@ -144,12 +156,7 @@ async function moduleFocusFromPriority(module){
  if(!known||!moduleFocusOpen(module))return false;
  const frame=document.querySelector('#moduleFocus');if(!frame)return false;
  const r=frame.getBoundingClientRect();
- if(r.top<8||r.bottom>innerHeight-8){
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  frame.scrollIntoView({block:r.height>innerHeight-16?'start':'center',behavior:reduce?'auto':'smooth'});
-  await new Promise(resolve=>setTimeout(resolve,reduce?30:420));
- }
- moduleFocusDock();
+ if(r.top<8||r.bottom>innerHeight-8)frame.scrollIntoView({block:r.height>innerHeight-16?'start':'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
  return true;
 }
 window.moduleFocusFromPriority=moduleFocusFromPriority;

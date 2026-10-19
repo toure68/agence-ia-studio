@@ -17,6 +17,13 @@ const {chromium}=require('playwright');
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  // Action cards open their function in the function dial (it stays open after the window closes, by design).
+ // An action card's green button opens its function in the function dial; its actions are listed there.
+ async function openPriority(card){
+   await (card||page.locator('[data-priority-open]')).click();
+   await page.waitForFunction(()=>document.querySelector('#moduleFocus [data-focus-priority]')||document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));
+   const rows=page.locator('#moduleFocus [data-focus-priority]');
+   if(await rows.count()===1)await rows.click();
+ }
  async function closeDial(){await page.evaluate(()=>{if(typeof moduleFocus!=='undefined'&&moduleFocus.key&&!document.querySelector('#contextPanel')&&document.querySelector('#modalLayer.hide'))moduleFocusClose();});}
  async function backHome(){
    for(let i=0;i<5;i++){
@@ -280,7 +287,7 @@ const {chromium}=require('playwright');
    await Promise.all([page.waitForResponse(r=>r.url().endsWith('/ai-usage')&&r.request().method()==='PUT'),page.locator('#budgetForm button').click()]);
    await page.waitForFunction(()=>document.querySelector('#content [role="status"]')?.textContent.includes('Aucun plafond'));
    await backHome();
-   await page.locator('[data-priority-open]').click();
+   await openPriority();
    await page.locator('#commandText').waitFor();
    await page.locator('#closeModal').click();
    await page.locator('#content .module-grid').waitFor({state:'attached'});
@@ -399,7 +406,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('.module-grid input,.module-grid dl,.module-inline-action,.inline-client-facts').count(),0);
    assert((await page.locator('[data-module="clients"] .module-insight').innerText()).includes('Client Interface'));
    assert.equal(await page.locator('#contextPanel').count(),0);
-   await page.locator('[data-priority-open]').click();
+   await openPriority();
    await page.locator('#clientForm').waitFor();assert.equal(await page.locator('#clientName').inputValue(),'Client Interface');
    await page.locator('[data-validate-client]').click();await page.locator('#content .module-grid').waitFor({state:'attached'});
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
@@ -418,7 +425,7 @@ const {chromium}=require('playwright');
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card:not(.routine-card)').length===1);
    assert.equal(await page.locator('.example-card').count(),0);
-   await page.locator('[data-priority-open]').click();
+   await openPriority();
    await page.locator('[data-work-status="doing"]').click();
    await page.locator('[data-work-status="doing"]').waitFor({state:'detached'});
    await page.locator('[data-work-status="done"]').click();
@@ -442,7 +449,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#socialDownload').count(),0);
    await backHome();
    await page.waitForFunction(()=>document.querySelector('.priority-card')?.innerText.includes('Réalisation publique test'));
-   await page.locator('[data-priority-open]').click();
+   await openPriority();
    await page.locator('#socialConsent').check();
    await page.locator('#socialValidate').click();
    await page.locator('#socialDownload').waitFor();
@@ -468,7 +475,7 @@ const {chromium}=require('playwright');
    await page.locator('.task-row').waitFor();
    await backHome();
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1);
-   await page.locator('[data-priority-open]').click();
+   await openPriority();
    await page.locator('#completeTask').waitFor();
    await page.locator('#completeTask').click();
    await page.locator('.task-row').waitFor();
@@ -491,9 +498,9 @@ const {chromium}=require('playwright');
    await page.waitForFunction(()=>document.querySelectorAll('.priority-card').length===1&&document.querySelector('.priority-group-count')?.textContent==='6 actions');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,6);
    await priorityLayout(1);
-   await page.locator('[data-priority-open]').click();await dialogContained();
-   assert.equal(await page.locator('[data-priority-item-open]').count(),6,'All same-function actions remain available');
-   const choice=page.locator('[data-priority-item-open]').last(),choiceTitle=await choice.locator('strong').innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
+   await openPriority();
+   assert.equal(await page.locator('#moduleFocus [data-focus-priority]').count(),6,'All same-function actions remain available in the function dial');
+   const choice=page.locator('#moduleFocus [data-focus-priority]').last(),choiceTitle=await choice.locator('.focus-title').innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
    await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
 
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
@@ -541,7 +548,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    assert.equal(await page.locator('[data-priority-complete],.module-grid button').count(),0);
-   await page.locator('[data-priority-open]').first().click();await page.locator('[data-priority-item-open]').first().click();await page.locator('#completeTask').waitFor();
+   await page.locator('[data-priority-open]').first().click();await page.locator('#moduleFocus [data-focus-priority]').first().click();await page.locator('#completeTask').waitFor();
    const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
    await page.locator('#completeTask').click();await completed;await backHome();
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);

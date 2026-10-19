@@ -65,8 +65,10 @@ async function renderPriorities(initial={}) {
   const all=host.querySelector("#homeAllActions");if(all)all.onclick=()=>openPriorityGroup({module:"all",members:cards},cid);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const group=displayCards[Number(btn.dataset.priorityOpen)];
-    // Same as tapping the function in the function dial: open it there, then dock the action's window on it.
-    if(typeof moduleFocusFromPriority==='function')await moduleFocusFromPriority(group.module);
+    // The green button is the function's own button: it opens the function in the function dial, exactly like
+    // tapping it there; its actions are listed first in the dial and open docked on it.
+    const real=group.members.some(c=>!c.fallback&&!c.example);
+    if(real&&typeof moduleFocusFromPriority==='function'&&await moduleFocusFromPriority(group.module))return;
     if(group.members.length===1)return openPriorityAction(group.members[0]);
     openPriorityGroup(group,cid);
   });

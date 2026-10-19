@@ -155,6 +155,9 @@ const {chromium}=require('playwright');
     await card.locator('[data-priority-open]').click();
     await page.locator('#moduleFocus').waitFor();
     assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),module,'Same function as in the dial');
+    // Same as the dial's own button: no extra window; the card's actions are listed first in the dial.
+    assert.equal(await page.locator('#contextPanel').count(),0);assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
+    await page.locator('#moduleFocus [data-focus-priority]').first().click();
     await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')));
     const win=await page.evaluate(()=>{const w=(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')).getBoundingClientRect(),f=document.querySelector('#moduleFocus').getBoundingClientRect();return {dx:Math.abs(w.left-f.left),dw:Math.abs(w.width-f.width)};});
     assert(win.dx<=2&&win.dw<=2,'Action window docked on the function frame '+JSON.stringify(win));
