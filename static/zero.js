@@ -145,7 +145,7 @@ function homeTreasuryMarkup(state){
 }
 function refreshHomeSummary(state,cards){
  const host=document.querySelector('#homeTreasury');if(host){host.treasuryState=state;host.innerHTML=homeTreasuryMarkup(state);}
- const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.innerHTML=`<span class="home-date">${clean(date.charAt(0).toUpperCase()+date.slice(1))}</span><span class="home-status ${count?'is-todo':'is-ok'}">${count?count+' action'+(count>1?'s':'')+' à traiter':'À jour'}</span>`;}
+ const day=document.querySelector('#homeDay');if(day){const date=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());const count=cards.filter(c=>!c.fallback).length;day.innerHTML=`<span class="home-date">${clean(date.charAt(0).toUpperCase()+date.slice(1))}</span><span class="home-status ${count?'is-todo':'is-ok'}">${count+' action'+(count>1?'s':'')+' à traiter'}</span>`;}
 }
 // Inline layout chooser: the grid button expands into 2/3/4 column squares and a 1–10 row stepper.
 // Each change applies instantly on home and is saved in order in the background; no form, no navigation.

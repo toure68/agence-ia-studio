@@ -74,7 +74,7 @@ const {chromium}=require('playwright');
    assert(pill.height>=44&&pill.height<=90&&pill.top>=pill.priorityBottom&&pill.bottom<=pill.gridTop&&pill.left>=0&&pill.right<=pill.toggleLeft&&Math.abs(pill.mid-pill.toggleMid)<3,'Assistant sits above the grid, aligned with the grid button: '+JSON.stringify(pill));assert.equal(pill.position,'relative');
    // Greeting centered; date and status as distinct chips, status green when up to date or orange with actions.
    const head=await page.evaluate(()=>({align:getComputedStyle(document.querySelector('.home-heading')).textAlign,date:!!document.querySelector('#homeDay .home-date'),status:document.querySelector('#homeDay .home-status')?.className||'',text:document.querySelector('#homeDay .home-status')?.textContent||''}));
-   assert.equal(head.align,'center');assert(head.date);assert(/is-(ok|todo)/.test(head.status));assert(head.status.includes('is-ok')?head.text==='À jour':/\d+ actions? à traiter/.test(head.text),'Status chip text matches its color: '+JSON.stringify(head));
+   assert.equal(head.align,'center');assert(head.date);assert(/is-(ok|todo)/.test(head.status));assert(head.status.includes('is-ok')?head.text==='0 action à traiter':/\d+ actions? à traiter/.test(head.text),'Status chip text matches its color: '+JSON.stringify(head));
    assert.equal(await page.locator('#assistantMessage').getAttribute('placeholder'),'Posez une question ou ajoutez un document…');
 
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
