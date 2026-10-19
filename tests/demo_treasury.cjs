@@ -35,7 +35,7 @@ const amount=text=>Math.round(Number(text.replace(/[^\d,−-]/g,'').replace('−
    if(row)assert(row.same&&row.inside&&row.assistantFirst,'Assistant then grid button on one row, inside the screen '+JSON.stringify(row));
    await page.locator('[data-columns-toggle]').click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No sideways overflow with the chooser open');
    await page.locator('[data-columns-toggle]').click();
-   await page.locator('#content .module-grid .module-tile').first().click();await page.locator('#moduleFocus').waitFor();
+   await page.locator('#content .module-grid .module-tile').first().click();await page.waitForFunction(()=>document.querySelector('#moduleFocus')||document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));await page.waitForTimeout(300);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No sideways overflow with a function open');
    assert.match(await page.locator('meta[name=viewport]').getAttribute('content'),/maximum-scale=1/,'No zoom on field focus');
    await page.close();

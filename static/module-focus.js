@@ -107,8 +107,23 @@ document.addEventListener('click',e=>{
  // Own attribute (not data-go) so the frame's buttons never clash with the full function's own links.
  if(go){moduleFocusDock();const route=go.dataset.focusGo;if(['task-new','activity-new'].includes(route))return openCommand(route==='task-new'?'task':'activity');return openTab(route,{companyId:go.dataset.companyId?Number(go.dataset.companyId):null});}
  const key=(tile||app).dataset.go||(tile||app).dataset.focusApp;
- if(!moduleFocusOpen(key))openTab(key);
+ if(!moduleFocusWindow(key))openTab(key);
 },true);
+// A function opens directly as its full window, docked on the frame (same place, same size), with the app strip
+// below it. Tapping another app switches window; closing the window goes back to the home grid.
+// `open` opens something else than the function's full view in that window (e.g. one action).
+function moduleFocusWindow(key,open){
+ if(!moduleFocusOpen(key))return false;
+ const frame=document.querySelector('#moduleFocus');
+ const r=frame.getBoundingClientRect();
+ if(r.top<8||r.bottom>innerHeight-8)frame.scrollIntoView({block:r.height>innerHeight-16?'start':'center'});
+ if(!moduleFocusDock()){moduleFocusClose();return false;} // too little room: the normal full window opens instead
+ frame.classList.add('is-direct');moduleDock.direct=true;
+ if(open)open();
+ else{const id=['company-edit','team'].includes(key)?company.id:null;openTab(key,{companyId:id});}
+ return true;
+}
+window.moduleFocusWindow=moduleFocusWindow;
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||!moduleFocus.key||document.querySelector('#modalLayer:not(.hide)')||document.querySelector('#contextPanel'))return;
  e.preventDefault();moduleFocusClose();
@@ -117,15 +132,18 @@ document.addEventListener('keydown',e=>{
 // with a back arrow and a "Déployer" button for when the whole screen is needed.
 const moduleDock={armed:0,seen:false};
 function moduleFocusDock(){
- const frame=document.querySelector('#moduleFocus');if(!frame)return;
+ const frame=document.querySelector('#moduleFocus');if(!frame)return false;
  // The app strip stays visible under the window: wherever you are, the other functions are one tap away.
  const strip=frame.querySelector('.focus-apps'),stripTop=strip&&strip.getClientRects().length?strip.getBoundingClientRect().top-6:null;
- const r=frame.getBoundingClientRect(),top=Math.max(8,r.top),bottom=Math.min(innerHeight-8,stripTop??r.bottom);
- if(bottom-top<260)return; // not enough visible room: the window opens full screen
+ // The window also takes the row just above the frame (Assistant IA): the assistant is then in the window header.
+ const head=document.querySelector('.reference-home .home-modules-heading'),hr=head&&head.getClientRects().length?head.getBoundingClientRect():null;
+ const r=frame.getBoundingClientRect(),top=Math.max(8,hr&&hr.bottom<=r.top+1&&r.top-hr.bottom<40?hr.top:r.top),bottom=Math.min(innerHeight-8,stripTop??r.bottom);
+ if(bottom-top<260)return false; // not enough visible room: the window opens full screen
  const s=document.documentElement.style;
  s.setProperty('--dock-top',top+'px');s.setProperty('--dock-left',r.left+'px');s.setProperty('--dock-width',r.width+'px');s.setProperty('--dock-height',(bottom-top)+'px');
  document.body.classList.add('dock-to-focus');document.body.classList.remove('dock-expanded');
  moduleDock.armed=Date.now();moduleDock.seen=false;
+ return true;
 }
 function moduleDockSync(){
  if(!document.body.classList.contains('dock-to-focus'))return;
@@ -144,10 +162,16 @@ function moduleDockSync(){
    apps.onclick=()=>{closeContext();moduleFocusClose();};
    const back=document.createElement('button');back.type='button';back.id='dockBack';back.className='dock-back';
    back.onclick=()=>{if(moduleDockSteps()>1)history.back();else closeContext();};
-   header.prepend(apps,back);moduleDockCount();
+   header.prepend(apps,back);
+   // Assistant IA in the window header (the function name is already in the strip below): usable without closing.
+   const assistant=document.createElement('button');assistant.type='button';assistant.id='dockAssistant';assistant.className='dock-assistant';
+   assistant.setAttribute('aria-label','Ouvrir l’assistant IA');
+   assistant.innerHTML='<span class="dock-assistant-spark" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="m9 2 2 5 5 2-5 2-2 5-2-5-5-2 5-2zM18 13l1.3 3.2 3.2 1.3-3.2 1.3L18 22l-1.3-3.2-3.2-1.3 3.2-1.3z"/></svg></span><b>Assistant IA</b><span class="dock-assistant-hint">· Poser une question</span>';
+   assistant.onclick=()=>{if(typeof tab!=='undefined'&&tab==='assistant')return;openTab('assistant');};
+   back.after(assistant);moduleDockCount();
    new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
- }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);}
+ }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct){moduleDock.direct=false;moduleFocusClose();}}
 }
 // Full screen (⤢): the home is covered, so the same app strip is shown fixed under the window.
 // Touching an app closes the window and switches the function dial, exactly like the strip on the dial.
@@ -161,21 +185,18 @@ function moduleDockBar(on){
   const app=e.target.closest('[data-focus-app]');if(!app)return;
   e.preventDefault();const key=app.dataset.focusApp;
   document.body.classList.remove('dock-expanded');moduleDockBar(false);closeContext();
-  if(!moduleFocusOpen(key))openTab(key);
+  if(!moduleFocusWindow(key))openTab(key);
  });
  document.body.append(bar);
  document.documentElement.style.setProperty('--dock-bar-h',Math.ceil(bar.getBoundingClientRect().height)+'px');
  const current=bar.querySelector('.is-current');if(current)bar.scrollLeft=Math.max(0,current.offsetLeft-(bar.clientWidth-current.offsetWidth)/2);
 }
-// Action cards (green buttons on home): open the matching function in the function dial, bring it into view,
-// then the action's window docks on it exactly as if it had been opened from the dial itself.
-async function moduleFocusFromPriority(module){
+// Action cards (green buttons on home): the action's window opens directly, docked exactly like a function
+// window, with the app strip below.
+async function moduleFocusFromPriority(module,open){
  const known=(homeLayout.workspace?.modules||[]).some(m=>m.key===module);
- if(!known||!moduleFocusOpen(module))return false;
- const frame=document.querySelector('#moduleFocus');if(!frame)return false;
- const r=frame.getBoundingClientRect();
- if(r.top<8||r.bottom>innerHeight-8)frame.scrollIntoView({block:r.height>innerHeight-16?'start':'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
- return true;
+ if(!known)return false;
+ return moduleFocusWindow(module,open);
 }
 window.moduleFocusFromPriority=moduleFocusFromPriority;
 window.moduleFocusDock=moduleFocusDock;

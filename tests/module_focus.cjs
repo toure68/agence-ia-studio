@@ -21,75 +21,63 @@ const {chromium}=require('playwright');
   });
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid [data-go="clients"]').waitFor();
   await page.locator('#content .module-grid [data-go="clients"]').scrollIntoViewIfNeeded();
-  const before=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#content .module-grid').getBoundingClientRect().top,height:Math.round(document.querySelector('.module-reserve-launch').getBoundingClientRect().bottom-document.querySelector('#content .module-grid').getBoundingClientRect().top),page:document.documentElement.scrollHeight,url:location.href,tiles:document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-tile').length}));
-  await page.locator('#content .module-grid [data-go="clients"]').click();
-  const frame=page.locator('#moduleFocus');await frame.waitFor();
-  const after=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#moduleFocus').getBoundingClientRect().top,url:location.href}));
-  assert.equal(after.url,before.url,'No screen change');assert(Math.abs(after.scroll-before.scroll)<2,'No scroll');assert(Math.abs(after.top-before.top)<2,'Same place as the grid '+JSON.stringify({before,after}));
-  assert(await page.locator('#content .module-grid:not(.module-reserve-grid-inline)').isHidden(),'Grid hidden');
-  const frameHeight=()=>frame.evaluate(e=>Math.round(e.getBoundingClientRect().height));
-  assert(Math.abs(await frameHeight()-before.height)<=1,'Frame covers exactly the function block (grid + Réserve) '+JSON.stringify({block:before.height,frame:await frameHeight()}));
-  assert(Math.abs(await page.evaluate(()=>document.documentElement.scrollHeight)-before.page)<=1,'Nothing below moves');
-  assert.equal(await page.locator('#moduleFocus [data-focus-close]').getAttribute('aria-label'),'Toutes les fonctions','Apps button instead of a back arrow on the first level');
-  assert(await page.locator('.module-reserve-launch').isHidden(),'Reserve button hidden');
-  assert(await page.locator('#homeTreasury').isVisible(),'Treasury dial stays above');
-  assert.equal(await page.locator('#moduleFocus .focus-title-main').innerText(),'Clients');
-  await page.locator('#moduleFocus li.focus-row',{hasText:'Client Cadran Fonction'}).waitFor();
-  assert(await page.locator('#moduleFocus .focus-row').count()<=3,'Three lines at most');
-  // Small strip of the other functions at the bottom; switching stays in the same frame.
-  const strip=page.locator('#moduleFocus .focus-app');assert.equal(await strip.count(),before.tiles);
-  assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),'clients');
-  const box=await strip.first().locator('.module-icon').boundingBox();assert(box.width<=44&&box.height<=44,'Small format');
-  assert.equal(await strip.first().locator('.focus-app-name').count(),1,'Name band above each app');
-  assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>e.scrollHeight<=e.clientHeight+1&&getComputedStyle(e).overflowY==='hidden'),'Strip never moves up or down');
-  const other=await page.locator('#moduleFocus .focus-app[aria-pressed="false"]').first();
-  if(await other.count()){const key=await other.getAttribute('data-focus-app');await other.click();assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),key);assert.equal(await page.locator('#moduleFocus').count(),1);assert(Math.abs(await frameHeight()-before.height)<=1,'Same size for another function');await page.locator('#moduleFocus [data-focus-app="clients"]').click();}
-  // Buttons readable before any tap (no white on white), same height.
-  const buttons=await page.locator('#moduleFocus .focus-btn').evaluateAll(es=>es.map(e=>{const c=getComputedStyle(e),r=e.getBoundingClientRect();return {text:e.innerText.trim(),color:c.color,bg:c.backgroundColor,h:Math.round(r.height)};}));
-  assert.deepEqual(buttons.map(b=>b.text),['Voir tout →','＋ Nouveau client']);
-  for(const b of buttons)assert(b.color!==b.bg&&b.h>=40,'Readable button '+JSON.stringify(b));
-  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
-  // "Voir tout" opens the full function; closing it comes back to the same frame.
-  const frameBox=await frame.boundingBox(),stripTop=await page.locator('#moduleFocus .focus-apps').evaluate(e=>e.getBoundingClientRect().top);
-  await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();
-  await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&document.querySelector('#dockExpand'));
-  // Second window: exactly on the frame, dark universe, back arrow and Déployer.
-  const panelBox=await page.locator('#contextPanel').boundingBox();
-  const vh=await page.evaluate(()=>innerHeight),top=Math.max(8,frameBox.y),visible={x:frameBox.x,y:top,width:frameBox.width,height:Math.min(vh-8,stripTop-6)-top};
-  for(const k of ['x','y','width','height'])assert(Math.abs(panelBox[k]-visible[k])<=2,'Second window on the (visible) frame '+JSON.stringify({visible,panelBox}));
-  const dark=await page.locator('#contextPanel').evaluate(e=>{const m=getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number);return (m[0]+m[1]+m[2])/3;});assert(dark<60,'Dark window '+dark);
-  assert.equal((await page.locator('#dockBack').innerText()).trim(),'1','Single back button with the number of steps');
-  const backLook=await page.locator('#dockBack').evaluate(b=>{const i=b.querySelector('svg').getBoundingClientRect(),n=parseFloat(getComputedStyle(b.querySelector('.dock-back-n')).fontSize),r=b.getBoundingClientRect();return {icon:i.height,n,h:r.height};});
-  assert(backLook.icon>=22&&backLook.n<backLook.icon&&backLook.h>=40,'Large iOS-style back chevron, smaller step number '+JSON.stringify(backLook));
-  assert(await page.locator('#dockApps').isVisible(),'Apps button to go straight back to all functions');
-  assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&e.contains(hit);}),'App strip stays visible under the window');
-  // Switching function from the strip while a window is open closes it and opens the other function in the frame.
-  const next=page.locator('#moduleFocus .focus-app[aria-pressed="false"]').first();
-  if(await next.count()){const k=await next.getAttribute('data-focus-app');await next.click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
-   assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),k);
-   await page.locator('#moduleFocus [data-focus-app="clients"]').click();await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();await page.waitForFunction(()=>document.querySelector('#dockBack'));}
-  // No light surface and no dark ink left in the window (no white-on-white like the old Agenda card).
+  const tiles=await page.locator('#content .module-grid:not(.module-reserve-grid-inline) .module-tile[data-go]').count();
   const lightCheck=sel=>page.locator(sel).evaluate(root=>{const rgb=v=>{const m=String(v).match(/rgba?\(([^)]+)\)/);if(!m)return null;const [r,g,b,a=1]=m[1].split(/[\s,/]+/).filter(Boolean).map(Number);return {r,g,b,a};},lum=c=>(0.2126*c.r+0.7152*c.g+0.0722*c.b)/255;
    const bad=[];for(const el of root.querySelectorAll('*')){if(/^(INPUT|SELECT|TEXTAREA|BUTTON|OPTION|svg|path|IMG)$/i.test(el.tagName)||el.closest('svg,.btn,.badge')||!el.getClientRects().length)continue;const cs=getComputedStyle(el),bg=rgb(cs.backgroundColor),fg=rgb(cs.color);
     if(bg&&bg.a>0.3&&lum(bg)>0.78)bad.push('light:'+el.className);
     if(fg&&lum(fg)<0.22&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))bad.push('dark text:'+el.className+':'+el.textContent.trim().slice(0,30));}
    return bad;});
-  await page.waitForTimeout(150);
-  assert.deepEqual(await lightCheck('#contextPanel'),[],'Readable dark window');
+  const geo=()=>page.evaluate(()=>{const w=document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'),f=document.querySelector('#moduleFocus'),s=f?.querySelector('.focus-apps');
+   const r=w?.getBoundingClientRect(),fr=f?.getBoundingClientRect(),sr=s?.getBoundingClientRect();
+   return {win:r&&{x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom},frame:fr&&{x:fr.x,y:fr.y,w:fr.width,bottom:fr.bottom},strip:sr&&{top:sr.top,h:sr.height},vh:innerHeight};});
+  const waitWindow=async key=>{await page.waitForFunction(k=>document.body.classList.contains('dock-to-focus')&&document.querySelector(`#moduleFocus [data-focus-app="${k}"]`)?.getAttribute('aria-pressed')==='true'&&(document.querySelector('#contextPanel #dockBack')||document.querySelector('#modalLayer:not(.hide) .modal')),key);await page.evaluate(async()=>{await navigationQueue;});};
+  const toGrid=async()=>{await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else if(document.querySelector('#modalLayer:not(.hide)'))closeModal();});await page.evaluate(async()=>{await navigationQueue;});
+   await page.waitForFunction(()=>!document.querySelector('#moduleFocus')&&!document.body.classList.contains('dock-to-focus'));};
+  // Tapping a function opens its full window directly (no summary step), on the function frame, app strip below.
+  await page.locator('#content .module-grid [data-go="clients"]').click();await waitWindow('clients');
+  await page.locator('#contextPanel').getByText('Client Cadran Fonction').first().waitFor();
+  const g=await geo();
+  assert(Math.abs(g.win.x-g.frame.x)<=2&&Math.abs(g.win.w-g.frame.w)<=2&&g.win.y<=g.frame.y+1,'Window on the function frame '+JSON.stringify(g));
+  assert(g.strip&&g.strip.h>20&&Math.abs(g.win.bottom-(g.strip.top-6))<=2,'App strip right under the window '+JSON.stringify(g));
+  assert(g.win.h>=g.vh*0.5,'Big window '+JSON.stringify(g));
+  assert(await page.locator('#moduleFocus .focus-kpis').evaluate(e=>getComputedStyle(e).visibility==='hidden'),'No summary step');
+  assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&e.contains(hit);}),'App strip visible and usable under the window');
+  const strip=page.locator('#moduleFocus .focus-app');assert.equal(await strip.count(),tiles);
+  const box=await strip.first().locator('.module-icon').boundingBox();assert(box.width<=44&&box.height<=44,'Small format');
+  assert.equal(await strip.first().locator('.focus-app-name').count(),1,'Name band above each app');
+  assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>e.scrollHeight<=e.clientHeight+1&&getComputedStyle(e).overflowY==='hidden'),'Strip never moves up or down');
+  // Header: apps button, one big back arrow with a small number, Assistant IA in place of the title, ⤢.
+  assert(await page.locator('#dockApps').isVisible(),'Apps button');
+  assert.equal((await page.locator('#dockBack').innerText()).trim(),'1','Single back button with the number of steps');
+  const backLook=await page.locator('#dockBack').evaluate(b=>{const i=b.querySelector('svg').getBoundingClientRect(),n=parseFloat(getComputedStyle(b.querySelector('.dock-back-n')).fontSize),r=b.getBoundingClientRect();return {icon:i.height,n,h:r.height};});
+  assert(backLook.icon>=22&&backLook.n<backLook.icon&&backLook.h>=40,'Large iOS-style back chevron, smaller step number '+JSON.stringify(backLook));
+  assert(await page.locator('#dockAssistant').isVisible(),'Assistant IA in the window header');
+  assert(await page.locator('#contextTitle').isHidden(),'No title in the header: the name is in the strip');
+  assert.equal(await page.locator('#assistantDock').evaluate(e=>getComputedStyle(e).visibility),'hidden','Home assistant moved into the window');
   const headerBacks=await page.locator('#contextPanel .context-header').evaluate(h=>[...h.querySelectorAll('button,a')].filter(b=>b.getClientRects().length&&/‹|back|Revenir/i.test((b.textContent||'')+(b.getAttribute('aria-label')||'')+(getComputedStyle(b,'::before').content||''))).length);
   assert(headerBacks<=1,'One back arrow only, got '+headerBacks);
+  const dark=await page.locator('#contextPanel').evaluate(e=>{const m=getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number);return (m[0]+m[1]+m[2])/3;});assert(dark<60,'Dark window '+dark);
+  await page.waitForTimeout(150);assert.deepEqual(await lightCheck('#contextPanel'),[],'Readable dark window');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
+  // The assistant opens from the window without closing it; the back arrow returns to the function.
+  await page.locator('#dockAssistant').click();
+  await page.waitForFunction(()=>document.querySelector('#contextPanel #assistantChat')&&document.querySelector('#dockBack')?.dataset.n==='2');
+  await page.locator('#dockBack').click();
+  await page.waitForFunction(()=>document.querySelector('#dockBack')?.dataset.n==='1'&&!document.querySelector('#contextPanel #assistantChat'));
+  await page.locator('#contextPanel').getByText('Client Cadran Fonction').first().waitFor();
+  // Another app in the strip: its window opens directly in place of this one.
+  const other=page.locator('#moduleFocus .focus-app[aria-pressed="false"]').first();
+  if(await other.count()){const k=await other.getAttribute('data-focus-app');await other.click();await waitWindow(k);
+   if(await page.locator('#dockBack').count())assert.equal((await page.locator('#dockBack').innerText()).trim(),'1','Fresh window after switching');
+   await page.locator('#moduleFocus [data-focus-app="clients"]').click();await waitWindow('clients');}
+  // Déployer still works.
   await page.locator('#dockExpand').click();
-  assert((await page.locator('#contextPanel').boundingBox()).width>frameBox.width,'Déployer widens the window');
+  assert((await page.locator('#contextPanel').boundingBox()).width>g.frame.w,'Déployer widens the window');
   await page.locator('#dockExpand').click();
-  // The single visible back arrow returns to the function frame.
-  await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});
-  await page.evaluate(async()=>{await navigationQueue;});
-  assert.equal(await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),false,'Dock released after closing');
-  assert(await frame.isVisible(),'Frame kept after the full view');
   // Keyboard open while typing in a docked form: the form leaves the frame and fills the visible area above
   // the keyboard, with the field in view; it returns onto the frame when the keyboard closes.
-  await page.locator('#moduleFocus [data-focus-go="client-new"]').click();await page.locator('#contextPanel input').first().waitFor();
-  await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus'));
+  await page.evaluate(()=>{openTab('client-new');});await page.locator('#contextPanel #clientName').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#dockBack')?.dataset.n==='2');
   const dockedBox=await page.locator('#contextPanel').boundingBox();
   const field=page.locator('#contextPanel input:not([type=hidden])').first();await field.focus();
   const kb=await page.evaluate(()=>{const real=window.visualViewport;Object.defineProperty(window,'visualViewport',{configurable:true,value:{height:innerHeight-340,width:innerWidth,offsetTop:0,offsetLeft:0,addEventListener(){}}});
@@ -101,10 +89,8 @@ const {chromium}=require('playwright');
   const fieldBox=await field.boundingBox();assert(fieldBox.y>=0&&fieldBox.y+fieldBox.height<=kb.limit+1,'Active field visible above the keyboard');
   await page.evaluate(()=>{Object.defineProperty(window,'visualViewport',{configurable:true,value:window.__realVV});syncDialogViewport();document.activeElement.blur();moduleDockKeyboard();});
   const back=await page.locator('#contextPanel').boundingBox();assert(Math.abs(back.y-dockedBox.y)<=2&&Math.abs(back.height-dockedBox.height)<=2,'Back onto the frame when the keyboard closes');
-  await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
   // Guided entry: "Suivant" key moves to the next field, a complete phone number moves on by itself,
   // the validate button stays visible at the bottom, a small progress shows where you are.
-  await page.locator('#moduleFocus [data-focus-go="client-new"]').click();await page.locator('#clientName').waitFor();
   await page.waitForFunction(()=>document.querySelector('#clientName')?.getAttribute('enterkeyhint')==='next');
   await page.locator('#clientName').focus();await page.keyboard.type('Client Guidé');await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement.id),'clientEmail','Enter goes to the next field');
@@ -116,7 +102,11 @@ const {chromium}=require('playwright');
   assert.equal(await page.evaluate(async()=>(await api(`/api/companies/${company.id}/clients`)).some(c=>c.name==='Client Guidé')),false,'Never submits on its own');
   const ring=await page.evaluate(()=>{const f=document.querySelector('#clientAddress');f.focus();const w=f.closest('.fg-current'),cs=getComputedStyle(f);return {wrapOutline:w?getComputedStyle(w).outlineStyle:'none',inputOutline:cs.outlineStyle,shadow:cs.boxShadow};});
   assert(ring.wrapOutline==='none'&&ring.inputOutline==='none'&&ring.shadow!=='none','One single ring on the active field '+JSON.stringify(ring));
-  await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
+  // Closing the window returns to the home grid, with the assistant back in its place.
+  await toGrid();
+  assert(await page.locator('#content .module-grid [data-go="clients"]').isVisible(),'Grid back');
+  assert(await page.locator('.module-reserve-launch').isVisible(),'Reserve button back');
+  assert.equal(await page.locator('#assistantDock').evaluate(e=>getComputedStyle(e).visibility),'visible','Assistant back in its place');
   // Exports stay inside the app: the CSV goes to the share sheet, the page does not navigate to a file.
   await page.evaluate(()=>{openTab('prospects');});await page.locator('a[href="/api/prospects-export"]').waitFor();
   const urlBefore=page.url();
@@ -131,62 +121,47 @@ const {chromium}=require('playwright');
   const fit=await page.locator('#modalLayer .modal').evaluate(m=>{const r=m.getBoundingClientRect();return [...m.querySelectorAll('input,select,textarea')].filter(i=>i.getClientRects().length).every(i=>i.getBoundingClientRect().right<=r.right+1);});
   assert(fit,'Fields stay inside the form');
   await page.keyboard.press('Escape');await page.locator('#modalLayer.hide').waitFor({state:'attached'});
-  // Escape and the back arrow restore the grid.
-  await page.keyboard.press('Escape');assert.equal(await page.locator('#moduleFocus').count(),0);
-  assert(await page.locator('#content .module-grid [data-go="clients"]').isVisible());
-  await page.locator('#content .module-grid [data-go="clients"]').click();await page.locator('#moduleFocus [data-focus-close]').click();
-  assert(await page.locator('.module-reserve-launch').isVisible(),'Reserve button back');
-  // Tiny grid (4 columns, 1 row): the frame still keeps the grid's size; content adapts.
+  // The apps button of the window returns to all functions.
+  await page.locator('#content .module-grid [data-go="clients"]').click();await waitWindow('clients');
+  await page.locator('#dockApps').click();await page.evaluate(async()=>{await navigationQueue;});
+  await page.waitForFunction(()=>!document.querySelector('#moduleFocus')&&!document.querySelector('#contextPanel'));
+  // Tiny grid (4 columns, 1 row): too little room on the frame, the function still opens in a full window.
   await page.evaluate(async()=>{const cid=company.id,w=await api(`/api/companies/${cid}/workspace`);await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:w.visible,version:w.version,columns:4,rows:1})});});
   await page.reload({waitUntil:'networkidle'});const small=page.locator('#content .module-grid .module-tile').first();await small.waitFor();
-  const smallGrid=await page.evaluate(()=>Math.round(document.querySelector('.module-reserve-launch').getBoundingClientRect().bottom-document.querySelector('#content .module-grid').getBoundingClientRect().top));
-  await small.click();await frame.waitFor();
-  assert(Math.abs(await frameHeight()-smallGrid)<=1,'Small grid: same size '+JSON.stringify({grid:smallGrid,frame:await frameHeight()}));
-  assert(await frame.locator('[data-focus-open]').isVisible(),'Voir tout stays reachable');
-  assert(await frame.evaluate(e=>[...e.querySelectorAll('button,a')].filter(b=>b.offsetParent).every(b=>b.getBoundingClientRect().bottom<=e.getBoundingClientRect().bottom+1)),'Nothing spills out of the frame');
-  await page.locator('#moduleFocus [data-focus-close]').click();
-  // Action cards: the green button opens the matching function in the function dial and docks its window there.
-  // Normal-size grid again (the previous check used a one-row grid, too small to host a window).
+  await small.click();await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));
+  assert(await page.locator('#contextPanel,#modalLayer:not(.hide) .modal').first().isVisible(),'Window opens even with a tiny grid');
+  await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else closeModal();});await page.evaluate(async()=>{await navigationQueue;});
+  await page.waitForFunction(()=>!document.querySelector('#moduleFocus')&&!document.querySelector('#contextPanel'));
+  // Action cards: the green button opens the action's window directly, docked on the function frame like a function.
   await page.evaluate(async()=>{const cid=company.id,w=await api(`/api/companies/${cid}/workspace`);await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:w.visible,version:w.version,columns:2,rows:4})});});
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').first().waitFor({state:'attached'});
   const card=page.locator('.priority-card:has([data-priority-open])').first();
   if(await card.count()){
    const module=await card.getAttribute('data-priority-module');
-   const known=await page.evaluate(m=>(homeLayout.workspace?.modules||[]).some(x=>x.key===m),module);
+   const known=await page.evaluate(m=>(homeLayout.workspace?.modules||[]).some(x=>x.key===m)&&!!document.querySelector(`#content .module-grid [data-go="${m}"]`),module);
    if(known){
-    await card.locator('[data-priority-open]').click();
-    await page.locator('#moduleFocus').waitFor();
-    assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),module,'Same function as in the dial');
-    // Same as the dial's own button: no extra window; the card's actions are listed first in the dial.
-    assert.equal(await page.locator('#contextPanel').count(),0);assert.equal(await page.locator('#modalLayer:not(.hide)').count(),0);
-    await page.locator('#moduleFocus [data-focus-priority]').first().click();
-    await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')));
-    const win=await page.evaluate(()=>{const w=(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')).getBoundingClientRect(),f=document.querySelector('#moduleFocus').getBoundingClientRect();return {dx:Math.abs(w.left-f.left),dw:Math.abs(w.width-f.width)};});
-    assert(win.dx<=2&&win.dw<=2,'Action window docked on the function frame '+JSON.stringify(win));
-    await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else closeModal();});
-    await page.evaluate(async()=>{await navigationQueue;});
-    if(await page.locator('#moduleFocus').count())await page.locator('#moduleFocus [data-focus-close]').click();
+    await card.locator('[data-priority-open]').click();await waitWindow(module);
+    const w=await geo();
+    assert(Math.abs(w.win.x-w.frame.x)<=2&&Math.abs(w.win.w-w.frame.w)<=2,'Action window docked on the function frame '+JSON.stringify(w));
+    assert(w.strip&&Math.abs(w.win.bottom-(w.strip.top-6))<=2,'App strip under the action window');
+    await toGrid();
    }
   }
-  // Every function window, opened from the dial: no card inside a card (no narrower nested box), the app strip
-  // stays available docked AND in full screen (⤢), and the full-screen strip switches function.
+  // Every function window, opened from the grid then from the strip: no card inside a card, the app strip
+  // stays available docked AND in full screen (⤢), and the full-screen strip switches window.
   {
    const keys=await page.evaluate(()=>(homeLayout.workspace?.modules||[]).map(m=>m.key));
-   await page.locator('#content .module-grid .module-tile[data-go]').first().click();await page.locator('#moduleFocus').waitFor();
    const report=[],checked=[];
-   const ensureDial=async key=>{
-    if(!await page.locator('#moduleFocus').count()){await page.locator('#content .module-grid .module-tile[data-go]').first().click();await page.locator('#moduleFocus').waitFor();}
-    const app=page.locator(`#moduleFocus [data-focus-app="${key}"]`);if(!await app.count())return false;
-    if(await app.getAttribute('aria-pressed')!=='true'){await app.click();await page.waitForFunction(k=>document.querySelector(`#moduleFocus [data-focus-app="${k}"]`)?.getAttribute('aria-pressed')==='true',key);}
-    return true;
-   };
-   const closeWindow=async()=>{await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else if(document.querySelector('#modalLayer:not(.hide)'))closeModal();});await page.evaluate(async()=>{await navigationQueue;});await page.waitForTimeout(150);};
    for(const key of keys){
-    if(!await ensureDial(key))continue;
-    const open=page.locator('#moduleFocus [data-focus-open]');if(!await open.count())continue;
-    await open.click();
-    const opened=await page.waitForFunction(()=>document.querySelector('#contextPanel .context-scroll')||document.querySelector('#modalLayer:not(.hide) .modal'),null,{timeout:6000}).then(()=>true,()=>false);
+    const inStrip=page.locator(`#moduleFocus [data-focus-app="${key}"]`),docked=await page.evaluate(()=>!!document.querySelector('#contextPanel')&&document.body.classList.contains('dock-to-focus'));
+    if(docked&&await inStrip.count())await inStrip.click();
+    else{
+     if(await page.locator('#contextPanel,#modalLayer:not(.hide)').count())await toGrid();
+     const tile=page.locator(`#content .module-grid [data-go="${key}"]`);if(!await tile.count())continue;await tile.click();
+    }
+    const opened=await page.waitForFunction(k=>document.querySelector(`#moduleFocus [data-focus-app="${k}"]`)?.getAttribute('aria-pressed')==='true'&&(document.querySelector('#contextPanel .context-scroll')||document.querySelector('#modalLayer:not(.hide) .modal')),key,{timeout:6000}).then(()=>true,()=>false);
     if(!opened){report.push(key+': no window');continue;}
+    await page.evaluate(async()=>{await navigationQueue;});
     await page.waitForTimeout(600);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
     const m=await page.evaluate(()=>{
      const win=document.querySelector('#contextPanel .context-scroll')||document.querySelector('#modalLayer:not(.hide) .modal');
@@ -201,7 +176,8 @@ const {chromium}=require('playwright');
     });
     checked.push(key);
     if(m.deep.length)report.push(`${key}: nested box ${m.deep.join(', ')}`);
-    if(m.docked&&!m.strip)report.push(key+': app strip hidden under the docked window');
+    if(!m.docked)report.push(key+': window not on the function frame');
+    else if(!m.strip)report.push(key+': app strip hidden under the window');
     if(await page.locator('#dockExpand').count()){
      await page.locator('#dockExpand').click();
      const x=await page.evaluate(()=>{const b=document.querySelector('#dockAppBar'),p=document.querySelector('#contextPanel').getBoundingClientRect();if(!b)return {bar:false};const r=b.getBoundingClientRect();return {bar:r.height>20&&r.bottom<=innerHeight+1,above:p.bottom<=r.top+1,apps:b.querySelectorAll('[data-focus-app]').length,dial:document.querySelectorAll('#moduleFocus .focus-apps [data-focus-app]').length};});
@@ -209,26 +185,21 @@ const {chromium}=require('playwright');
      await page.locator('#dockExpand').click();
      if(await page.locator('#dockAppBar').count())report.push(key+': strip left after leaving full screen');
     }
-    await closeWindow();
    }
    assert(checked.length>=3,'Enough function windows checked '+checked.join(','));
    assert.deepEqual(report,[],'All function windows: '+report.join(' | '));
-   // Full-screen strip switches function: the window closes and the dial shows the touched function.
+   // Full-screen strip: touching another app opens its window directly.
    const [first,second]=checked;
-   await ensureDial(first);await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();await page.waitForFunction(()=>document.querySelector('#dockExpand'));
+   await toGrid();await page.locator(`#content .module-grid [data-go="${first}"]`).click();await waitWindow(first);
+   await page.waitForFunction(()=>document.querySelector('#dockExpand'));
    await page.locator('#dockExpand').click();await page.locator(`#dockAppBar [data-focus-app="${second}"]`).click();
-   await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
-   await page.waitForFunction(k=>document.querySelector(`#moduleFocus [data-focus-app="${k}"]`)?.getAttribute('aria-pressed')==='true',second);
+   await waitWindow(second);
    assert.equal(await page.locator('#dockAppBar').count(),0);assert(!await page.evaluate(()=>document.body.classList.contains('dock-expanded')));
    console.log('Function windows checked:',checked.join(', '));
-   await page.locator('#moduleFocus [data-focus-close]').click();
-  }
-  // No white frame around the current app of the strip (keyboard focus = green ring on the icon only).
-  {
-   await page.locator('#content .module-grid .module-tile[data-go]').first().click();await page.locator('#moduleFocus').waitFor();
+   // No white frame around the current app of the strip (keyboard focus = green ring on the icon only).
    const ring=await page.locator('#moduleFocus .focus-app.is-current').evaluate(b=>{b.focus();const cs=getComputedStyle(b);return {outline:cs.outlineStyle,width:cs.outlineWidth};});
    assert(ring.outline==='none'||ring.width==='0px','No white frame around the current app '+JSON.stringify(ring));
-   await page.locator('#moduleFocus [data-focus-close]').click();
+   await toGrid();
   }
   // Glass design: wallpaper chosen from the account menu, saved on the account, glass cards over it.
   {
@@ -248,7 +219,7 @@ const {chromium}=require('playwright');
   const peek=await page.evaluate(async()=>api(`/api/companies/${company.id}/module-peek/clients`));
   assert(peek.items.length>=1&&peek.items.length<=3);
   assert.deepEqual(errors,[]);
-  console.log('Function dial: opens in place, same position, no scroll, 3 lines, app strip, Voir tout, back/Escape.');
+  console.log('Function windows: open directly on the frame, app strip below, assistant in the header, back to the grid.');
  }catch(error){
   console.error('Function dial details',JSON.stringify({url:page.url(),errors,body:(await page.locator('#moduleFocus').innerText().catch(()=>'')).slice(0,800)}));
   throw error;

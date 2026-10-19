@@ -16,13 +16,12 @@ const {chromium}=require('playwright');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
- // Action cards open their function in the function dial (it stays open after the window closes, by design).
- // An action card's green button opens its function in the function dial; its actions are listed there.
+ // An action card's green button opens the action's window directly (several actions: their list), docked on
+ // the function frame when there is room for it.
  async function openPriority(card){
    await (card||page.locator('[data-priority-open]')).click();
-   await page.waitForFunction(()=>document.querySelector('#moduleFocus [data-focus-priority]')||document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));
-   const rows=page.locator('#moduleFocus [data-focus-priority]');
-   if(await rows.count()===1)await rows.click();
+   await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));
+   await page.evaluate(async()=>{await navigationQueue;});
  }
  async function closeDial(){await page.evaluate(()=>{if(typeof moduleFocus!=='undefined'&&moduleFocus.key&&!document.querySelector('#contextPanel')&&document.querySelector('#modalLayer.hide'))moduleFocusClose();});}
  async function backHome(){
@@ -499,8 +498,9 @@ const {chromium}=require('playwright');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,6);
    await priorityLayout(1);
    await openPriority();
-   assert.equal(await page.locator('#moduleFocus [data-focus-priority]').count(),6,'All same-function actions remain available in the function dial');
-   const choice=page.locator('#moduleFocus [data-focus-priority]').last(),choiceTitle=await choice.locator('.focus-title').innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
+   await page.locator('#modalLayer [data-priority-item-open]').first().waitFor();
+   assert.equal(await page.locator('#modalLayer [data-priority-item-open]').count(),6,'All same-function actions remain available');
+   const choice=page.locator('#modalLayer [data-priority-item-open]').last(),choiceTitle=await choice.locator('strong').first().innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
    await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
 
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
@@ -548,7 +548,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
    await backHome();
    assert.equal(await page.locator('[data-priority-complete],.module-grid button').count(),0);
-   await page.locator('[data-priority-open]').first().click();await page.locator('#moduleFocus [data-focus-priority]').first().click();await page.locator('#completeTask').waitFor();
+   await openPriority(page.locator('[data-priority-open]').first());if(await page.locator('#modalLayer:not(.hide) [data-priority-item-open]').count())await page.locator('#modalLayer [data-priority-item-open]').first().click();await page.locator('#completeTask').waitFor();
    const completed=page.waitForResponse(r=>r.url().includes('/complete')&&r.request().method()==='POST');
    await page.locator('#completeTask').click();await completed;await backHome();
    assert.equal((await page.evaluate(()=>api('/api/companies/1/priorities'))).length,5);
