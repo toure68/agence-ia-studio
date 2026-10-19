@@ -44,6 +44,10 @@ const {chromium}=require('playwright');
   assert.deepEqual(tabs.map(t=>t.text),['Derniers','À venir']);
   for(const t of tabs){assert(t.bg!=='rgba(0, 0, 0, 0)'&&t.color!==t.bg,'Tab visible before tap '+JSON.stringify(t));}
   assert.equal(tabs[0].pressed,'true');
+  // "Voir tout" sits on the same row, same size, so the bank pills get the whole bottom row.
+  const more=await page.locator('.dial-tabs .dial-more').evaluate(e=>{const r=e.getBoundingClientRect(),t=document.querySelector('.dial-tab').getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height),top:Math.round(r.top-t.top),text:e.innerText.trim()};});
+  assert.deepEqual(more,{w:tabs[0].w,h:tabs[0].h,top:0,text:'Voir tout →'});
+  assert.equal(await page.locator('.dial-foot button:not(.bank-pill)').count(),0,'Only bank pills in the bottom row');
   assert.equal(await page.locator('.dial-row').count(),3,'Three latest movements across banks');
   await page.locator('[data-dial-tab="next"]').click();
   assert.equal(await page.locator('[data-dial-tab="next"]').getAttribute('aria-pressed'),'true');
@@ -59,10 +63,13 @@ const {chromium}=require('playwright');
   assert(await page.locator('#homeTreasury .bank-dial .bank-back').isVisible(),'Back arrow at the top');
   assert((await page.locator('.bank-home-name').innerText()).toLowerCase().includes('rivage'));
   assert(await page.locator('.bank-total.bank-negative').isVisible());
-  assert((await page.locator('.dial-status.is-alert').innerText()).includes('1 000,00'));
+  assert.equal(await page.locator('.dial-status.is-alert').innerText(),'Alerte');
   const fund=page.locator('.bank-home-alert .bank-fund');assert(await fund.isVisible());
   assert((await page.locator('.bank-home-alert').innerText()).includes('1 000,00'),'Missing amount covers overdraft plus debit');
   assert((await fund.innerText()).startsWith('Approvisionner depuis'));
+  // The alert is the default panel; Derniers still shows this bank's movements, same card size.
+  await page.locator('[data-dial-tab="last"]').click();assert.equal(await page.locator('.bank-home-alert').count(),0);assert(await page.locator('.dial-row').count()>=1);
+  assert(Math.abs(await height()-summaryHeight)<=1,'Same size on Derniers for a bank in alert');
   // Tapping the selected bank again returns to the summary.
   await page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"]').click();
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
