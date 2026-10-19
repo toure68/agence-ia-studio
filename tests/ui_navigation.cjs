@@ -19,7 +19,7 @@ const {chromium}=require('playwright');
  async function backHome(){
    for(let i=0;i<5;i++){
     await page.evaluate(async()=>{await navigationQueue;});
-    if(await page.locator('#content .module-grid').count())return;
+    if(await page.locator('#content .module-grid').count()){await page.evaluate(()=>{if(typeof moduleFocusClose==='function'&&moduleFocus.key&&!document.querySelector('#contextPanel'))moduleFocusClose();});if(!await page.locator('#contextPanel').count())return;}
     const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
     await page.waitForFunction(route=>JSON.stringify(readRoute())!==route||Boolean(document.querySelector('#content .module-grid')),before);
     await page.evaluate(async()=>{await navigationQueue;});
@@ -30,7 +30,7 @@ const {chromium}=require('playwright');
  async function goModule(route){
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
-   if(await tile.count())await tile.click();
+   if(await tile.count()){await page.evaluate(()=>{if(moduleFocus.key)moduleFocusClose();});await tile.click();await page.locator('#moduleFocus [data-focus-open]').click();}
    else if(await page.evaluate(async r=>(await api(`/api/companies/${company.id}/workspace`)).modules.some(m=>m.key===r),route)){
      // Functions kept in the reserve open through their own route.
      await page.evaluate(r=>openTab(r),route);await page.evaluate(()=>navigationQueue);

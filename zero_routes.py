@@ -218,6 +218,58 @@ def install(app,db,require,own_company,utcnow):
         if not row:raise HTTPException(404,'Enregistrement introuvable')
         return dict(row)
 
+    # Function dial: three read-only lines per function, shown in place of the grid on the home screen.
+    PEEK_OWNER={'prospects','drafts','scanner','social','team'}
+    @app.get('/api/companies/{cid}/module-peek/{key}')
+    def module_peek(cid:int,key:str,req:Request):
+        user=scope(req,cid)
+        if key in PEEK_OWNER and user['role']!='owner':raise HTTPException(403,'Accès réservé à la direction')
+        items=[]
+        def add(title,meta='',tone='neutral',amount_minor=None,currency='EUR'):
+            items.append({'title':str(title or '')[:120],'meta':str(meta or '')[:120],'tone':tone,'amount_minor':amount_minor,'currency':currency})
+        with db() as con:
+            if key=='requests':
+                for r in con.execute("SELECT name,service,status FROM leads WHERE company_id=? AND status IN ('Nouveau','À rappeler') ORDER BY created DESC,id DESC LIMIT 3",(cid,)):
+                    add(r['name'],f"{r['service']} · {r['status']}",'warning')
+            elif key=='clients':
+                for r in con.execute('SELECT name,email,phone FROM clients WHERE company_id=? AND archived=0 ORDER BY updated DESC,id DESC LIMIT 3',(cid,)):
+                    add(r['name'],r['phone'] or r['email'])
+            elif key in ('activities','reports'):
+                for r in con.execute("SELECT title,status,due FROM work_items WHERE company_id=? AND status NOT IN ('done','cancelled') ORDER BY due IS NULL,due,id DESC LIMIT 3",(cid,)):
+                    late=bool(r['due'] and r['due']<today().isoformat())
+                    add(r['title'],('En retard · ' if late else '')+(r['due'] or 'Sans échéance'),'danger' if late else 'neutral')
+            elif key=='leads':
+                for r in con.execute('SELECT reference,status,total_minor,payload FROM quotations WHERE company_id=? ORDER BY id DESC LIMIT 3',(cid,)):
+                    try:currency=json.loads(r['payload']).get('currency') or 'EUR'
+                    except Exception:currency='EUR'
+                    label={'draft':'À finaliser','sent':'Envoyé','accepted':'Accepté','declined':'Refusé'}.get(r['status'],r['status'])
+                    add(r['reference'],label,'warning' if r['status']=='draft' else 'success' if r['status']=='accepted' else 'neutral',r['total_minor'],currency if len(str(currency))==3 else 'EUR')
+            elif key=='emails':
+                for r in con.execute("SELECT subject,sender,send_status FROM mail_messages WHERE company_id=? AND user_id=? ORDER BY received DESC,id DESC LIMIT 3",(cid,user['id'])):
+                    add(r['subject'] or '(sans objet)',r['sender'],'warning' if r['send_status']=='draft' else 'neutral')
+            elif key=='calendar':
+                upcoming=[]
+                for task in con.execute('SELECT * FROM calendar_tasks WHERE company_id=?',(cid,)):
+                    done={x['occurrence'] for x in con.execute('SELECT occurrence FROM task_completions WHERE task_id=?',(task['id'],))}
+                    due=next_occurrence(dict(task),done)
+                    if due:upcoming.append((due,task['title']))
+                for due,title in sorted(upcoming)[:3]:
+                    add(title,due.isoformat(),'danger' if due<today() else 'warning' if due<=today()+timedelta(days=7) else 'neutral')
+            elif key in ('equipment','risks'):
+                wanted=('equipment','material') if key=='equipment' else ('risk',)
+                for c in [c for c in risk_cards(con,cid) if c['action']['type'] in wanted][:3]:
+                    add(c['title'],c['state_label'],c['state'])
+            elif key=='prospects':
+                for r in con.execute('SELECT name,stage,city FROM prospects ORDER BY updated DESC,id DESC LIMIT 3'):
+                    add(r['name'],' · '.join(x for x in (r['stage'],r['city']) if x))
+            elif key=='drafts':
+                for r in con.execute('SELECT d.subject,p.name FROM drafts d JOIN prospects p ON p.id=d.prospect_id ORDER BY d.id DESC LIMIT 3'):
+                    add(r['subject'],r['name'])
+            elif key=='scanner':
+                for r in con.execute('SELECT filename,kind FROM source_documents WHERE company_id=? AND reviewed=0 ORDER BY id DESC LIMIT 3',(cid,)):
+                    add(r['filename'],r['kind'],'warning')
+        return {'key':key,'items':items}
+
     @app.get('/api/companies/{cid}/cockpit')
     def dashboard(cid:int,req:Request):
         user=scope(req,cid)

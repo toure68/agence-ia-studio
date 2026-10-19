@@ -365,3 +365,54 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 @keyframes dial-pulse{0%{box-shadow:0 0 0 0 currentColor}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @media(max-width:359px){#homeTreasury .bank-dial{padding:14px 12px 10px}#homeTreasury .bank-dial .dial-mid{grid-template-columns:76px minmax(0,1fr);gap:10px}#homeTreasury .bank-dial .dial-ring-wrap,#homeTreasury .bank-dial .dial-ring{width:76px;height:76px}#homeTreasury .bank-dial .dial-head h2{letter-spacing:.1em;gap:6px}#homeTreasury .bank-dial .bank-pills{gap:8px}#homeTreasury .bank-dial .dial-row{gap:6px}#homeTreasury .bank-dial .dial-row b{min-width:0}#homeTreasury .bank-dial .dial-where{display:none}#homeTreasury .bank-dial .dial-tabs{gap:6px}#homeTreasury .bank-dial .dial-tab,#homeTreasury .bank-dial .dial-more{font-size:12px;padding:0 4px}}
 @media(prefers-reduced-motion:reduce){#homeTreasury .bank-dial .dial-arc{animation:none}#homeTreasury .bank-dial .dial-row,#homeTreasury .bank-dial .dial-head h2 .bank-home-name{animation:dial-dissolve .2s linear both;animation-delay:0s}#homeTreasury .bank-dial .is-alert .dial-pulse{animation:none}#homeTreasury .bank-dial .bank-pill,#homeTreasury .bank-dial .dial-tab,#homeTreasury .bank-dial .dial-more{transition:none}#homeTreasury .bank-dial .bank-pill[aria-pressed="true"]{transform:none}}
+/* Function dial: a function opens in place of the grid, same frame; other functions in a small strip at the bottom. */
+.reference-home[data-module-focus] .module-grid:not(.module-reserve-grid-inline),.reference-home[data-module-focus] .module-reserve-launch,.reference-home[data-module-focus] #homeReserve{display:none!important}
+.reference-home .module-focus{box-sizing:border-box;display:flex;flex-direction:column;gap:12px;margin:0 0 12px;padding:14px 14px 10px;border:1px solid var(--home-border);border-radius:22px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08;color:var(--home-text);font-variant-numeric:tabular-nums}
+.reference-home .module-focus.is-entering{animation:focus-in .38s cubic-bezier(.2,.8,.2,1) both}
+.reference-home .module-focus.is-switching>:not(.focus-apps){animation:focus-swap .3s cubic-bezier(.2,.8,.2,1) both}
+.reference-home .focus-head{display:flex;align-items:center;gap:10px;min-width:0}
+.reference-home .focus-back{width:32px;height:32px;flex:0 0 32px;margin-left:-4px;border:0;border-radius:50%;background:#ffffff12;color:var(--home-text);font-size:22px;line-height:1;cursor:pointer}
+.reference-home .focus-head .module-icon{width:34px;height:34px;flex:0 0 34px;border-radius:11px}
+.reference-home .focus-head .module-icon svg{width:20px;height:20px}
+.reference-home .focus-title-main{flex:1;min-width:0;margin:0;font-size:17px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--home-text)}
+.reference-home .focus-status{flex:0 1 auto;min-width:0;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-home .focus-status i{width:6px;height:6px;flex:none;border-radius:50%;background:currentColor}
+.reference-home .focus-status.is-ok{color:#50ca89;background:#50ca891f}
+.reference-home .focus-status.is-warning{color:#f0a24a;background:#f0a24a1f}
+.reference-home .focus-status.is-danger{color:#ef8a8e;background:#e46e7226}
+.reference-home .focus-status.is-danger i{animation:dial-pulse 2.2s ease-out infinite}
+.reference-home .focus-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.reference-home .focus-kpis div{min-width:0;padding:8px 10px;border:1px solid #ffffff0d;border-radius:12px;background:#ffffff08}
+.reference-home .focus-kpis span{display:block;color:var(--home-muted);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-home .focus-kpis b{display:block;margin-top:2px;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-home .focus-kpis .focus-state{font-size:14px}
+.reference-home .focus-body{flex:1;min-height:84px}
+.reference-home .focus-list{margin:0;padding:0;list-style:none}
+.reference-home .focus-row{display:grid;grid-template-columns:7px minmax(0,1fr) auto auto;align-items:center;gap:8px;height:30px;font-size:13px;animation:dial-rise .4s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 55ms)}
+.reference-home .focus-dot{width:7px;height:7px;border-radius:50%;background:var(--home-muted)}
+.reference-home .focus-row.tone-warning .focus-dot{background:#f0a24a}
+.reference-home .focus-row.tone-danger .focus-dot{background:#ef6b72}
+.reference-home .focus-row.tone-success .focus-dot{background:#50ca89}
+.reference-home .focus-title{min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-home .focus-row small{max-width:46vw;color:var(--home-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-home .focus-row.tone-danger small{color:#ef8a8e}
+.reference-home .focus-row b{font-size:13px;white-space:nowrap}
+.reference-home .focus-skeleton{height:14px;margin:8px 0;border-radius:7px;background:linear-gradient(90deg,#ffffff0a,#ffffff17,#ffffff0a);background-size:200% 100%;animation:focus-shimmer 1.2s linear infinite}
+.reference-home .focus-skeleton:nth-child(2){width:80%}.reference-home .focus-skeleton:nth-child(3){width:60%}
+.reference-home .focus-empty{margin:8px 0;color:var(--home-muted);font-size:13px}
+.reference-home .focus-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.reference-home .focus-actions.is-single{grid-template-columns:1fr}
+.reference-home .focus-btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 10px;border:1px solid #3a414c;border-radius:12px;background:#1c2129;color:#e6eaef;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.reference-home .focus-btn.is-primary{border-color:var(--home-green);background:var(--home-green);color:#06240f}
+.reference-home .focus-apps{display:flex;gap:8px;overflow-x:auto;margin:0 -4px;padding:8px 4px 2px;border-top:1px solid #ffffff0d;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.reference-home .focus-apps::-webkit-scrollbar{display:none}
+.reference-home .focus-app{position:relative;flex:0 0 40px;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:none;cursor:pointer;opacity:.72;transition:opacity .2s,transform .25s cubic-bezier(.2,.8,.2,1)}
+.reference-home .focus-app .module-icon{width:40px;height:40px;flex:0 0 40px;border-radius:12px}
+.reference-home .focus-app .module-icon svg{width:20px;height:20px}
+.reference-home .focus-app.is-current{opacity:1;transform:scale(1.05)}
+.reference-home .focus-app.is-current::after{content:"";position:absolute;left:14px;right:14px;bottom:-5px;height:3px;border-radius:2px;background:var(--home-green)}
+.reference-home .focus-app:focus-visible,.reference-home .focus-back:focus-visible,.reference-home .focus-btn:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
+@keyframes focus-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+@keyframes focus-swap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes focus-shimmer{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.reference-home .module-focus.is-entering,.reference-home .module-focus.is-switching>*{animation:dial-dissolve .2s linear both}.reference-home .focus-row{animation:none}.reference-home .focus-skeleton,.reference-home .focus-status.is-danger i{animation:none}.reference-home .focus-app{transition:none}}

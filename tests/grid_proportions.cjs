@@ -57,10 +57,14 @@ const {chromium}=require('playwright');
   }
   await page.setViewportSize({width:390,height:844});
   await page.locator('.module-grid [data-go]').first().click();
+  await page.locator('#moduleFocus').waitFor();
+  assert(await page.locator('.module-grid:not(.module-reserve-grid-inline)').isHidden(),'Function opens in place of the grid');
+  await page.locator('#moduleFocus [data-focus-open]').click();
   await page.locator('#contextPanel').waitFor();
   await page.locator('#closeContext').click();
   await page.locator('#contextPanel').waitFor({state:'detached'});
   assert.equal(await page.locator('.module-grid').count(),1,'Cockpit stays mounted after opening and closing a function');
+  await page.locator('#moduleFocus [data-focus-close]').click();assert(await page.locator('.module-grid').first().isVisible(),'Back arrow restores the grid');
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({passed:true,results}));
  }finally{await browser.close();}
