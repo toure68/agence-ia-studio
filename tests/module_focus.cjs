@@ -144,6 +144,8 @@ const {chromium}=require('playwright');
   assert(await frame.evaluate(e=>[...e.querySelectorAll('button,a')].filter(b=>b.offsetParent).every(b=>b.getBoundingClientRect().bottom<=e.getBoundingClientRect().bottom+1)),'Nothing spills out of the frame');
   await page.locator('#moduleFocus [data-focus-close]').click();
   // Action cards: the green button opens the matching function in the function dial and docks its window there.
+  // Normal-size grid again (the previous check used a one-row grid, too small to host a window).
+  await page.evaluate(async()=>{const cid=company.id,w=await api(`/api/companies/${cid}/workspace`);await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:w.visible,version:w.version,columns:2,rows:4})});});
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').first().waitFor({state:'attached'});
   const card=page.locator('.priority-card:has([data-priority-open])').first();
   if(await card.count()){
