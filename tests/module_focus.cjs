@@ -143,6 +143,24 @@ const {chromium}=require('playwright');
   assert(await frame.locator('[data-focus-open]').isVisible(),'Voir tout stays reachable');
   assert(await frame.evaluate(e=>[...e.querySelectorAll('button,a')].filter(b=>b.offsetParent).every(b=>b.getBoundingClientRect().bottom<=e.getBoundingClientRect().bottom+1)),'Nothing spills out of the frame');
   await page.locator('#moduleFocus [data-focus-close]').click();
+  // Action cards: the green button opens the matching function in the function dial and docks its window there.
+  await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').first().waitFor({state:'attached'});
+  const card=page.locator('.priority-card:has([data-priority-open])').first();
+  if(await card.count()){
+   const module=await card.getAttribute('data-priority-module');
+   const known=await page.evaluate(m=>(homeLayout.workspace?.modules||[]).some(x=>x.key===m),module);
+   if(known){
+    await card.locator('[data-priority-open]').click();
+    await page.locator('#moduleFocus').waitFor();
+    assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),module,'Same function as in the dial');
+    await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')));
+    const win=await page.evaluate(()=>{const w=(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')).getBoundingClientRect(),f=document.querySelector('#moduleFocus').getBoundingClientRect();return {dx:Math.abs(w.left-f.left),dw:Math.abs(w.width-f.width)};});
+    assert(win.dx<=2&&win.dw<=2,'Action window docked on the function frame '+JSON.stringify(win));
+    await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else closeModal();});
+    await page.evaluate(async()=>{await navigationQueue;});
+    if(await page.locator('#moduleFocus').count())await page.locator('#moduleFocus [data-focus-close]').click();
+   }
+  }
   // Preview endpoint is company-scoped and read-only.
   const peek=await page.evaluate(async()=>api(`/api/companies/${company.id}/module-peek/clients`));
   assert(peek.items.length>=1&&peek.items.length<=3);
