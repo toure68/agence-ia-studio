@@ -496,3 +496,10 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 :is(.context-panel .context-scroll,#modalLayer .modal){scroll-padding-bottom:76px}
 :is(.context-panel,#modalLayer .modal) .tint-was-light{background:#ffffff14!important;background-image:none!important;border-color:#ffffff24!important;color:#f2f5f7!important}
 :is(.context-panel,#modalLayer .modal) .badge{background:#1f3a2c!important;border:1px solid #4ade8055!important;color:#bbf7d0!important}
+/* Review 19/10: buttons that are links look like buttons; confirmation spans the width; a card inside a card
+   is flattened so nested windows/cards keep the same proportions as the first one (no shrinking boxes). */
+:is(.context-panel,#modalLayer .modal) a.btn{text-decoration:none}
+:is(.context-panel,#modalLayer .modal) .command-confirm{display:flex;width:100%;justify-content:center;min-height:48px}
+:is(.context-panel,#modalLayer .modal) :is(.card,.stack,.task-detail,.form-page>.stack) :is(.card,.task-detail,article.stack){padding-left:0!important;padding-right:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.reference-home .priority-group-count{display:none}
+:is(.context-panel,#modalLayer .modal) .logo-icon{display:inline-grid;place-items:center;font-weight:800;font-size:15px;letter-spacing:.02em}
