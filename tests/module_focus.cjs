@@ -37,9 +37,9 @@ const {chromium}=require('playwright');
   await page.locator('#content .module-grid [data-go="clients"]').click();await waitWindow('clients');
   await page.locator('#contextPanel').getByText('Client Cadran Fonction').first().waitFor();
   // Windows open maximized by default: home blurred behind, app strip at the bottom; ⤡ puts it back on the frame.
-  const full=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),b=document.querySelector('#dockAppBar')?.getBoundingClientRect(),cs=getComputedStyle(document.querySelector('#contextLayer'));return {on:document.body.classList.contains('dock-expanded'),w:p.width,bottom:p.bottom,bar:b&&{top:b.top,h:b.height,bottom:b.bottom},blur:cs.backdropFilter||cs.webkitBackdropFilter||'',vw:innerWidth,vh:innerHeight};});
+  const full=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),b=document.querySelector('#dockAppBar')?.getBoundingClientRect(),cs=getComputedStyle(document.querySelector('#contextLayer'));return {on:document.body.classList.contains('dock-expanded'),w:p.width,top:p.top,bottom:p.bottom,inside:!!document.querySelector('#contextPanel>#dockAppBar'),bar:b&&{top:b.top,h:b.height,bottom:b.bottom},blur:cs.backdropFilter||cs.webkitBackdropFilter||'',vw:innerWidth,vh:innerHeight};});
   assert(full.on&&full.w>=full.vw-40,'Maximized by default '+JSON.stringify(full));
-  assert(full.bar&&full.bar.h>20&&full.bar.bottom<=full.vh+1&&full.bottom<=full.bar.top+1,'App strip under the maximized window '+JSON.stringify(full));
+  assert(full.inside&&full.bar&&full.bar.h>20&&full.bar.bottom<=full.bottom+1&&full.bar.top>=full.top&&full.bar.bottom<=full.vh+1,'App strip inside the maximized window, at its bottom '+JSON.stringify(full));
   assert(/blur/.test(full.blur),'Home blurred behind the window '+JSON.stringify(full));
   await page.locator('#dockExpand').click();
   assert(!await page.evaluate(()=>document.body.classList.contains('dock-expanded')),'⤡ puts the window back on the frame');
@@ -234,8 +234,37 @@ const {chromium}=require('playwright');
     else if(!m.strip)report.push(key+': app strip hidden under the window');
     if(await page.locator('#dockExpand').count()){
      await page.locator('#dockExpand').click();
-     const x=await page.evaluate(()=>{const b=document.querySelector('#dockAppBar'),p=document.querySelector('#contextPanel').getBoundingClientRect();if(!b)return {bar:false};const r=b.getBoundingClientRect();return {bar:r.height>20&&r.bottom<=innerHeight+1,above:p.bottom<=r.top+1,apps:b.querySelectorAll('[data-focus-app]').length,dial:document.querySelectorAll('#moduleFocus .focus-apps [data-focus-app]').length};});
-     if(!x.bar)report.push(key+': app strip missing in full screen');else{if(!x.above)report.push(key+': full-screen window covers the strip');if(x.apps!==x.dial)report.push(key+': full-screen strip differs from the dial');}
+     const x=await page.evaluate(()=>{const b=document.querySelector('#dockAppBar'),p=document.querySelector('#contextPanel').getBoundingClientRect();if(!b)return {bar:false};const r=b.getBoundingClientRect();return {bar:r.height>20&&r.bottom<=innerHeight+1,inside:r.top>=p.top&&r.bottom<=p.bottom+1,apps:b.querySelectorAll('[data-focus-app]').length,dial:document.querySelectorAll('#moduleFocus .focus-apps [data-focus-app]').length};});
+     if(!x.bar)report.push(key+': app strip missing in full screen');else{if(!x.inside)report.push(key+': strip not inside the window');if(x.apps!==x.dial)report.push(key+': full-screen strip differs from the dial');}
+     // Every button and field of the window: reachable (nothing covers it) and never stuck to its neighbour.
+     const layout=await page.evaluate(()=>{
+      const win=document.querySelector('#modalLayer:not(.hide) .modal')||document.querySelector('#contextPanel .context-scroll');const out=[];
+      const ctl=[...win.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select,textarea,button,a.btn,summary')].filter(e=>e.getClientRects().length&&!e.closest('.dock-app-bar,.context-header,.chat-file,table,.row-chip'));
+      const name=e=>(e.id?'#'+e.id:e.tagName.toLowerCase())+':'+((e.textContent||e.placeholder||e.name||'').trim().slice(0,18));
+      for(const e of ctl.filter(e=>e.matches('.btn.primary,button[type=submit],.fg-primary,#previewCommand,#confirmCommand'))){
+       e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+       if(!hit||!(e===hit||e.contains(hit)))out.push('covered '+name(e)+' by '+(hit?(hit.id||hit.className||hit.tagName):'nothing'));
+      }
+      win.scrollTop=0;
+      const R=ctl.map(e=>({e,r:e.getBoundingClientRect()}));
+      for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){
+       const a=R[i],b=R[j];if(a.e.contains(b.e)||b.e.contains(a.e))continue;
+       const h=Math.min(a.r.right,b.r.right)-Math.max(a.r.left,b.r.left),v=Math.min(a.r.bottom,b.r.bottom)-Math.max(a.r.top,b.r.top);
+       let gap=null;
+       if(h>8&&v<=0)gap=b.r.top>=a.r.top?b.r.top-a.r.bottom:a.r.top-b.r.bottom;
+       else if(v>8&&h<=0)gap=b.r.left>=a.r.left?b.r.left-a.r.right:a.r.left-b.r.right;
+       if(gap!==null&&gap>-1&&gap<6)out.push(`stuck ${name(a.e)} / ${name(b.e)} (${Math.round(gap)}px)`);
+      }
+      return out.slice(0,6);
+     });
+     for(const l of layout)report.push(key+': '+l);
+     if(key==='calendar'&&await page.locator('#contextPanel [data-go="task-new"]').count()){
+      // A form sheet opened from a window (e.g. a new task): the strip moves inside the sheet, the green button stays visible.
+      await page.locator('#contextPanel [data-go="task-new"]').first().click();await page.locator('#commandText').waitFor();await page.waitForTimeout(250);
+      const sheet=await page.evaluate(()=>{const m=document.querySelector('#modalLayer:not(.hide) .modal'),b=document.querySelector('#previewCommand');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {inSheet:!!m.querySelector('#dockAppBar'),visible:!!hit&&(hit===b||b.contains(hit))};});
+      if(!sheet.inSheet)report.push('calendar: strip not inside the form sheet');if(!sheet.visible)report.push('calendar: "Préparer" hidden in the form sheet');
+      await page.evaluate(()=>closeModal());await page.waitForTimeout(200);
+     }
      await page.locator('#dockExpand').click();
      if(await page.locator('#dockAppBar').count())report.push(key+': strip left after leaving full screen');
     }

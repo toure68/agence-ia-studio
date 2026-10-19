@@ -189,24 +189,34 @@ function moduleDockSync(){
    if(moduleDock.preferExpanded)moduleDockSetExpanded(true);
    new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
+  // The strip follows the window on top (form sheet opened or closed).
+  if(document.body.classList.contains('dock-expanded'))moduleDockBar(true);
  }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct&&!moduleDock.switching){moduleDock.direct=false;moduleFocusClose();}}
 }
 // Full screen (⤢): the home is covered, so the same app strip is shown fixed under the window.
 // Touching an app closes the window and switches the function dial, exactly like the strip on the dial.
 function moduleDockBar(on){
- document.querySelector('#dockAppBar')?.remove();
- if(!on){document.documentElement.style.removeProperty('--dock-bar-h');return;}
- const source=document.querySelector('#moduleFocus .focus-apps');if(!source)return;
- const bar=document.createElement('nav');bar.id='dockAppBar';bar.className='reference-home dock-app-bar';bar.setAttribute('aria-label','Toutes les fonctions');
- bar.innerHTML=source.innerHTML;
- bar.addEventListener('click',e=>{
-  const app=e.target.closest('[data-focus-app]');if(!app)return;
-  e.preventDefault();const key=app.dataset.focusApp;
-  document.body.classList.remove('dock-expanded');moduleDockBar(false);moduleFocusSwitch(key);
- });
- document.body.append(bar);
- document.documentElement.style.setProperty('--dock-bar-h',Math.ceil(bar.getBoundingClientRect().height)+'px');
- const current=bar.querySelector('.is-current');if(current)bar.scrollLeft=Math.max(0,current.offsetLeft-(bar.clientWidth-current.offsetWidth)/2);
+ let bar=document.querySelector('#dockAppBar');
+ if(!on){bar?.remove();return;}
+ const source=document.querySelector('#moduleFocus .focus-apps');
+ // Host: the window on top (a form sheet if one is open, otherwise the function window).
+ const host=document.querySelector('#modalLayer:not(.hide) .modal')||document.querySelector('#contextPanel');
+ if(!source||!host){bar?.remove();return;}
+ if(!bar){
+  bar=document.createElement('nav');bar.id='dockAppBar';bar.className='reference-home dock-app-bar';bar.setAttribute('aria-label','Toutes les fonctions');
+  bar.innerHTML=source.innerHTML;
+  bar.addEventListener('click',e=>{
+   const app=e.target.closest('[data-focus-app]');if(!app)return;
+   e.preventDefault();const key=app.dataset.focusApp;
+   document.body.classList.remove('dock-expanded');moduleDockBar(false);if(document.querySelector('#modalLayer:not(.hide)'))closeModal();moduleFocusSwitch(key);
+  });
+ }
+ if(bar.parentElement!==host){
+  host.append(bar);
+  if(host.matches('.modal')){const cs=getComputedStyle(host);bar.style.marginLeft='-'+cs.paddingLeft;bar.style.marginRight='-'+cs.paddingRight;}
+  else{bar.style.marginLeft='';bar.style.marginRight='';}
+  const current=bar.querySelector('.is-current');if(current)bar.scrollLeft=Math.max(0,current.offsetLeft-(bar.clientWidth-current.offsetWidth)/2);
+ }
 }
 // Action cards (green buttons on home): the action's window opens directly, docked exactly like a function
 // window, with the app strip below.
@@ -246,6 +256,6 @@ window.visualViewport?.addEventListener('scroll',moduleDockKeyboard,{passive:tru
 document.addEventListener('focusin',()=>setTimeout(moduleDockKeyboard,60));
 document.addEventListener('focusout',()=>setTimeout(moduleDockKeyboard,60));
 new MutationObserver(moduleDockSync).observe(document.body,{childList:true,subtree:false});
-{const m=document.querySelector('#modalLayer');if(m)new MutationObserver(moduleDockSync).observe(m,{attributes:true,attributeFilter:['class']});}
+{const m=document.querySelector('#modalLayer');if(m)new MutationObserver(moduleDockSync).observe(m,{attributes:true,attributeFilter:['class'],childList:true});}
 // The home is rebuilt when the dashboard is opened again: start from the grid.
 new MutationObserver(()=>{if(moduleFocus.key&&!document.querySelector('#moduleFocus'))moduleFocus.key=null;}).observe(document.documentElement,{childList:true,subtree:true});
