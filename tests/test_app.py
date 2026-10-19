@@ -194,3 +194,10 @@ def test_wallpaper_is_saved_per_user(env):
     assert client.put('/api/me/wallpaper',json={'wallpaper':'inconnu'},headers=headers).status_code==400
     assert client.put('/api/me/wallpaper',json={'wallpaper':'aurore'},headers=headers).json()['wallpaper']=='aurore'
     assert client.get('/api/me').json()['wallpaper']=='aurore'
+
+
+def test_pages_are_revalidated_so_new_versions_show(env):
+    client=TestClient(env.app)
+    page=client.get('/')
+    assert page.status_code==200 and page.headers['content-type'].startswith('text/html')
+    assert page.headers['cache-control']=='no-cache'
