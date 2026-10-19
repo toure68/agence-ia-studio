@@ -57,12 +57,28 @@ const {chromium}=require('playwright');
   for(const k of ['x','y','width','height'])assert(Math.abs(panelBox[k]-visible[k])<=2,'Second window on the (visible) frame '+JSON.stringify({visible,panelBox}));
   const dark=await page.locator('#contextPanel').evaluate(e=>{const m=getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number);return (m[0]+m[1]+m[2])/3;});assert(dark<60,'Dark window '+dark);
   assert.equal(await page.locator('#closeContext').getAttribute('aria-label'),'Revenir à la fonction');
+  // No light surface and no dark ink left in the window (no white-on-white like the old Agenda card).
+  const lightCheck=sel=>page.locator(sel).evaluate(root=>{const rgb=v=>{const m=String(v).match(/rgba?\(([^)]+)\)/);if(!m)return null;const [r,g,b,a=1]=m[1].split(/[\s,/]+/).filter(Boolean).map(Number);return {r,g,b,a};},lum=c=>(0.2126*c.r+0.7152*c.g+0.0722*c.b)/255;
+   const bad=[];for(const el of root.querySelectorAll('*')){if(/^(INPUT|SELECT|TEXTAREA|BUTTON|OPTION|svg|path|IMG)$/i.test(el.tagName)||el.closest('svg,.btn,.badge')||!el.getClientRects().length)continue;const cs=getComputedStyle(el),bg=rgb(cs.backgroundColor),fg=rgb(cs.color);
+    if(bg&&bg.a>0.3&&lum(bg)>0.78)bad.push('light:'+el.className);
+    if(fg&&lum(fg)<0.22&&[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))bad.push('dark text:'+el.className+':'+el.textContent.trim().slice(0,30));}
+   return bad;});
+  await page.waitForTimeout(150);
+  assert.deepEqual(await lightCheck('#contextPanel'),[],'Readable dark window');
+  const headerBacks=await page.locator('#contextPanel .context-header').evaluate(h=>[...h.querySelectorAll('button,a')].filter(b=>b.getClientRects().length&&/‹|back|Revenir/i.test((b.textContent||'')+(b.getAttribute('aria-label')||'')+(getComputedStyle(b,'::before').content||''))).length);
+  assert(headerBacks<=1,'One back arrow only, got '+headerBacks);
   await page.locator('#dockExpand').click();
   assert((await page.locator('#contextPanel').boundingBox()).width>frameBox.width,'Déployer widens the window');
   await page.locator('#dockExpand').click();
   await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});
   assert.equal(await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),false,'Dock released after closing');
   assert(await frame.isVisible(),'Frame kept after the full view');
+  // Forms opened from home buttons (e.g. "Traiter l'activité") are dark and nothing overflows.
+  await page.evaluate(()=>openCommand('task'));await page.locator('#commandText').waitFor();await page.waitForTimeout(150);
+  assert.deepEqual(await lightCheck('#modalLayer .modal'),[],'Readable dark form');
+  const fit=await page.locator('#modalLayer .modal').evaluate(m=>{const r=m.getBoundingClientRect();return [...m.querySelectorAll('input,select,textarea')].filter(i=>i.getClientRects().length).every(i=>i.getBoundingClientRect().right<=r.right+1);});
+  assert(fit,'Fields stay inside the form');
+  await page.keyboard.press('Escape');await page.locator('#modalLayer.hide').waitFor({state:'attached'});
   // Escape and the back arrow restore the grid.
   await page.keyboard.press('Escape');assert.equal(await page.locator('#moduleFocus').count(),0);
   assert(await page.locator('#content .module-grid [data-go="clients"]').isVisible());
