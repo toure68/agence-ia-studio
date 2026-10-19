@@ -483,7 +483,8 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 /* One single, clean ring on the active field (no double outline). */
 :is(.context-panel,#modalLayer .modal) :is(input,select,textarea):focus{outline:none!important;border-color:#4ade80!important;box-shadow:0 0 0 3px #4ade8033!important}
 /* While typing, the validate button stays in the flow so it never covers the next field. */
-:is(.context-panel,#modalLayer .modal) :is(form,.modal):focus-within .fg-primary{position:static;box-shadow:none}
+/* Only while a FIELD has focus (not the button itself, or pressing it would move it away mid-tap). */
+:is(.context-panel,#modalLayer .modal) :is(form,.modal):has(:is(input,select,textarea):focus) .fg-primary{position:static;box-shadow:none}
 :is(.context-panel,#modalLayer .modal) .fg-progress{position:relative;display:flex;align-items:center;justify-content:flex-end;height:18px;margin:0 0 10px;border-radius:9px;background:#ffffff0a;overflow:hidden}
 :is(.context-panel,#modalLayer .modal) .fg-progress i{position:absolute;left:0;top:0;bottom:0;background:#4ade8040;transition:width .3s}
 :is(.context-panel,#modalLayer .modal) .fg-progress span{position:relative;padding:0 8px;color:#c9d0d9;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
