@@ -102,6 +102,7 @@ const {chromium}=require('playwright');
   await page.locator('#homeTreasury [data-dial-fold]').click();
   await page.waitForFunction(()=>document.querySelector('#homeTreasury .bank-dial.is-folded'));
   assert.equal(await page.locator('#homeTreasury .bank-pills').count(),0,'Folded again');
+  await page.locator('#homeTreasury [data-dial-fold]').click();await page.locator('#homeTreasury .bank-pills').waitFor(); // unfolded for the next checks
   // Motion on: rings fill and amounts tick, then settle on the exact value.
   const motion=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});await motion.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
   await motion.context().addCookies(await page.context().cookies());
