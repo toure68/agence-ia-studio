@@ -631,3 +631,10 @@ body:not(.dock-to-focus) .context-header :is(#moduleBack .back-circle,#closeCont
 body:not(.dock-to-focus) .context-header #moduleBack .back-circle svg{width:24px;height:24px}
 body:not(.dock-to-focus) .context-header #closeContext{font-size:22px!important;line-height:1}
 body:not(.dock-to-focus) .context-panel.is-root .context-header #moduleBack .back-circle{display:none!important}
+/* Windows take the wallpaper's colours too: frosted glass (not flat grey), with the same readability guard as the
+   home cards (darker glass on bright wallpapers). Header, footer, rows and fields are see-through layers on it. */
+body[data-wall] :is(.context-panel,#modalLayer .modal){background:linear-gradient(160deg,#ffffff14,#ffffff04),rgba(10,14,20,calc(var(--glass-tint,.3) + .4))!important;-webkit-backdrop-filter:blur(34px) saturate(170%)!important;backdrop-filter:blur(34px) saturate(170%)!important;border-color:#ffffff2b!important}
+body[data-wall] .context-panel :is(.context-header,.context-footer,.context-scroll){background:transparent!important}
+body[data-wall] :is(.context-panel,#modalLayer .modal) .task-row:not(.row-todo):not(.row-quiet){background:#ffffff0c!important;border-color:#ffffff1f!important}
+body[data-wall] :is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:rgba(0,0,0,.28)!important;border-color:#ffffff29!important}
+body[data-wall].dock-to-focus.dock-expanded .context-layer{background:rgba(5,7,10,.22)!important}

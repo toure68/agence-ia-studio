@@ -264,7 +264,12 @@ const {chromium}=require('playwright');
    await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').first().waitFor({state:'attached'});
    await page.waitForFunction(()=>document.body.dataset.wall==='aurore');
    const glass=await page.evaluate(()=>{const t=document.querySelector('.reference-home .home-treasury,.reference-home .module-focus,.reference-home .module-grid>.module-card');const cs=getComputedStyle(t);const w=getComputedStyle(document.querySelector('#appWall'));return {blur:(cs.backdropFilter||cs.webkitBackdropFilter||''),wall:w.display,img:w.backgroundImage};});
-   assert(/blur/.test(glass.blur),'Frosted glass cards '+JSON.stringify(glass));assert(glass.wall==='block'&&/gradient/.test(glass.img),'Wallpaper behind the home '+JSON.stringify(glass));
+   assert(/blur/.test(glass.blur),'Frosted glass cards '+JSON.stringify(glass));
+   // Windows take the wallpaper's colours too (frosted glass, not flat grey).
+   await page.evaluate(()=>{openTab('clients');});await page.locator('#contextPanel').waitFor();await page.evaluate(async()=>{await navigationQueue;});
+   const win=await page.locator('#contextPanel').evaluate(p=>{const cs=getComputedStyle(p),m=cs.backgroundColor.match(/[\d.]+/g)||[];return {blur:cs.backdropFilter||cs.webkitBackdropFilter||'',alpha:m.length>3?Number(m[3]):1,header:getComputedStyle(p.querySelector('.context-header')).backgroundColor};});
+   assert(/blur/.test(win.blur)&&win.alpha<0.95&&/rgba\(0, 0, 0, 0\)|transparent/.test(win.header),'Window in frosted glass over the wallpaper '+JSON.stringify(win));
+   await page.evaluate(()=>closeContext());await page.waitForFunction(()=>!document.querySelector('#contextPanel'));await page.evaluate(async()=>{await navigationQueue;});assert(glass.wall==='block'&&/gradient/.test(glass.img),'Wallpaper behind the home '+JSON.stringify(glass));
    await page.evaluate(async()=>{await api('/api/me/wallpaper',{method:'PUT',body:JSON.stringify({wallpaper:'nuit'})});applyWallpaper('nuit');});
   }
   // Preview endpoint is company-scoped and read-only.
