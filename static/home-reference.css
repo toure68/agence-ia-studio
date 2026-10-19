@@ -301,22 +301,66 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 .reference-home .module-grid[data-columns] .module-copy strong{line-height:1.22;letter-spacing:-.005em}
 .reference-home .module-grid[data-columns="4"] .module-tile{gap:calc(5px * var(--home-grid-scale))}
 .reference-home .module-grid[data-columns="4"] .module-copy strong{line-height:1.15}
-#homeTreasury .bank-focus{display:flex;flex-direction:column;overflow:hidden;animation:bank-focus-in .22s ease-out}
-#homeTreasury .bank-focus .bank-back{width:36px;height:36px;flex:0 0 36px;margin:-4px 0 -4px -6px;font-size:26px;line-height:1;color:var(--home-text)}
-#homeTreasury .bank-focus .treasury-balance-row{margin:12px 0 4px}
-#homeTreasury .bank-focus-flows{display:flex;gap:14px;margin:0 0 8px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-#homeTreasury .bank-focus .bank-home-detail{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-#homeTreasury .bank-focus .bank-home-alert{margin-top:4px}
-#homeTreasury .bank-focus .bank-detail-heading{margin-top:2px}
-#homeTreasury .bank-focus .bank-row{min-height:36px}
-#homeTreasury .bank-focus .bank-view-all{min-height:36px;padding:6px 0}
-#homeTreasury .bank-focus .bank-pills{flex:0 0 auto;margin-top:auto;padding-top:10px}
-@keyframes bank-focus-in{from{opacity:.4;transform:translateX(10px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){#homeTreasury .bank-focus{animation:none}}
-#homeTreasury .demo-multibank:not(.bank-focus) .bank-back{display:none}
-#homeTreasury .demo-multibank.bank-focus .home-treasury-top .module-icon,#homeTreasury .demo-multibank.bank-focus .home-cash-details,#homeTreasury .demo-multibank.bank-focus .demo-global-alerts{display:none}
-#homeTreasury .demo-multibank.bank-focus .treasury-balance-row{order:2}
-#homeTreasury .demo-multibank.bank-focus .demo-bank-detail{order:5;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
-#homeTreasury .demo-multibank.bank-focus .demo-bank-scroll{max-height:none;overflow:visible}
-#homeTreasury .demo-multibank.bank-focus .demo-bank-pills{order:10;margin-top:auto;padding-top:10px}
-#homeTreasury .demo-multibank.bank-focus .home-treasury-top{order:1}
+/* Treasury dial — Apple Watch Ultra–style face. Read-only, compact, same height for "Toutes" and every bank. */
+#homeTreasury .bank-dial{display:flex;flex-direction:column;gap:12px;padding:16px 16px 12px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+#homeTreasury .bank-dial .dial-head{display:flex;align-items:center;gap:8px;min-width:0;min-height:30px}
+#homeTreasury .bank-dial .bank-back{width:30px;height:30px;flex:0 0 30px;margin:0 -2px 0 -6px;border-radius:50%;font-size:24px;line-height:1;color:var(--home-text)}
+#homeTreasury .bank-dial .dial-head h2{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:flex-start;gap:8px;margin:0;font-size:11px;line-height:1.2;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--home-muted)}
+#homeTreasury .bank-dial .treasury-label{flex:none;color:var(--home-gold)}
+#homeTreasury .bank-dial .dial-head h2 .bank-home-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--home-text);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;animation:dial-rise .35s cubic-bezier(.2,.8,.2,1) both}
+#homeTreasury .bank-dial .dial-status{position:relative;flex:0 2 auto;min-width:0;max-width:56%;width:auto;display:inline-flex;align-items:center;gap:6px;min-height:26px;margin:0;padding:3px 10px;border:0;border-radius:999px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;text-align:left}
+#homeTreasury .bank-dial .dial-status>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#homeTreasury .bank-dial button.dial-status{cursor:pointer}
+#homeTreasury .bank-dial button.dial-status::after{content:"";position:absolute;inset:-9px -4px}
+#homeTreasury .bank-dial .dial-status.is-ok{color:#50ca89;background:#50ca891f}
+#homeTreasury .bank-dial .dial-status.is-alert{color:#ef8a8e;background:#e46e7226}
+#homeTreasury .bank-dial .dial-pulse{flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
+#homeTreasury .bank-dial .is-alert .dial-pulse{animation:dial-pulse 2.2s ease-out infinite}
+#homeTreasury .bank-dial .dial-mid{display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;align-items:center;min-height:84px}
+#homeTreasury .bank-dial .dial-ring-wrap{position:relative;width:84px;height:84px}
+#homeTreasury .bank-dial .dial-ring{display:block;width:84px;height:84px;transform:rotate(-90deg)}
+#homeTreasury .bank-dial .dial-track{fill:none;stroke:#ffffff12;stroke-width:6}
+#homeTreasury .bank-dial .dial-track-inner{stroke-width:5}
+#homeTreasury .bank-dial .dial-arc{fill:none;stroke-linecap:round;stroke-dasharray:100 100;stroke-dashoffset:var(--dial);animation:dial-fill 1s cubic-bezier(.2,.8,.2,1) both}
+#homeTreasury .bank-dial .dial-arc-in{stroke:#50ca89;stroke-width:6;filter:drop-shadow(0 0 3px #50ca8966)}
+#homeTreasury .bank-dial .dial-arc-out{stroke:#ef8a8e;stroke-width:5;animation-delay:.08s}
+#homeTreasury .bank-dial .dial-arc.is-empty{opacity:0}
+#homeTreasury .bank-dial .dial-month{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--home-muted);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+#homeTreasury .bank-dial .dial-balance{min-width:0;display:flex;flex-direction:column;gap:8px}
+#homeTreasury .bank-dial .bank-total{display:block;margin:0;font-size:clamp(25px,8vw,32px);line-height:1;font-weight:800;letter-spacing:-.025em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#homeTreasury .bank-dial .bank-total.is-multi{font-size:17px;white-space:normal;line-height:1.25}
+#homeTreasury .bank-dial .dial-flows{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;font-size:14px;font-weight:700;white-space:nowrap}
+#homeTreasury .bank-dial .dial-body{display:flex;flex-direction:column;gap:8px;height:118px;min-height:0}
+#homeTreasury .bank-dial .dial-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none}
+#homeTreasury .bank-dial .dial-tab{-webkit-appearance:none;appearance:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;height:32px;margin:0;padding:0 8px;border:1px solid #3a414c;border-radius:10px;background:#1c2129;color:#e6eaef;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .25s,border-color .25s,color .25s}
+#homeTreasury .bank-dial .dial-tab[aria-pressed="true"]{background:#1f3a2c;border-color:#50ca89;color:#fff}
+#homeTreasury .bank-dial .dial-tab-dot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--home-gold)}
+#homeTreasury .bank-dial .dial-tab-dot.is-risk{background:#ef6b72}
+#homeTreasury .bank-dial .dial-list{flex:1;min-height:0;margin:0;padding:0;list-style:none;overflow:hidden}
+#homeTreasury .bank-dial .dial-row{display:grid;grid-template-columns:7px minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:0;height:26px;border:0;font-size:13px;animation:dial-rise .4s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 55ms)}
+#homeTreasury .bank-dial .dial-dot{width:7px;height:7px;border-radius:50%;background:#ef8a8e}
+#homeTreasury .bank-dial .dial-row.is-in .dial-dot{background:#50ca89}
+#homeTreasury .bank-dial .dial-row.is-next .dial-dot{background:var(--home-gold)}
+#homeTreasury .bank-dial .dial-row.is-risk .dial-dot{background:#ef6b72}
+#homeTreasury .bank-dial .dial-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#homeTreasury .bank-dial .dial-row small{color:var(--home-muted);font-size:11px;white-space:nowrap}
+#homeTreasury .bank-dial .dial-row.is-risk small{color:#ef8a8e}
+#homeTreasury .bank-dial .dial-row b{min-width:64px;text-align:right;font-size:13px;white-space:nowrap}
+#homeTreasury .bank-dial .dial-empty{padding:8px 0;color:var(--home-muted);font-size:13px}
+#homeTreasury .bank-dial .dial-alert{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;margin:0;padding:10px 12px;border-radius:14px}
+#homeTreasury .bank-dial .dial-alert p{margin:0;font-size:13px;line-height:1.45}
+#homeTreasury .bank-dial .dial-alert .bank-fund{min-height:40px;padding:8px 12px}
+#homeTreasury .bank-dial .dial-foot{display:flex;align-items:center;gap:8px;padding-top:4px;border-top:1px solid #ffffff0d}
+#homeTreasury .bank-dial .bank-pills{flex:1;min-width:0;gap:10px;margin:0;padding:6px 18px 6px 5px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
+#homeTreasury .bank-dial .bank-pill{width:36px;height:36px;min-width:36px;flex:0 0 36px;border-radius:50%;font-size:12px;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+#homeTreasury .bank-dial .bank-pill::before{content:"";position:absolute;inset:-4px}
+#homeTreasury .bank-dial .bank-pill[aria-pressed="true"]{transform:scale(1.06);outline:2px solid #50ca89;outline-offset:2px}
+#homeTreasury .bank-dial .bank-pill-logo{border-radius:50%}
+#homeTreasury .bank-dial .bank-pill-add{font-size:15px}
+#homeTreasury .bank-dial .dial-all{flex:none;display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 12px;border:1px solid #3a414c;border-radius:999px;background:#1c2129;color:#e6eaef;font-size:12px;font-weight:700;white-space:nowrap}
+@keyframes dial-fill{from{stroke-dashoffset:100}}
+@keyframes dial-rise{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes dial-dissolve{from{opacity:.3}to{opacity:1}}
+@keyframes dial-pulse{0%{box-shadow:0 0 0 0 currentColor}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media(max-width:359px){#homeTreasury .bank-dial{padding:14px 12px 10px}#homeTreasury .bank-dial .dial-mid{grid-template-columns:76px minmax(0,1fr);gap:10px}#homeTreasury .bank-dial .dial-ring-wrap,#homeTreasury .bank-dial .dial-ring{width:76px;height:76px}#homeTreasury .bank-dial .dial-head h2{letter-spacing:.1em;gap:6px}#homeTreasury .bank-dial .bank-pills{gap:8px}#homeTreasury .bank-dial .dial-row{gap:6px}#homeTreasury .bank-dial .dial-row b{min-width:0}#homeTreasury .bank-dial .dial-where{display:none}#homeTreasury .bank-dial .dial-all{padding:0 10px}}
+@media(prefers-reduced-motion:reduce){#homeTreasury .bank-dial .dial-arc{animation:none}#homeTreasury .bank-dial .dial-row,#homeTreasury .bank-dial .dial-head h2 .bank-home-name{animation:dial-dissolve .2s linear both;animation-delay:0s}#homeTreasury .bank-dial .is-alert .dial-pulse{animation:none}#homeTreasury .bank-dial .bank-pill,#homeTreasury .bank-dial .dial-tab{transition:none}#homeTreasury .bank-dial .bank-pill[aria-pressed="true"]{transform:none}}

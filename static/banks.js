@@ -78,62 +78,114 @@ function bankHomeSelected(banks){const id=bankHomeSelection.get(bankHomeKey());r
 function bankShortDate(value){if(!value)return '';const tomorrow=new Date(bankToday()+'T12:00:00Z');tomorrow.setUTCDate(tomorrow.getUTCDate()+1);if(value===tomorrow.toISOString().slice(0,10))return 'demain';if(value===bankToday())return 'aujourd’hui';return 'le '+bankDate(value).slice(0,5);}
 function bankPeriod(month){return new Intl.DateTimeFormat('fr-FR',{month:'long',timeZone:'Europe/Paris'}).format(new Date((month||bankToday().slice(0,7))+'-15T12:00:00Z'));}
 function bankMoneyList(map){const rows=Object.entries(map||{});return rows.length?rows.map(([currency,amount])=>clean(quoteMoney(amount,currency))).join('<br>'):clean(quoteMoney(0));}
+// Home treasury dial (Apple Watch Ultra–style face): read-only, compact, identical size for "Toutes" and each bank.
+let bankHomeTab='last';
+const bankDialShown=new Map();
+function bankDialShort(name){return String(name||'').replace(/^Banque\s+/i,'');}
+function bankDialDay(value,future){
+ if(!value)return '';
+ const today=bankToday(),day=(a,b)=>Math.round((new Date(a+'T12:00:00Z')-new Date(b+'T12:00:00Z'))/86400000),diff=day(value,today);
+ if(diff===0)return 'auj.';
+ if(diff===1)return 'demain';
+ if(diff===-1)return 'hier';
+ if(future&&diff>1&&diff<=14)return 'dans '+diff+' j';
+ return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',timeZone:'Europe/Paris'}).format(new Date(value+'T12:00:00Z'));
+}
+function bankDialRisk(bank,debit){return !!bank&&bank.shortfall_minor>0&&!!bank.next_due&&debit.due<=bank.next_due;}
+function bankDialRows(treasury,bank,tab){
+ const banks=treasury.banks||[],owner=id=>banks.find(b=>String(b.id)===String(id));
+ if(tab==='next'){
+  const items=(treasury.debits||[]).filter(d=>!bank||String(d.bank_id)===String(bank.id)).sort((a,c)=>String(a.due).localeCompare(String(c.due))).slice(0,3);
+  if(!items.length)return '<li class="dial-empty">Aucun prélèvement prévu</li>';
+  return items.map((d,i)=>{const o=owner(d.bank_id),risk=bankDialRisk(o,d),where=!bank&&o?'<span class="dial-where"> · '+clean(bankDialShort(o.name))+'</span>':'';return `<li class="bank-row dial-row is-next${risk?' is-risk':''}" style="--i:${i}"><span class="dial-dot" aria-hidden="true"></span><span class="dial-label" title="${clean(d.label)}">${clean(d.label)}</span><small>${risk?'à couvrir · ':''}${clean(bankDialDay(d.due,true))}${where}</small><b>${clean(bankSigned(-d.amount_minor,d.currency||o?.currency||'EUR'))}</b></li>`;}).join('');
+ }
+ const items=(bank?(bank.latest||[]).map(m=>({...m,bank})):banks.flatMap(b=>(b.latest||[]).map(m=>({...m,bank:b})))).sort((a,c)=>String(c.date).localeCompare(String(a.date))||(Number(c.id)||0)-(Number(a.id)||0)).slice(0,3);
+ if(!items.length)return '<li class="dial-empty">Aucune opération enregistrée</li>';
+ return items.map((m,i)=>{const incoming=m.direction==='in',where=!bank?'<span class="dial-where"> · '+clean(bankDialShort(m.bank.name))+'</span>':'';return `<li class="bank-row dial-row ${incoming?'is-in':'is-out'}" style="--i:${i}"><span class="dial-dot" aria-hidden="true"></span><span class="dial-label" title="${clean(m.label)}">${clean(m.label)}</span><small><time datetime="${clean(m.date)}">${clean(bankDialDay(m.date))}</time>${where}</small><b class="${incoming?'bank-positive':'bank-negative'}">${clean(bankSigned(incoming?m.amount_minor:-m.amount_minor,m.currency))}</b></li>`;}).join('');
+}
+function bankDialTabs(treasury,bank){
+ const debits=(treasury.debits||[]).filter(d=>!bank||String(d.bank_id)===String(bank.id)),risk=debits.some(d=>bankDialRisk((treasury.banks||[]).find(b=>String(b.id)===String(d.bank_id)),d));
+ const tab=(id,label,extra='')=>`<button type="button" class="dial-tab" data-dial-tab="${id}" aria-pressed="${bankHomeTab===id}">${label}${extra}</button>`;
+ return `<div class="dial-tabs" role="group" aria-label="Opérations">${tab('last','Derniers')}${tab('next','À venir',debits.length?`<span class="dial-tab-dot${risk?' is-risk':''}" aria-label="${debits.length} prélèvement${debits.length>1?'s':''} prévu${debits.length>1?'s':''}${risk?', dont un à couvrir':''}"></span>`:'')}</div><ul class="dial-list" aria-live="polite">${bankDialRows(treasury,bank,bankHomeTab)}</ul>`;
+}
+function bankDialCount(key,minor,currency){return `<span data-dial-count="${Number(minor)||0}" data-dial-key="${key}" data-dial-currency="${clean(currency)}">${clean(quoteMoney(minor,currency))}</span>`;}
 function bankHomeMarkup(treasury){
- const banks=treasury.banks||[],selected=bankHomeSelected(banks),bank=banks.find(b=>String(b.id)===selected),index=banks.indexOf(bank);
+ const banks=treasury.banks||[],selected=bankHomeSelected(banks),bank=banks.find(b=>String(b.id)===selected);
  const alerts=banks.filter(b=>b.shortfall_minor>0);
- const balance=bank?`<strong class="bank-total ${bank.shortfall_minor>0?'bank-negative':''}">${clean(quoteMoney(bank.balance_minor,bank.currency))}</strong>`:`<strong class="bank-total">${bankMoneyList(treasury.balances_minor)}</strong>`;
- const incoming=bank?clean(quoteMoney(bank.month_inflows_minor||0,bank.currency)):bankMoneyList(treasury.month_inflows_minor);
- const outgoing=bank?clean(quoteMoney(bank.month_outflows_minor||0,bank.currency)):bankMoneyList(treasury.month_outflows_minor);
- const pills=`<div class="bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="bank-pill bank-pill-all" data-bank-pill="all" aria-pressed="${!bank}" aria-label="Toutes les banques" title="Toutes les banques"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg></button>${banks.map((b,i)=>`<button type="button" class="bank-pill" data-bank-pill="${b.id}" style="--bank-color:${bankColor(i)}" aria-pressed="${String(b.id)===selected}" aria-label="${clean(b.name)}${b.shortfall_minor>0?' · Alerte : solde insuffisant':''}" title="${clean(b.name)}">${bankPillFace(b)}${b.shortfall_minor>0?'<span class="bank-pill-dot" aria-hidden="true"></span>':''}</button>`).join('')}<button type="button" class="bank-pill bank-pill-add" data-bank-add aria-label="Ajouter une banque" title="Ajouter une banque"><span aria-hidden="true">＋</span></button></div>`;
- const global=bank?'':alerts.map(b=>`<button type="button" class="bank-global-alert" data-bank-pill="${b.id}"><span aria-hidden="true">●</span><span>${clean(b.name)} à ${clean(bankSigned(b.available_minor,b.currency))}${b.next_due?' · prélèvement '+bankShortDate(b.next_due):''}</span><span aria-hidden="true">›</span></button>`).join('');
- let detail='';
+ const currencies=Object.keys(treasury.balances_minor||{}),multi=!bank&&currencies.length>1,main=bank?bank.currency:(currencies[0]||banks[0]?.currency||'EUR');
+ const pick=map=>Number((map||{})[main]||0);
+ const balanceMinor=bank?bank.balance_minor:pick(treasury.balances_minor),inMinor=bank?(bank.month_inflows_minor||0):pick(treasury.month_inflows_minor),outMinor=bank?(bank.month_outflows_minor||0):pick(treasury.month_outflows_minor);
+ const negative=bank?bank.shortfall_minor>0:balanceMinor<0;
+ const list=map=>Object.entries(map||{}).map(([c,a])=>clean(quoteMoney(a,c))).join(' · ')||clean(quoteMoney(0));
+ const balance=`<strong class="bank-total${negative?' bank-negative':''}${multi?' is-multi':''}">${multi?list(treasury.balances_minor):bankDialCount('balance',balanceMinor,main)}</strong>`;
+ const flows=`<p class="dial-flows"><span class="bank-positive"><span aria-hidden="true">↓ </span><span class="sr-only">Entrées du mois </span>${multi?list(treasury.month_inflows_minor):bankDialCount('in',inMinor,main)}</span><span class="bank-negative"><span aria-hidden="true">↑ </span><span class="sr-only">Sorties du mois </span>${multi?list(treasury.month_outflows_minor):bankDialCount('out',outMinor,main)}</span></p>`;
+ const max=Math.max(inMinor,outMinor,1),share=v=>Math.round(Math.min(1,v/max)*92);
+ const arc=(cls,r,v)=>`<circle class="dial-arc ${cls}${v?'':' is-empty'}" cx="42" cy="42" r="${r}" pathLength="100" style="--dial:${100-share(v)}"/>`;
+ const month=new Intl.DateTimeFormat('fr-FR',{month:'short',timeZone:'Europe/Paris'}).format(new Date((treasury.month||bankToday().slice(0,7))+'-15T12:00:00Z'));
+ const ring=`<div class="dial-ring-wrap" aria-hidden="true"><svg class="dial-ring" viewBox="0 0 84 84"><circle class="dial-track" cx="42" cy="42" r="37"/>${arc('dial-arc-in',37,inMinor)}<circle class="dial-track dial-track-inner" cx="42" cy="42" r="27"/>${arc('dial-arc-out',27,outMinor)}</svg><span class="dial-month">${clean(month)}</span></div>`;
+ let status;
+ if(bank)status=bank.shortfall_minor>0?`<span class="dial-status is-alert"><i class="dial-pulse" aria-hidden="true"></i><span>Manque ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</span></span>`:'<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
+ else if(alerts.length){const a=alerts[0];status=`<button type="button" class="dial-status is-alert bank-global-alert" data-bank-pill="${a.id}" aria-label="Alerte : ${clean(a.name)} à ${clean(bankSigned(a.available_minor,a.currency))}${a.next_due?', prélèvement '+bankShortDate(a.next_due):''}"><i class="dial-pulse" aria-hidden="true"></i><span>${clean(bankDialShort(a.name))}${a.next_due?' · '+bankShortDate(a.next_due):''}${alerts.length>1?' +'+(alerts.length-1):''}</span></button>`;}
+ else status='<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
+ let body;
  if(bank&&bank.shortfall_minor>0){
-  const due=(treasury.debits||[]).filter(d=>d.bank_id===bank.id&&bank.next_due&&d.due<=bank.next_due);
+  const due=(treasury.debits||[]).filter(d=>String(d.bank_id)===String(bank.id)&&bank.next_due&&d.due<=bank.next_due);
   const source=banks.filter(b=>b.id!==bank.id&&b.currency===bank.currency&&b.available_minor>=bank.shortfall_minor).sort((a,c)=>c.available_minor-a.available_minor)[0];
-  detail=`<div class="bank-home-alert" role="status"><p><strong>Solde insuffisant : ${clean(bankSigned(bank.available_minor,bank.currency))}</strong>${bank.upcoming_minor?`<br>Prélèvement${due.length>1?'s':''} de ${clean(quoteMoney(bank.upcoming_minor,bank.currency))} prévu${due.length>1?'s':''} ${bankShortDate(bank.next_due)}.`:''}<br>Montant manquant : <strong>${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</strong></p><button type="button" class="bank-fund" data-bank-fund="${bank.id}">${source?`Approvisionner depuis ${clean(source.name.replace(/^Banque\s+/i,''))} · ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}`:'Approvisionner cette banque'}</button></div>`;
- }else if(bank){
-  detail=`<div class="bank-detail-heading"><span>Dernières transactions</span></div>${(bank.latest||[]).slice(0,3).map(m=>`<div class="bank-row"><time datetime="${clean(m.date)}">${clean(bankDate(m.date).slice(0,5))}</time><span title="${clean(m.label)}">${clean(m.label)}</span><b class="${m.direction==='in'?'bank-positive':'bank-negative'}">${clean(bankSigned(m.direction==='in'?m.amount_minor:-m.amount_minor,m.currency))}</b></div>`).join('')||'<p class="bank-empty">Aucune transaction enregistrée sur cette banque.</p>'}<button type="button" class="bank-view-all" data-bank-all>Voir tout →</button>`;
- }
- if(bank){
-  // Focus view: same card, same size as the summary; only this bank's essentials, pills stay at the bottom.
-  const height=bankHomeHeight?` style="height:${bankHomeHeight}px"`:'';
-  return `<article class="home-treasury bank-home bank-focus" data-bank-selected="${clean(selected)}"${height}><div class="home-treasury-top bank-focus-head"><button type="button" class="bank-fold bank-back" data-bank-pill="all" aria-label="Revenir à toutes les banques">‹</button><h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name">${clean(bank.name)}</span></h2></div><div class="treasury-balance-row">${balance}<span class="treasury-period">${clean(bankPeriod(treasury.month))}</span></div><p class="bank-focus-flows"><span class="bank-positive">↓ ${incoming}</span><span class="bank-negative">↑ ${outgoing}</span></p><div class="bank-home-detail">${detail}</div>${pills}</article>`;
- }
- return `<article class="home-treasury bank-home" data-bank-selected="${clean(selected)}"><div class="home-treasury-top"><span class="module-icon tone-gold" aria-hidden="true">${moduleIcon('treasury')}</span><h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name">${clean(bank?bank.name:'Toutes les banques')}</span></h2></div><div class="treasury-balance-row">${balance}<span class="treasury-period">${clean(bankPeriod(treasury.month))}</span></div><div class="home-cash-details"><button type="button" class="home-flow" data-home-cash="in" aria-label="Enregistrer une entrée d’argent"><span class="home-flow-heading">Entrées du mois <span class="home-flow-plus" aria-hidden="true">+</span></span><b class="bank-positive">${incoming}</b></button><button type="button" class="home-flow" data-home-cash="out" aria-label="Enregistrer une sortie d’argent"><span class="home-flow-heading">Sorties du mois <span class="home-flow-plus" aria-hidden="true">+</span></span><b class="bank-negative">${outgoing}</b></button></div><div class="bank-global-alerts">${global}</div>${pills}<div class="bank-home-detail"${bank?'':' hidden'}>${detail}</div></article>`;
+  body=`<div class="bank-home-alert dial-alert" role="status"><p>${bank.upcoming_minor?`Prélèvement${due.length>1?'s':''} de ${clean(quoteMoney(bank.upcoming_minor,bank.currency))} ${bankShortDate(bank.next_due)}<br>`:'Solde insuffisant<br>'}Montant manquant : <strong>${clean(quoteMoney(bank.shortfall_minor,bank.currency))}</strong></p><button type="button" class="bank-fund" data-bank-fund="${bank.id}">${source?`Approvisionner depuis ${clean(bankDialShort(source.name))} · ${clean(quoteMoney(bank.shortfall_minor,bank.currency))}`:'Approvisionner cette banque'}</button></div>`;
+ }else body=bankDialTabs(treasury,bank);
+ const pills=`<div class="bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="bank-pill bank-pill-all" data-bank-pill="all" aria-pressed="${!bank}" aria-label="Toutes les banques" title="Toutes les banques"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg></button>${banks.map((b,i)=>`<button type="button" class="bank-pill" data-bank-pill="${b.id}" style="--bank-color:${bankColor(i)}" aria-pressed="${String(b.id)===selected}" aria-label="${clean(b.name)}${b.shortfall_minor>0?' · Alerte : solde insuffisant':''}" title="${clean(b.name)}">${bankPillFace(b)}${b.shortfall_minor>0?'<span class="bank-pill-dot" aria-hidden="true"></span>':''}</button>`).join('')}<button type="button" class="bank-pill bank-pill-add" data-bank-add aria-label="Ajouter une banque" title="Ajouter une banque"><span aria-hidden="true">＋</span></button></div>`;
+ const back=bank?'<button type="button" class="bank-fold bank-back" data-bank-pill="all" aria-label="Revenir à toutes les banques">‹</button>':'';
+ queueMicrotask(()=>bankDialAnimate(document.querySelector('#homeTreasury')));
+ return `<article class="home-treasury bank-home bank-dial${bank?' is-bank':''}" data-bank-selected="${clean(selected)}"><div class="home-treasury-top dial-head">${back}<h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name" title="${clean(bank?bank.name:'Toutes les banques')}">${clean(bank?bankDialShort(bank.name):'Toutes')}</span></h2>${status}</div><div class="dial-mid">${ring}<div class="dial-balance"><span class="sr-only">Solde</span>${balance}${flows}</div></div><div class="dial-body">${body}</div><div class="dial-foot">${pills}<button type="button" class="bank-view-all dial-all" data-bank-all>Voir tout →</button></div></article>`;
+}
+function bankDialReduced(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch{return false;}}
+function bankDialAnimate(host){
+ // Amounts tick from the previously shown value to the new one; final text is already correct in the markup.
+ if(!host)return;const reduce=bankDialReduced();
+ host.querySelectorAll('[data-dial-count]').forEach(el=>{
+  const key=el.dataset.dialKey+'-'+el.dataset.dialCurrency,to=Number(el.dataset.dialCount),currency=el.dataset.dialCurrency,from=bankDialShown.has(key)?bankDialShown.get(key):0;
+  bankDialShown.set(key,to);if(reduce||from===to)return;
+  const start=performance.now(),duration=700;
+  const step=now=>{if(!el.isConnected)return;const k=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-k,3);el.textContent=quoteMoney(k<1?Math.round(from+(to-from)*ease):to,currency);if(k<1)requestAnimationFrame(step);};
+  el.textContent=quoteMoney(from,currency);requestAnimationFrame(step);
+ });
 }
 function bankHomeRepaint(host,focus){
  if(!host?.treasuryState)return;host.innerHTML=homeTreasuryMarkup(host.treasuryState);
- if(focus){const pill=host.querySelector(`[data-bank-pill="${focus}"]`);if(pill)pill.focus({preventScroll:true});}
+ if(focus){const pill=host.querySelector(`[data-bank-pill="${focus}"].bank-pill`);if(pill)pill.focus({preventScroll:true});}
 }
-let bankHomeHeight=null;
-addEventListener('resize',()=>{bankHomeHeight=null;const card=document.querySelector('#homeTreasury .bank-focus');if(card)card.style.height='';});
 function bankHomeSelect(host,id){
  const banks=host.treasuryState?.widgets?.treasury?.banks||[],current=bankHomeSelected(banks);
- if(current==='all'){const card=host.querySelector('.bank-home');if(card)bankHomeHeight=Math.round(card.getBoundingClientRect().height);}
  const next=id!=='all'&&String(id)===current?'all':String(id);
- if(next==='all')bankHomeHeight=null;
- bankHomeSelection.set(bankHomeKey(),next);bankHomeRepaint(host,next==='all'?'all':next);
+ bankHomeSelection.set(bankHomeKey(),next);bankHomeRepaint(host,next);
+}
+function bankHomeShowTab(host,tab){
+ const treasury=host.treasuryState?.widgets?.treasury;if(!treasury)return;
+ bankHomeTab=tab==='next'?'next':'last';
+ const bank=(treasury.banks||[]).find(b=>String(b.id)===bankHomeSelected(treasury.banks||[]));
+ host.querySelectorAll('[data-dial-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.dialTab===bankHomeTab)));
+ const list=host.querySelector('.dial-list');if(list)list.innerHTML=bankDialRows(treasury,bank,bankHomeTab);
 }
 document.addEventListener('click',e=>{
  const host=e.target.closest('#homeTreasury');if(!host||!host.querySelector('.bank-home'))return;
- const pill=e.target.closest('[data-bank-pill]'),add=e.target.closest('[data-bank-add]'),fund=e.target.closest('[data-bank-fund]'),all=e.target.closest('[data-bank-all]'),cash=e.target.closest('[data-home-cash]');
- if(!pill&&!add&&!fund&&!all&&!cash)return;
+ const pill=e.target.closest('[data-bank-pill]'),add=e.target.closest('[data-bank-add]'),fund=e.target.closest('[data-bank-fund]'),all=e.target.closest('[data-bank-all]'),tab=e.target.closest('[data-dial-tab]');
+ if(!pill&&!add&&!fund&&!all&&!tab)return;
  e.preventDefault();e.stopImmediatePropagation();
+ if(tab)return bankHomeShowTab(host,tab.dataset.dialTab);
  if(pill)return bankHomeSelect(host,pill.dataset.bankPill);
  if(add)return bankTry(()=>openBankEditor());
  if(fund)return bankTry(()=>openBankFunding(Number(fund.dataset.bankFund)));
- if(all)return bankTry(()=>openTab('treasury'));
- const banks=host.treasuryState?.widgets?.treasury?.banks||[],selected=bankHomeSelected(banks);
- bankTry(()=>openBankMovement(selected==='all'?null:Number(selected),cash.dataset.homeCash));
+ return bankTry(()=>openTab('treasury'));
 },true);
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||document.querySelector('#modalLayer:not(.hide)'))return;
  const host=document.querySelector('#homeTreasury');if(!host?.querySelector('.bank-home[data-bank-selected]:not([data-bank-selected="all"])'))return;
- e.preventDefault();bankHomeHeight=null;bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
+ e.preventDefault();bankHomeSelection.set(bankHomeKey(),'all');bankHomeRepaint(host,'all');
 });
 
 // Bank logos: uploaded by the user for their own accounts, re-cropped server-side, never part of the code.
-function bankPillFace(b){return b.logo&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(b.logo)?`<img class="bank-pill-logo" src="${b.logo}" alt="">`:`<span aria-hidden="true">${clean(bankInitials(b.name))}</span>`;}
+function bankPillFace(b){if(typeof b.demo_face==='string')return b.demo_face; // public demo only: repo-owned SVG
+ return b.logo&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(b.logo)?`<img class="bank-pill-logo" src="${b.logo}" alt="">`:`<span aria-hidden="true">${clean(bankInitials(b.name))}</span>`;}
 async function bankSquareImage(file){
  if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw Error('Choisissez une image PNG, JPEG ou WebP.');
  const url=URL.createObjectURL(file);
