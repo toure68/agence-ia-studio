@@ -34,7 +34,7 @@ const {chromium}=require('playwright');
   assert(await page.locator('.module-reserve-launch').isHidden(),'Reserve button hidden');
   assert(await page.locator('#homeTreasury').isVisible(),'Treasury dial stays above');
   assert.equal(await page.locator('#moduleFocus .focus-title-main').innerText(),'Clients');
-  await page.locator('#moduleFocus .focus-row',{hasText:'Client Cadran Fonction'}).waitFor();
+  await page.locator('#moduleFocus li.focus-row',{hasText:'Client Cadran Fonction'}).waitFor();
   assert(await page.locator('#moduleFocus .focus-row').count()<=3,'Three lines at most');
   // Small strip of the other functions at the bottom; switching stays in the same frame.
   const strip=page.locator('#moduleFocus .focus-app');assert.equal(await strip.count(),before.tiles);
