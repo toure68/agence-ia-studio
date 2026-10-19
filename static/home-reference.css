@@ -405,13 +405,15 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 .reference-home .focus-actions.is-single{grid-template-columns:1fr}
 .reference-home .focus-btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 10px;border:1px solid #3a414c;border-radius:12px;background:#1c2129;color:#e6eaef;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .reference-home .focus-btn.is-primary{border-color:var(--home-green);background:var(--home-green);color:#06240f}
-.reference-home .focus-apps{display:flex;gap:8px;overflow-x:auto;margin:0 -4px;padding:8px 4px 2px;border-top:1px solid #ffffff0d;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.reference-home .focus-apps{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior:contain;margin:0 -4px;padding:0 4px 4px;border-top:1px solid #ffffff0d;scrollbar-width:none;-webkit-overflow-scrolling:touch;background:linear-gradient(#ffffff0d,#ffffff0d) 0 6px/100% 18px no-repeat}
 .reference-home .focus-apps::-webkit-scrollbar{display:none}
-.reference-home .focus-app{position:relative;flex:0 0 40px;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:none;cursor:pointer;opacity:.72;transition:opacity .2s,transform .25s cubic-bezier(.2,.8,.2,1)}
+.reference-home .focus-app{position:relative;flex:0 0 56px;width:56px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 0;border:0;border-radius:12px;background:none;cursor:pointer;opacity:.7;transition:opacity .2s}
+.reference-home .focus-app-name{display:block;width:56px;height:18px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:var(--home-muted);font-size:10px;font-weight:700}
+.reference-home .focus-app.is-current .focus-app-name{color:var(--home-text)}
 .reference-home .focus-app .module-icon{width:40px;height:40px;flex:0 0 40px;border-radius:12px}
 .reference-home .focus-app .module-icon svg{width:20px;height:20px}
-.reference-home .focus-app.is-current{opacity:1;transform:scale(1.05)}
-.reference-home .focus-app.is-current::after{content:"";position:absolute;left:14px;right:14px;bottom:-5px;height:3px;border-radius:2px;background:var(--home-green)}
+.reference-home .focus-app.is-current{opacity:1}
+.reference-home .focus-app.is-current .module-icon{box-shadow:0 0 0 2px var(--home-green)}
 .reference-home .focus-app:focus-visible,.reference-home .focus-back:focus-visible,.reference-home .focus-btn:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
 @keyframes focus-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 @keyframes focus-swap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -436,19 +438,33 @@ body.dock-to-focus:not(.dock-expanded) .context-header #closeContext::before{con
 body.dock-to-focus .context-header{order:0}
 body.dock-to-focus .dock-expand{flex:0 0 36px;width:36px;height:36px;border:1px solid #3a414c;border-radius:50%;background:#1c2129;color:#e6eaef;font-size:16px;line-height:1;cursor:pointer}
 body.dock-to-focus .context-header #closeContext{order:-1}
-/* Dark universe for these windows and their forms. */
-body.dock-to-focus :is(.context-panel,#modalLayer .modal){--ink:#f2f5f7;--mute:#9aa6b2;--white:#151a21;--line:#ffffff1f;--bg:#0d1116;--pale:#1f3a2c;--green:#4ade80;--green2:#3fc574;--shadow:none;background:#10141a!important;border:1px solid #ffffff1a!important;color:#f2f5f7!important}
-body.dock-to-focus :is(.context-header,.context-footer){background:#10141a!important;border-color:#ffffff14!important;color:#f2f5f7}
-body.dock-to-focus .context-header #contextTitle,body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(h1,h2,h3,h4,strong,b,label,legend,th,dt){color:#f2f5f7!important}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(p,small,.sub,.tiny,.muted,td,dd,time,span){color:inherit}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(.sub,.tiny,.muted,.hint,small){color:#9aa6b2!important}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:#1a1f27!important;color:#f2f5f7!important;-webkit-text-fill-color:#f2f5f7;border:1px solid #ffffff24!important;border-radius:12px;color-scheme:dark}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(input,textarea)::placeholder{color:#5c6773!important;-webkit-text-fill-color:#5c6773}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(input,select,textarea):focus{outline:2px solid #4ade8099;outline-offset:1px;border-color:#4ade80!important}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(.card,.stack,.form-page>.stack,.task-row,.library-card,.tool-list>*,.tablewrap,details,fieldset,.field-group,.msg,.panel,.box,li.row){background:#ffffff08!important;border-color:#ffffff14!important;color:#f2f5f7!important;box-shadow:none!important}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) .btn,body.dock-to-focus :is(.context-panel,#modalLayer .modal) button:not(.dock-expand):not(#closeContext):not(.back-circle){background:#1c2129;color:#e6eaef;border:1px solid #3a414c}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(.btn.primary,button.primary,[type=submit].btn){background:#4ade80!important;color:#06240f!important;border-color:#4ade80!important}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) .back-circle,body.dock-to-focus .context-header #closeContext,body.dock-to-focus .context-header #moduleBack .back-circle{background:#ffffff12!important;border:0!important;color:#f2f5f7!important;box-shadow:none!important}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) a:not(.btn){color:#7ee2a8}
-body.dock-to-focus :is(.context-panel,#modalLayer .modal) :is(table,th,td,hr){border-color:#ffffff14!important}
+/* Dark universe for every second-level window and form (panels and dialogs), like the function dial. */
+:is(.context-panel,#modalLayer .modal){--ink:#f2f5f7;--mute:#9aa6b2;--white:#151a21;--line:#ffffff1f;--bg:#0d1116;--pale:#1f3a2c;--green:#4ade80;--green2:#3fc574;--shadow:none;background:#10141a!important;border:1px solid #ffffff1a!important;color:#f2f5f7!important}
+:is(.context-header,.context-footer){background:#10141a!important;border-color:#ffffff14!important;color:#f2f5f7}
+.context-header #contextTitle,:is(.context-panel,#modalLayer .modal) :is(h1,h2,h3,h4,strong,b,label,legend,th,dt){color:#f2f5f7!important}
+:is(.context-panel,#modalLayer .modal) :is(p,small,.sub,.tiny,.muted,td,dd,time,span){color:inherit}
+:is(.context-panel,#modalLayer .modal) :is(.sub,.tiny,.muted,.hint,small){color:#9aa6b2!important}
+:is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:#1a1f27!important;color:#f2f5f7!important;-webkit-text-fill-color:#f2f5f7;border:1px solid #ffffff24!important;border-radius:12px;color-scheme:dark}
+:is(.context-panel,#modalLayer .modal) :is(input,textarea)::placeholder{color:#5c6773!important;-webkit-text-fill-color:#5c6773}
+:is(.context-panel,#modalLayer .modal) :is(input,select,textarea):focus{outline:2px solid #4ade8099;outline-offset:1px;border-color:#4ade80!important}
+:is(.context-panel,#modalLayer .modal) :is(.card,.stack,.form-page>.stack,.task-row,.library-card,.tool-list>*,.tablewrap,details,fieldset,.field-group,.msg,.panel,.box,li.row){background:#ffffff08!important;border-color:#ffffff14!important;color:#f2f5f7!important;box-shadow:none!important}
+:is(.context-panel,#modalLayer .modal) .btn,:is(.context-panel,#modalLayer .modal) button:not(.dock-expand):not(#closeContext):not(.back-circle){background:#1c2129;color:#e6eaef;border:1px solid #3a414c}
+:is(.context-panel,#modalLayer .modal) :is(.btn.primary,button.primary,[type=submit].btn){background:#4ade80!important;color:#06240f!important;border-color:#4ade80!important}
+:is(.context-panel,#modalLayer .modal) .back-circle,.context-header #closeContext,.context-header #moduleBack .back-circle{background:#ffffff12!important;border:0!important;color:#f2f5f7!important;box-shadow:none!important}
+:is(.context-panel,#modalLayer .modal) a:not(.btn){color:#7ee2a8}
+:is(.context-panel,#modalLayer .modal) :is(table,th,td,hr){border-color:#ffffff14!important}
+:is(.context-panel,#modalLayer .modal) .surface-was-light{background:#ffffff08!important;background-image:none!important;border-color:#ffffff14!important;box-shadow:none!important}
+:is(.context-panel,#modalLayer .modal) .text-was-dark{color:#f2f5f7!important}
+:is(.context-panel,#modalLayer .modal) :is(input,select,textarea){max-width:100%;min-width:0}
+:is(.context-panel,#modalLayer .modal) input:is([type=date],[type=time],[type=datetime-local],[type=month]){display:block;width:100%;min-height:44px;-webkit-appearance:none;appearance:none;text-align:left}
+:is(.context-panel,#modalLayer .modal) input::-webkit-date-and-time-value{text-align:left}
+/* One back arrow only: inside a function's deeper pages, its own back arrow replaces the frame's. */
+body.dock-to-focus .context-header .back-circle,body.dock-to-focus .context-header #closeContext{width:36px!important;height:36px!important;flex:0 0 36px!important;min-width:36px}
 @media(prefers-reduced-motion:reduce){body.dock-to-focus .context-panel,body.dock-to-focus #modalLayer .modal{animation:dial-dissolve .2s linear both!important}}
+body.dock-to-focus .context-header :is(#moduleBack,#closeContext){display:none!important}
+body.dock-to-focus .context-header :is(.dock-apps,.dock-back){flex:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:36px;border:1px solid #3a414c;border-radius:999px;background:#1c2129;color:#f2f5f7;font-size:15px;font-weight:800;line-height:1;cursor:pointer}
+body.dock-to-focus .context-header .dock-apps{width:36px;padding:0}
+body.dock-to-focus .context-header .dock-apps svg{width:16px;height:16px}
+body.dock-to-focus .context-header .dock-back{min-width:52px;padding:0 12px;font-variant-numeric:tabular-nums}
+body.dock-to-focus:not(.dock-expanded) .context-layer{pointer-events:none}
+body.dock-to-focus:not(.dock-expanded) .context-panel{pointer-events:auto}
