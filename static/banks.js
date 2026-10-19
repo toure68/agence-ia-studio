@@ -117,6 +117,11 @@ function bankDialTabs(treasury,bank){
  return `<div class="dial-tabs" role="group" aria-label="Opérations">${tab('last','Derniers')}${tab('next','À venir',debits.length?`<span class="dial-tab-dot${risk?' is-risk':''}" aria-label="${debits.length} prélèvement${debits.length>1?'s':''} prévu${debits.length>1?'s':''}${risk?', dont un à couvrir':''}"></span>`:'')}<button type="button" class="dial-more bank-view-all" data-bank-all title="Ouvrir la Trésorerie${bank?' de '+clean(bankDialShort(bank.name)):''}">Voir tout →</button></div><div class="dial-panel">${bankDialPanel(treasury,bank)}</div>`;
 }
 function bankDialCount(key,minor,currency){return `<span data-dial-count="${Number(minor)||0}" data-dial-key="${key}" data-dial-currency="${clean(currency)}">${clean(quoteMoney(minor,currency))}</span>`;}
+// Folded by default: health ring, balance, month in/out (and any alert, always). A tap on the top unfolds
+// the full dial (tabs, banks); the choice is kept on this device.
+const bankFoldKey='aia-treasury-open';
+function bankDialOpen(){try{return localStorage.getItem(bankFoldKey)==='1';}catch{return false;}}
+function bankDialSetOpen(host,open){try{localStorage.setItem(bankFoldKey,open?'1':'0');}catch{}bankHomeRepaint(host);host.querySelector('[data-dial-fold]')?.focus({preventScroll:true});}
 function bankHomeMarkup(treasury){
  const banks=treasury.banks||[],selected=bankHomeSelected(banks),bank=banks.find(b=>String(b.id)===selected);
  const alerts=banks.filter(b=>b.shortfall_minor>0);
@@ -135,11 +140,14 @@ function bankHomeMarkup(treasury){
  if(bank)status=bank.shortfall_minor>0?'<span class="dial-status is-alert"><i class="dial-pulse" aria-hidden="true"></i><span>Alerte</span></span>':'<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
  else if(alerts.length){const a=alerts[0];status=`<button type="button" class="dial-status is-alert bank-global-alert" data-bank-pill="${a.id}" aria-label="Alerte : ${clean(a.name)} à ${clean(bankSigned(a.available_minor,a.currency))}${a.next_due?', prélèvement '+bankShortDate(a.next_due):''}"><i class="dial-pulse" aria-hidden="true"></i><span>${clean(bankDialShort(a.name))}${a.next_due?' · '+bankShortDate(a.next_due):''}${alerts.length>1?' +'+(alerts.length-1):''}</span></button>`;}
  else status='<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
- const body=bankDialTabs(treasury,bank);
+ const open=bankDialOpen(),body=open?bankDialTabs(treasury,bank):'';
+ const alertBank=bank?(bank.shortfall_minor>0?bank:null):alerts[0];
+ const foldAlert=!open&&alertBank?`<div class="dial-fold-alert">${bankDialAlert(treasury,alertBank)}</div>`:'';
+ const toggle=`<button type="button" class="dial-fold-toggle" data-dial-fold aria-expanded="${open}" aria-label="${open?'Replier':'Déplier'} la trésorerie" title="${open?'Replier':'Déplier'}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
  const pills=`<div class="bank-pills" role="group" aria-label="Choisir une banque"><button type="button" class="bank-pill bank-pill-all" data-bank-pill="all" aria-pressed="${!bank}" aria-label="Toutes les banques" title="Toutes les banques"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg></button>${banks.map((b,i)=>`<button type="button" class="bank-pill" data-bank-pill="${b.id}" style="--bank-color:${bankColor(i)}" aria-pressed="${String(b.id)===selected}" aria-label="${clean(b.name)}${b.shortfall_minor>0?' · Alerte : solde insuffisant':''}" title="${clean(b.name)}">${bankPillFace(b)}${b.shortfall_minor>0?'<span class="bank-pill-dot" aria-hidden="true"></span>':''}</button>`).join('')}<button type="button" class="bank-pill bank-pill-add" data-bank-add aria-label="Ajouter une banque" title="Ajouter une banque"><span aria-hidden="true">＋</span></button></div>`;
  const back=bank?'<button type="button" class="bank-fold bank-back" data-bank-pill="all" aria-label="Revenir à toutes les banques"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>':'';
  queueMicrotask(()=>bankDialAnimate(document.querySelector('#homeTreasury')));
- return `<article class="home-treasury bank-home bank-dial${bank?' is-bank':''}" data-bank-selected="${clean(selected)}"><div class="home-treasury-top dial-head">${back}<h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name" title="${clean(bank?bank.name:'Toutes les banques')}">${clean(bank?bankDialShort(bank.name):'Toutes')}</span></h2>${status}</div><div class="dial-mid">${ring}<div class="dial-balance"><span class="sr-only">Solde</span>${balance}${flows}</div></div><div class="dial-body">${body}</div><div class="dial-foot">${pills}</div></article>`;
+ return `<article class="home-treasury bank-home bank-dial${bank?' is-bank':''}${open?'':' is-folded'}" data-bank-selected="${clean(selected)}"><div class="home-treasury-top dial-head">${back}<h2 class="bank-home-title"><span class="treasury-label">Trésorerie</span><span class="bank-home-name" title="${clean(bank?bank.name:'Toutes les banques')}">${clean(bank?bankDialShort(bank.name):'Toutes')}</span></h2>${status}${toggle}</div><div class="dial-mid">${ring}<div class="dial-balance"><span class="sr-only">Solde</span>${balance}${flows}</div></div>${open?`<div class="dial-body">${body}</div><div class="dial-foot">${pills}</div>`:foldAlert}</article>`;
 }
 function bankDialReduced(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch{return false;}}
 function bankDialAnimate(host){
@@ -173,8 +181,11 @@ function bankHomeShowTab(host,tab){
 document.addEventListener('click',e=>{
  const host=e.target.closest('#homeTreasury');if(!host||!host.querySelector('.bank-home'))return;
  const pill=e.target.closest('[data-bank-pill]'),add=e.target.closest('[data-bank-add]'),fund=e.target.closest('[data-bank-fund]'),all=e.target.closest('[data-bank-all]'),tab=e.target.closest('[data-dial-tab]');
- if(!pill&&!add&&!fund&&!all&&!tab)return;
+ // Fold/unfold: the chevron, or a tap anywhere on the top of the dial (title, ring, balance) outside its buttons.
+ const fold=e.target.closest('[data-dial-fold]')||(!e.target.closest('button,a')&&e.target.closest('.bank-dial .dial-head,.bank-dial .dial-mid'));
+ if(!pill&&!add&&!fund&&!all&&!tab&&!fold)return;
  e.preventDefault();e.stopImmediatePropagation();
+ if(fold&&!pill)return bankDialSetOpen(host,!bankDialOpen());
  if(tab)return bankHomeShowTab(host,tab.dataset.dialTab);
  if(pill)return bankHomeSelect(host,pill.dataset.bankPill);
  if(add)return bankTry(()=>openBankEditor());

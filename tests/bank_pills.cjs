@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{}),...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
- const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
+ const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];await page.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});
@@ -88,8 +88,22 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
   await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').click();await page.locator('.bank-fold').click();
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
+  // Folded by default (no choice saved yet): ring, balance and month in/out stay, plus the alert; tabs and banks hide.
+  await page.evaluate(()=>{sessionStorage.setItem('fold-test','1');localStorage.removeItem('aia-treasury-open');});
+  await page.reload({waitUntil:'networkidle'});await page.locator('#homeTreasury .bank-dial').waitFor();
+  const folded=await page.evaluate(()=>{const d=document.querySelector('#homeTreasury .bank-dial');return {cls:d.classList.contains('is-folded'),tabs:!!d.querySelector('.dial-tabs'),pills:!!d.querySelector('.bank-pills'),ring:!!d.querySelector('.dial-ring'),total:!!d.querySelector('.bank-total'),flows:!!d.querySelector('.dial-flows'),alert:!!d.querySelector('.dial-fold-alert .bank-fund'),h:Math.round(d.getBoundingClientRect().height)};});
+  assert(folded.cls&&!folded.tabs&&!folded.pills&&folded.ring&&folded.total&&folded.flows,'Folded dial: vital figures only '+JSON.stringify(folded));
+  assert(folded.alert,'An alert always stays visible, even folded');
+  await page.locator('#homeTreasury .bank-dial .bank-total').click();
+  await page.locator('#homeTreasury .dial-tabs').waitFor();
+  assert.equal(await page.locator('#homeTreasury [data-dial-fold]').getAttribute('aria-expanded'),'true');
+  assert((await page.locator('#homeTreasury .bank-dial').evaluate(d=>d.getBoundingClientRect().height))>folded.h,'Unfolded shows the full dial');
+  await page.reload({waitUntil:'networkidle'});await page.locator('#homeTreasury .dial-tabs').waitFor(); // choice kept
+  await page.locator('#homeTreasury [data-dial-fold]').click();
+  await page.waitForFunction(()=>document.querySelector('#homeTreasury .bank-dial.is-folded'));
+  assert.equal(await page.locator('#homeTreasury .bank-pills').count(),0,'Folded again');
   // Motion on: rings fill and amounts tick, then settle on the exact value.
-  const motion=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});
+  const motion=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});await motion.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
   await motion.context().addCookies(await page.context().cookies());
   await motion.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});await motion.locator('#homeTreasury .bank-dial').waitFor();
   assert.equal(await motion.locator('#homeTreasury .dial-arc-in').evaluate(e=>getComputedStyle(e).animationName),'dial-fill');

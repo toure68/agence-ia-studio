@@ -576,3 +576,12 @@ body.dock-to-focus.dock-expanded .context-layer{background:rgba(5,7,10,.45)!impo
 /* Typing in a maximized window: the keyboard takes the bottom, the strip steps aside until it closes. */
 body.dock-expanded.dock-keyboard .dock-app-bar{display:none}
 body.dock-expanded.dock-keyboard .context-layer{padding-bottom:12px!important}
+/* Foldable treasury (banks.js): folded = health ring, balance, month in/out, plus any alert; tap the top to unfold. */
+#homeTreasury .bank-dial .dial-fold-toggle{flex:none;margin-left:auto;width:30px;height:30px;display:inline-grid;place-items:center;padding:0;border:1px solid #ffffff1f;border-radius:50%;background:#ffffff0d;color:var(--home-text);cursor:pointer}
+#homeTreasury .bank-dial .dial-fold-toggle svg{transition:transform .2s ease}
+#homeTreasury .bank-dial .dial-fold-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+#homeTreasury .bank-dial .dial-status+.dial-fold-toggle{margin-left:6px}
+#homeTreasury .bank-dial .dial-head,#homeTreasury .bank-dial .dial-mid{cursor:pointer}
+#homeTreasury .bank-dial.is-folded{gap:10px;height:auto!important;min-height:0!important}
+#homeTreasury .bank-dial .dial-fold-alert .dial-alert{margin:0}
+@media(prefers-reduced-motion:reduce){#homeTreasury .bank-dial .dial-fold-toggle svg{transition:none}}
