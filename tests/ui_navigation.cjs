@@ -589,9 +589,10 @@ const {chromium}=require('playwright');
    assert((await page.locator('#activityMaterialStatus').innerText()).includes('1 manquant'));
    await backHome();await goModule('risks');await page.locator('#addRisk').click();
    await page.locator('#commandText').fill('assurance RC Pro demain');await page.locator('#previewCommand').click();await page.locator('#confirmCommand').click();
-   await page.locator('[data-risk]').waitFor();await page.locator('[data-risk]').click();
-   await page.locator('#riskForm input[name="completed"]').check();await page.locator('#riskForm button.btn.primary').click();
-   await page.locator('[data-risk]').waitFor();assert((await page.locator('[data-risk]').innerText()).includes('Vérifié'));
+   await page.locator('[data-risk]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-risk]')?.classList.contains('row-todo'));await page.locator('[data-risk]').click();
+   // Option C: "Contrôle effectué" right in the unfolded row.
+   await page.locator('.inline-panel [data-inline-run="0"]').click();await page.locator('.inline-done').waitFor();
+   await page.evaluate(()=>openTab('risks',{replaceHistory:true}));await page.locator('[data-risk]').waitFor();assert((await page.locator('[data-risk]').innerText()).includes('Vérifié'));
    assert.equal((await page.evaluate(()=>api('/api/companies/1/risks')))[0].completed,1);await backHome();
    await goModule('conformity');await page.locator('.compliance-list').waitFor();assert.equal(await page.locator('.compliance-list article').count(),35);assert((await page.locator('.compliance-list').innerText()).includes('COST-01'));await backHome();
    await openModuleLibrary();assert.equal(await page.locator('#dynamicHome').isChecked(),true);await page.locator('#dynamicHome').uncheck();await page.locator('#activityDomain').selectOption('agriculture');
