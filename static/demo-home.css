@@ -8,8 +8,6 @@ body[data-public-demo] .reference-home .assistant-dock .assistant-dock-hint{flex
 body[data-public-demo] .reference-home .assistant-spark{margin-right:0}
 body[data-public-demo] .reference-home .home-sector{justify-content:center}
 body[data-public-demo] .reference-home .home-sector>div{text-align:center}
-body[data-public-demo] .reference-home .home-modules-heading{position:relative;justify-content:center;min-height:44px;padding:0 48px}
-body[data-public-demo] .reference-home .home-modules-heading>[data-go]{position:absolute;right:0}
 body[data-public-demo] .reference-home .module-grid .module-tile{align-items:center}
 body[data-public-demo] .reference-home .module-grid .module-copy{text-align:center}
 body[data-public-demo] .reference-home #homeTreasury .home-flow{text-align:center;align-items:center}

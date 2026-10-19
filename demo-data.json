@@ -1001,5 +1001,117 @@
     }
   ],
   "/api/companies/1/leads": [],
-  "/api/prospects": []
+  "/api/prospects": [],
+  "/api/companies/1/module-peek/requests": {
+    "key": "requests",
+    "items": []
+  },
+  "/api/companies/1/module-peek/clients": {
+    "key": "clients",
+    "items": [
+      {
+        "title": "Alex Martin",
+        "meta": "alex@example.test",
+        "tone": "warning",
+        "amount_minor": null,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "/api/companies/1/module-peek/leads": {
+    "key": "leads",
+    "items": [
+      {
+        "title": "DEV-2026-00001",
+        "meta": "À finaliser",
+        "tone": "warning",
+        "amount_minor": 520800,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "/api/companies/1/module-peek/activities": {
+    "key": "activities",
+    "items": [
+      {
+        "title": "Entretien des bureaux",
+        "meta": "Sans échéance",
+        "tone": "neutral",
+        "amount_minor": null,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "/api/companies/1/module-peek/reports": {
+    "key": "reports",
+    "items": [
+      {
+        "title": "Entretien des bureaux",
+        "meta": "Sans échéance",
+        "tone": "neutral",
+        "amount_minor": null,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "/api/companies/1/module-peek/equipment": {
+    "key": "equipment",
+    "items": [
+      {
+        "title": "Remplacer : Aspirateur professionnel",
+        "meta": "À remplacer",
+        "tone": "warning",
+        "amount_minor": null,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "/api/companies/1/module-peek/calendar": {
+    "key": "calendar",
+    "items": []
+  },
+  "/api/companies/1/module-peek/risks": {
+    "key": "risks",
+    "items": []
+  },
+  "/api/companies/1/module-peek/emails": {
+    "key": "emails",
+    "items": []
+  },
+  "/api/companies/1/module-peek/prospects": {
+    "key": "prospects",
+    "items": []
+  },
+  "/api/companies/1/module-peek/drafts": {
+    "key": "drafts",
+    "items": []
+  },
+  "/api/companies/1/module-peek/scanner": {
+    "key": "scanner",
+    "items": []
+  },
+  "/api/companies/1/module-peek/treasury": {
+    "key": "treasury",
+    "items": []
+  },
+  "/api/companies/1/module-peek/veille": {
+    "key": "veille",
+    "items": []
+  },
+  "/api/companies/1/module-peek/companies": {
+    "key": "companies",
+    "items": []
+  },
+  "/api/companies/1/module-peek/company-edit": {
+    "key": "company-edit",
+    "items": []
+  },
+  "/api/companies/1/module-peek/team": {
+    "key": "team",
+    "items": []
+  },
+  "/api/companies/1/module-peek/social": {
+    "key": "social",
+    "items": []
+  }
 }

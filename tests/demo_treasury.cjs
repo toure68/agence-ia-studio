@@ -29,6 +29,15 @@ const amount=text=>Math.round(Number(text.replace(/[^\d,−-]/g,'').replace('−
    assert.equal((await read()).balance,65000);assert.equal(await page.locator('.bank-pill-dot').count(),0);
    await page.locator('[data-bank-all]').click();await page.locator('.demo-transactions').waitFor();assert.equal(await page.locator('.demo-transactions [data-demo-movement]').count(),6);await page.locator('#closeModal').click();
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
+   // Browser behaves like the installed app: assistant and grid button share one row inside the screen,
+   // nothing overflows sideways with the chooser or a function open, and fields never trigger iOS zoom.
+   const row=await page.evaluate(()=>{const a=document.querySelector('#assistantDock')?.getBoundingClientRect(),g=document.querySelector('[data-columns-toggle]')?.getBoundingClientRect();return a&&g?{same:Math.abs(a.top-g.top)<4,inside:a.left>=0&&g.right<=innerWidth+0.5,assistantFirst:a.left<g.left}:null;});
+   if(row)assert(row.same&&row.inside&&row.assistantFirst,'Assistant then grid button on one row, inside the screen '+JSON.stringify(row));
+   await page.locator('[data-columns-toggle]').click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No sideways overflow with the chooser open');
+   await page.locator('[data-columns-toggle]').click();
+   await page.locator('#content .module-grid .module-tile').first().click();await page.locator('#moduleFocus').waitFor();
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No sideways overflow with a function open');
+   assert.match(await page.locator('meta[name=viewport]').getAttribute('content'),/maximum-scale=1/,'No zoom on field focus');
    await page.close();
   }
   console.log('Demo treasury dial: synthetic banks, header alert, constant size, simulated transfer, read-only.');

@@ -468,3 +468,9 @@ body.dock-to-focus .context-header .dock-apps svg{width:16px;height:16px}
 body.dock-to-focus .context-header .dock-back{min-width:52px;padding:0 12px;font-variant-numeric:tabular-nums}
 body.dock-to-focus:not(.dock-expanded) .context-layer{pointer-events:none}
 body.dock-to-focus:not(.dock-expanded) .context-panel{pointer-events:auto}
+/* Same behavior in any browser as in the installed app: the page never gets wider than the screen
+   (no sideways drift), and tapping a field never zooms the page (iOS zooms fields under 16px). */
+html,body{max-width:100%;overflow-x:clip}
+@supports not (overflow:clip){html,body{overflow-x:hidden}}
+@media(max-width:750px){input,select,textarea{font-size:max(16px,1em)}}
+.reference-home .module-focus{text-align:left}
