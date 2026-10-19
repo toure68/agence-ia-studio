@@ -20,7 +20,7 @@ function moduleFocusDate(value){
 }
 // Actions to do for this function (the same ones as the home action cards), shown first and tappable:
 // a tap opens the action's window docked on the frame. Then the read-only lines.
-function moduleFocusActions(key){return (typeof priorityCards!=='undefined'?priorityCards:[]).filter(c=>c.module===key&&!c.fallback&&!c.example);}
+function moduleFocusActions(key){const moduleOf=c=>(typeof priorityModules!=='undefined'&&priorityModules[c.action?.type])||c.action?.type||c.module;const seen=new Set();return (typeof priorityCards!=='undefined'?priorityCards:[]).filter(c=>{if(seen.has(c.key))return false;seen.add(c.key);return moduleOf(c)===key&&!c.fallback&&!c.example;});}
 function moduleFocusRows(key){
  const actions=moduleFocusActions(key);
  const actionRows=actions.map((c,i)=>`<li><button type="button" class="focus-row is-action tone-${clean((typeof priorityPresentation==='function'?priorityPresentation(c).state:'warning')||'warning')}" data-focus-priority="${i}" style="--i:${i}"><span class="focus-dot" aria-hidden="true"></span><span class="focus-title" title="${clean(c.title)}">${clean(c.title)}</span><small>${clean(typeof priorityPresentation==='function'?priorityPresentation(c).label:'À traiter')}</small><b aria-hidden="true">›</b></button></li>`).join('');
