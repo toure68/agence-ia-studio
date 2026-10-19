@@ -38,7 +38,7 @@ function moduleFocusMarkup(key){
  const p=modulePresentation(key,s),widget=moduleWidget(key,s),count=(s.action_counts||{})[key]||0,id=['company-edit','team'].includes(key)?company.id:null;
  const status=count?`${count} à traiter`:p.label==='Normal'?'À jour':p.label;
  const statusTone=count||['danger','warning'].includes(p.state)?(p.state==='danger'?'is-danger':'is-warning'):'is-ok';
- const create=moduleFocusNew[key]?`<a class="focus-btn is-primary" data-focus-go="${moduleFocusNew[key]}" href="#/${moduleFocusNew[key]}"><span aria-hidden="true">＋</span> ${clean(moduleFocusNewLabel[key])}</a>`:'';
+ const create=moduleFocusNew[key]?`<a class="focus-btn is-primary" data-focus-go="${moduleFocusNew[key]}" href="#/${moduleFocusNew[key]}">＋ ${clean(moduleFocusNewLabel[key])}</a>`:'';
  const strip=modules.map(m=>`<button type="button" class="focus-app tone-${moduleTone(m.key)}${m.key===key?' is-current':''}" data-focus-app="${m.key}" aria-label="${clean(m.label)}" aria-pressed="${m.key===key}" title="${clean(m.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span></button>`).join('');
  return `<div class="focus-head"><button type="button" class="focus-back" data-focus-close aria-label="Revenir aux fonctions">‹</button><span class="module-icon tone-${moduleTone(key)}" aria-hidden="true">${moduleIcon(key)}</span><h2 class="focus-title-main">${clean(module.label)}</h2><span class="focus-status ${statusTone}"><i aria-hidden="true"></i>${clean(status)}</span></div>
 <div class="focus-kpis"><div><span>${clean(widget.label)}</span><b>${clean(widget.value)}</b></div><div><span>À traiter</span><b>${count}</b></div><div><span>État</span><b class="focus-state">${clean(p.label==='Normal'?'Normal':p.label)}</b></div></div>
