@@ -136,6 +136,8 @@ def init_db():
         fields={r['name'] for r in con.execute('PRAGMA table_info(users)').fetchall()}
         if 'auth_version' not in fields:
             con.execute('ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 1')
+        if 'wallpaper' not in fields:
+            con.execute("ALTER TABLE users ADD COLUMN wallpaper TEXT NOT NULL DEFAULT 'nuit'")
         if not con.execute('SELECT 1 FROM companies').fetchone():
             con.execute('INSERT INTO companies(slug,name,city,headline,color,phone,email,rates,created) VALUES (?,?,?,?,?,?,?,?,?)',
                         ('eclat-proprete','Éclat Propreté','Paris', 'Un espace impeccable, un esprit tranquille.', '#14866e', '', '', json.dumps(SERVICE_META,ensure_ascii=False),utcnow()))
@@ -323,7 +325,7 @@ def get_user(req):
     except (BadSignature, SignatureExpired):
         raise HTTPException(401, 'Session expirée')
     with db() as con:
-        row = con.execute('SELECT id,email,role,company_id,auth_version FROM users WHERE id=?', (data.get('uid'),)).fetchone()
+        row = con.execute('SELECT id,email,role,company_id,auth_version,wallpaper FROM users WHERE id=?', (data.get('uid'),)).fetchone()
     if not row or row['auth_version'] != data.get('auth_version'):
         raise HTTPException(401, 'Session expirée ou révoquée')
     user = dict(row)
@@ -427,6 +429,24 @@ def change_password(data: PasswordChangeInput, req: Request, response: Response)
 def me(req: Request):
     user = require(req)
     return user
+
+
+# Home wallpaper chosen by each user (glass design). Only the presets below are accepted.
+WALLPAPERS = ('nuit', 'emeraude', 'ocean', 'couchant', 'aurore', 'sable')
+
+
+class WallpaperInput(BaseModel):
+    wallpaper: str
+
+
+@app.put('/api/me/wallpaper')
+def set_wallpaper(data: WallpaperInput, req: Request):
+    user = require(req, write=True)
+    if data.wallpaper not in WALLPAPERS:
+        raise HTTPException(400, 'Fond d’écran inconnu')
+    with db() as con:
+        con.execute('UPDATE users SET wallpaper=? WHERE id=?', (data.wallpaper, user['id']))
+    return {'ok': True, 'wallpaper': data.wallpaper}
 
 
 @app.get('/api/companies')
