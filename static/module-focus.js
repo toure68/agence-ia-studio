@@ -101,7 +101,7 @@ document.addEventListener('click',e=>{
  if(tile&&tile.getAttribute('aria-disabled')==='true')return;
  e.preventDefault();e.stopImmediatePropagation();
  // A docked window is open over the frame: the app strip below it switches function directly.
- if(home.closest('#cockpitContent')){if(!app)return;closeContext();}
+ if(home.closest('#cockpitContent')){if(!app)return;return moduleFocusSwitch(app.dataset.focusApp);}
  if(close)return moduleFocusClose();
  if(act){const card=moduleFocusActions(moduleFocus.key)[Number(act.dataset.focusPriority)];if(card){moduleFocusDock();openPriorityAction(card);}return;}
  // Own attribute (not data-go) so the frame's buttons never clash with the full function's own links.
@@ -126,13 +126,19 @@ function moduleFocusWindow(key,open){
  return true;
 }
 window.moduleFocusWindow=moduleFocusWindow;
+// Another app touched while a window is open: close this window, let the navigation back to the home finish
+// (history), then open the other function's window. Closing in between does not fold the frame.
+function moduleFocusSwitch(key){
+ moduleDock.switching=true;closeContext();
+ navigationQueue.then(()=>navigationQueue).catch(()=>{}).then(()=>{moduleDock.switching=false;if(!moduleFocusWindow(key))openTab(key);});
+}
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||!moduleFocus.key||document.querySelector('#modalLayer:not(.hide)')||document.querySelector('#contextPanel'))return;
  e.preventDefault();moduleFocusClose();
 });
 // Second window (full function, form): opens exactly on the frame — same place, same size —
 // with a back arrow and a "Déployer" button for when the whole screen is needed.
-const moduleDock={armed:0,seen:false};
+const moduleDock={armed:0,seen:false,direct:false,switching:false};
 function moduleFocusDock(){
  const frame=document.querySelector('#moduleFocus');if(!frame)return false;
  // The app strip stays visible under the window: wherever you are, the other functions are one tap away.
@@ -173,7 +179,7 @@ function moduleDockSync(){
    back.after(assistant);moduleDockCount();
    new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
- }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct){moduleDock.direct=false;moduleFocusClose();}}
+ }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct&&!moduleDock.switching){moduleDock.direct=false;moduleFocusClose();}}
 }
 // Full screen (⤢): the home is covered, so the same app strip is shown fixed under the window.
 // Touching an app closes the window and switches the function dial, exactly like the strip on the dial.
@@ -186,8 +192,7 @@ function moduleDockBar(on){
  bar.addEventListener('click',e=>{
   const app=e.target.closest('[data-focus-app]');if(!app)return;
   e.preventDefault();const key=app.dataset.focusApp;
-  document.body.classList.remove('dock-expanded');moduleDockBar(false);closeContext();
-  if(!moduleFocusWindow(key))openTab(key);
+  document.body.classList.remove('dock-expanded');moduleDockBar(false);moduleFocusSwitch(key);
  });
  document.body.append(bar);
  document.documentElement.style.setProperty('--dock-bar-h',Math.ceil(bar.getBoundingClientRect().height)+'px');
