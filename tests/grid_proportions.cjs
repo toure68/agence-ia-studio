@@ -57,14 +57,13 @@ const {chromium}=require('playwright');
   }
   await page.setViewportSize({width:390,height:844});
   await page.locator('.module-grid [data-go]').first().click();
-  await page.locator('#moduleFocus').waitFor();
-  assert(await page.locator('.module-grid:not(.module-reserve-grid-inline)').isHidden(),'Function opens in place of the grid');
-  await page.locator('#moduleFocus [data-focus-open]').click();
-  await page.locator('#contextPanel').waitFor();
-  await page.locator('#closeContext').click();
-  await page.locator('#contextPanel').waitFor({state:'detached'});
+  await page.waitForFunction(()=>document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal'));
+  await page.evaluate(async()=>{await navigationQueue;});
+  await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else closeModal();});
+  await page.waitForFunction(()=>!document.querySelector('#contextPanel'));await page.evaluate(async()=>{await navigationQueue;});
   assert.equal(await page.locator('.module-grid').count(),1,'Cockpit stays mounted after opening and closing a function');
-  await page.locator('#moduleFocus [data-focus-close]').click();assert(await page.locator('.module-grid').first().isVisible(),'Back arrow restores the grid');
+  await page.waitForFunction(()=>!document.querySelector('#moduleFocus'));
+  assert(await page.locator('.module-grid').first().isVisible(),'Closing the window restores the grid');
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({passed:true,results}));
  }finally{await browser.close();}

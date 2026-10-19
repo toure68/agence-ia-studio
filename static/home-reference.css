@@ -557,3 +557,15 @@ body.dock-to-focus:not(.dock-expanded) .context-header #closeContext::before{con
 :is(.context-panel,#modalLayer .modal,.reference-home) :is(input,textarea,select):-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px #1a1f27 inset,0 0 0 3px #4ade8033!important;box-shadow:0 0 0 1000px #1a1f27 inset,0 0 0 3px #4ade8033!important}
 :is(.context-panel,#modalLayer .modal,.reference-home) :is(input,textarea,select):autofill{-webkit-text-fill-color:#f2f5f7!important;box-shadow:0 0 0 1000px #1a1f27 inset!important}
 body.dock-to-focus .context-header .dock-apps{width:40px}
+/* Direct windows: a function or an action opens straight into its full window on the frame. The summary behind
+   is never shown; only the app strip stays visible under the window. */
+.reference-home .module-focus.is-direct .focus-inner>:not(.focus-apps){visibility:hidden}
+/* The window covers the "Vos modules" row: the assistant moves into the window header, in place of the title. */
+body.dock-to-focus .reference-home .home-modules-heading{visibility:hidden}
+body.dock-to-focus .context-header #contextTitle{display:none}
+.dock-assistant{display:none}
+body.dock-to-focus .context-header .dock-assistant{flex:1 1 auto;min-width:0;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:1px solid #3a414c;border-radius:999px;background:#1c2129;color:#f2f5f7;font:inherit;font-size:14px;cursor:pointer;overflow:hidden;white-space:nowrap}
+body.dock-to-focus .context-header .dock-assistant b{font-weight:800;flex:none}
+body.dock-to-focus .context-header .dock-assistant-spark{display:inline-grid;place-items:center;color:var(--home-gold,#E2B04A);flex:none}
+body.dock-to-focus .context-header .dock-assistant-hint{color:#9aa6b2;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media (max-width:360px){body.dock-to-focus .context-header .dock-assistant-hint{display:none}}
