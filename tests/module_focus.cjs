@@ -39,7 +39,9 @@ const {chromium}=require('playwright');
   // Small strip of the other functions at the bottom; switching stays in the same frame.
   const strip=page.locator('#moduleFocus .focus-app');assert.equal(await strip.count(),before.tiles);
   assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),'clients');
-  const box=await strip.first().boundingBox();assert(box.width<=44&&box.height<=44,'Small format');
+  const box=await strip.first().locator('.module-icon').boundingBox();assert(box.width<=44&&box.height<=44,'Small format');
+  assert.equal(await strip.first().locator('.focus-app-name').count(),1,'Name band above each app');
+  assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>e.scrollHeight<=e.clientHeight+1&&getComputedStyle(e).overflowY==='hidden'),'Strip never moves up or down');
   const other=await page.locator('#moduleFocus .focus-app[aria-pressed="false"]').first();
   if(await other.count()){const key=await other.getAttribute('data-focus-app');await other.click();assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),key);assert.equal(await page.locator('#moduleFocus').count(),1);assert(Math.abs(await frameHeight()-before.height)<=1,'Same size for another function');await page.locator('#moduleFocus [data-focus-app="clients"]').click();}
   // Buttons readable before any tap (no white on white), same height.
@@ -48,15 +50,22 @@ const {chromium}=require('playwright');
   for(const b of buttons)assert(b.color!==b.bg&&b.h>=40,'Readable button '+JSON.stringify(b));
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
   // "Voir tout" opens the full function; closing it comes back to the same frame.
-  const frameBox=await frame.boundingBox();
+  const frameBox=await frame.boundingBox(),stripTop=await page.locator('#moduleFocus .focus-apps').evaluate(e=>e.getBoundingClientRect().top);
   await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();
   await page.waitForFunction(()=>document.body.classList.contains('dock-to-focus')&&document.querySelector('#dockExpand'));
   // Second window: exactly on the frame, dark universe, back arrow and Déployer.
   const panelBox=await page.locator('#contextPanel').boundingBox();
-  const vh=await page.evaluate(()=>innerHeight),top=Math.max(8,frameBox.y),visible={x:frameBox.x,y:top,width:frameBox.width,height:Math.min(vh-8,frameBox.y+frameBox.height)-top};
+  const vh=await page.evaluate(()=>innerHeight),top=Math.max(8,frameBox.y),visible={x:frameBox.x,y:top,width:frameBox.width,height:Math.min(vh-8,stripTop-6)-top};
   for(const k of ['x','y','width','height'])assert(Math.abs(panelBox[k]-visible[k])<=2,'Second window on the (visible) frame '+JSON.stringify({visible,panelBox}));
   const dark=await page.locator('#contextPanel').evaluate(e=>{const m=getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number);return (m[0]+m[1]+m[2])/3;});assert(dark<60,'Dark window '+dark);
-  assert.equal(await page.locator('#closeContext').getAttribute('aria-label'),'Revenir à la fonction');
+  assert.equal(await page.locator('#dockBack').innerText(),'‹ 1','Single back button with the number of steps');
+  assert(await page.locator('#dockApps').isVisible(),'Apps button to go straight back to all functions');
+  assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&e.contains(hit);}),'App strip stays visible under the window');
+  // Switching function from the strip while a window is open closes it and opens the other function in the frame.
+  const next=page.locator('#moduleFocus .focus-app[aria-pressed="false"]').first();
+  if(await next.count()){const k=await next.getAttribute('data-focus-app');await next.click();await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
+   assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),k);
+   await page.locator('#moduleFocus [data-focus-app="clients"]').click();await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();await page.waitForFunction(()=>document.querySelector('#dockBack'));}
   // No light surface and no dark ink left in the window (no white-on-white like the old Agenda card).
   const lightCheck=sel=>page.locator(sel).evaluate(root=>{const rgb=v=>{const m=String(v).match(/rgba?\(([^)]+)\)/);if(!m)return null;const [r,g,b,a=1]=m[1].split(/[\s,/]+/).filter(Boolean).map(Number);return {r,g,b,a};},lum=c=>(0.2126*c.r+0.7152*c.g+0.0722*c.b)/255;
    const bad=[];for(const el of root.querySelectorAll('*')){if(/^(INPUT|SELECT|TEXTAREA|BUTTON|OPTION|svg|path|IMG)$/i.test(el.tagName)||el.closest('svg,.btn,.badge')||!el.getClientRects().length)continue;const cs=getComputedStyle(el),bg=rgb(cs.backgroundColor),fg=rgb(cs.color);
@@ -71,7 +80,7 @@ const {chromium}=require('playwright');
   assert((await page.locator('#contextPanel').boundingBox()).width>frameBox.width,'Déployer widens the window');
   await page.locator('#dockExpand').click();
   // The single visible back arrow returns to the function frame.
-  await page.locator('#contextPanel .context-header :is(#closeContext,#moduleBack [data-back])').filter({visible:true}).first().click();await page.locator('#contextPanel').waitFor({state:'detached'});
+  await page.locator('#dockBack').click();await page.locator('#contextPanel').waitFor({state:'detached'});
   await page.evaluate(async()=>{await navigationQueue;});
   assert.equal(await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),false,'Dock released after closing');
   assert(await frame.isVisible(),'Frame kept after the full view');

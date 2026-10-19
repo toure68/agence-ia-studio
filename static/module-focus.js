@@ -39,7 +39,7 @@ function moduleFocusMarkup(key){
  const status=count?`${count} à traiter`:p.label==='Normal'?'À jour':p.label;
  const statusTone=count||['danger','warning'].includes(p.state)?(p.state==='danger'?'is-danger':'is-warning'):'is-ok';
  const create=moduleFocusNew[key]?`<a class="focus-btn is-primary" data-focus-go="${moduleFocusNew[key]}" href="#/${moduleFocusNew[key]}">＋ ${clean(moduleFocusNewLabel[key])}</a>`:'';
- const strip=modules.map(m=>`<button type="button" class="focus-app tone-${moduleTone(m.key)}${m.key===key?' is-current':''}" data-focus-app="${m.key}" aria-label="${clean(m.label)}" aria-pressed="${m.key===key}" title="${clean(m.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span></button>`).join('');
+ const strip=modules.map(m=>`<button type="button" class="focus-app tone-${moduleTone(m.key)}${m.key===key?' is-current':''}" data-focus-app="${m.key}" aria-label="${clean(m.label)}" aria-pressed="${m.key===key}" title="${clean(m.label)}"><span class="focus-app-name" aria-hidden="true">${clean(({prospects:'Prospects','company-edit':'Identité',scanner:'Documents'})[m.key]||m.label)}</span><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span></button>`).join('');
  return `<div class="focus-head"><button type="button" class="focus-back focus-apps-button" data-focus-close aria-label="Toutes les fonctions" title="Toutes les fonctions"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></g></svg></button><span class="module-icon tone-${moduleTone(key)}" aria-hidden="true">${moduleIcon(key)}</span><h2 class="focus-title-main">${clean(module.label)}</h2><span class="focus-status ${statusTone}"><i aria-hidden="true"></i>${clean(status)}</span></div>
 <div class="focus-kpis"><div><span>${clean(widget.label)}</span><b>${clean(widget.value)}</b></div><div><span>À traiter</span><b>${count}</b></div><div><span>État</span><b class="focus-state">${clean(p.label==='Normal'?'Normal':p.label)}</b></div></div>
 <div class="focus-body" data-focus-rows>${moduleFocusRows(key)}</div>
@@ -83,12 +83,14 @@ function moduleFocusClose(){
  if(key)home.querySelector(`.module-grid [data-go="${key}"]`)?.focus({preventScroll:true});
 }
 document.addEventListener('click',e=>{
- const home=e.target.closest('#content .reference-home');if(!home)return;
+ const home=e.target.closest('#content .reference-home,#cockpitContent .reference-home');if(!home)return;
  const tile=e.target.closest('.module-grid:not(.module-reserve-grid-inline) .module-tile[data-go]'),app=e.target.closest('[data-focus-app]'),close=e.target.closest('[data-focus-close]'),go=e.target.closest('[data-focus-go]');
  if(!tile&&!app&&!close&&!go)return;
  if(tile&&(e.metaKey||e.ctrlKey||e.shiftKey))return;
  if(tile&&tile.getAttribute('aria-disabled')==='true')return;
  e.preventDefault();e.stopImmediatePropagation();
+ // A docked window is open over the frame: the app strip below it switches function directly.
+ if(home.closest('#cockpitContent')){if(!app)return;closeContext();}
  if(close)return moduleFocusClose();
  // Own attribute (not data-go) so the frame's buttons never clash with the full function's own links.
  if(go){moduleFocusDock();const route=go.dataset.focusGo;if(['task-new','activity-new'].includes(route))return openCommand(route==='task-new'?'task':'activity');return openTab(route,{companyId:go.dataset.companyId?Number(go.dataset.companyId):null});}
@@ -104,7 +106,9 @@ document.addEventListener('keydown',e=>{
 const moduleDock={armed:0,seen:false};
 function moduleFocusDock(){
  const frame=document.querySelector('#moduleFocus');if(!frame)return;
- const r=frame.getBoundingClientRect(),top=Math.max(8,r.top),bottom=Math.min(innerHeight-8,r.bottom);
+ // The app strip stays visible under the window: wherever you are, the other functions are one tap away.
+ const strip=frame.querySelector('.focus-apps'),stripTop=strip&&strip.getClientRects().length?strip.getBoundingClientRect().top-6:null;
+ const r=frame.getBoundingClientRect(),top=Math.max(8,r.top),bottom=Math.min(innerHeight-8,stripTop??r.bottom);
  if(bottom-top<260)return; // not enough visible room: the window opens full screen
  const s=document.documentElement.style;
  s.setProperty('--dock-top',top+'px');s.setProperty('--dock-left',r.left+'px');s.setProperty('--dock-width',r.width+'px');s.setProperty('--dock-height',(bottom-top)+'px');
@@ -116,15 +120,32 @@ function moduleDockSync(){
  const layer=document.querySelector('#contextLayer'),modal=document.querySelector('#modalLayer:not(.hide)');
  if(layer||modal){
   moduleDock.seen=true;
+  // Docked (not deployed) window: the home around it, including the app strip, stays usable.
+  const shell=document.querySelector('#shell');if(shell&&layer&&!modal)shell.inert=document.body.classList.contains('dock-expanded');
   const header=layer?.querySelector('.context-header');
   if(header&&!header.querySelector('#dockExpand')){
    const expand=document.createElement('button');expand.type='button';expand.id='dockExpand';expand.className='dock-expand';expand.setAttribute('aria-label','Déployer en plein écran');expand.title='Déployer en plein écran';expand.textContent='⤢';
-   expand.onclick=()=>{document.body.classList.toggle('dock-expanded');expand.textContent=document.body.classList.contains('dock-expanded')?'⤡':'⤢';expand.setAttribute('aria-label',document.body.classList.contains('dock-expanded')?'Revenir au cadre':'Déployer en plein écran');};
+   expand.onclick=()=>{document.body.classList.toggle('dock-expanded');const shell=document.querySelector('#shell');if(shell)shell.inert=document.body.classList.contains('dock-expanded');expand.textContent=document.body.classList.contains('dock-expanded')?'⤡':'⤢';expand.setAttribute('aria-label',document.body.classList.contains('dock-expanded')?'Revenir au cadre':'Déployer en plein écran');};
    header.append(expand);
-   const close=layer.querySelector('#closeContext');if(close)close.setAttribute('aria-label','Revenir à la fonction');
+   const apps=document.createElement('button');apps.type='button';apps.id='dockApps';apps.className='dock-apps';apps.setAttribute('aria-label','Toutes les fonctions');apps.title='Toutes les fonctions';
+   apps.innerHTML=document.querySelector('#moduleFocus .focus-apps-button')?.innerHTML||'⋯';
+   apps.onclick=()=>{closeContext();moduleFocusClose();};
+   const back=document.createElement('button');back.type='button';back.id='dockBack';back.className='dock-back';
+   back.onclick=()=>{if(moduleDockSteps()>1)history.back();else closeContext();};
+   header.prepend(apps,back);moduleDockCount();
+   new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
  }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded');moduleDock.seen=false;}
 }
+// One back button that says how many steps lead back to the function frame ("‹ 3").
+function moduleDockSteps(){try{return Math.max(1,(history.state?.aiaDepth||0)-(contextState?.depth||0));}catch{return 1;}}
+function moduleDockCount(){
+ const back=document.querySelector('#dockBack');if(!back)return;
+ const n=moduleDockSteps(),text=`‹ ${n}`;
+ if(back.textContent!==text)back.textContent=text;
+ back.setAttribute('aria-label',n>1?`Revenir en arrière (${n} étapes jusqu’à la fonction)`:'Revenir à la fonction');
+}
+addEventListener('popstate',()=>setTimeout(moduleDockCount,0));
 new MutationObserver(moduleDockSync).observe(document.body,{childList:true,subtree:false});
 {const m=document.querySelector('#modalLayer');if(m)new MutationObserver(moduleDockSync).observe(m,{attributes:true,attributeFilter:['class']});}
 // The home is rebuilt when the dashboard is opened again: start from the grid.
