@@ -550,7 +550,7 @@ body.dock-to-focus .context-header .dock-back{gap:2px;min-width:58px;padding:0 1
 body.dock-to-focus .context-header .dock-back svg{width:24px;height:24px;flex:none}
 .dock-back-n{font-size:13px;font-weight:700;line-height:1;color:#aab4be;font-variant-numeric:tabular-nums}
 body.dock-to-focus:not(.dock-expanded) .context-header #closeContext::before{content:"";width:24px;height:24px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15 4.5 7.5 12l7.5 7.5' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15 4.5 7.5 12l7.5 7.5' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
-#homeTreasury .bank-dial .bank-back{width:36px;height:36px;flex:0 0 36px;display:inline-grid;place-items:center}
+#homeTreasury .bank-dial .bank-back{display:inline-grid;place-items:center;padding:0}
 /* Autofill (Safari / Chrome suggestions, saved e-mails, strong passwords): never the yellow light field with
    pale text; filled fields keep the dark field of the app's universe with readable text. */
 :is(.context-panel,#modalLayer .modal,.reference-home) :is(input,textarea,select):is(:-webkit-autofill,:-webkit-autofill:hover,:-webkit-autofill:focus){-webkit-text-fill-color:#f2f5f7!important;caret-color:#f2f5f7;-webkit-box-shadow:0 0 0 1000px #1a1f27 inset!important;box-shadow:0 0 0 1000px #1a1f27 inset!important;transition:background-color 99999s ease-out 0s}
