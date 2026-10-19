@@ -70,6 +70,8 @@ const {chromium}=require('playwright');
   // The assistant opens from the window without closing it; the back arrow returns to the function.
   await page.locator('#dockAssistant').click();
   await page.waitForFunction(()=>document.querySelector('#contextPanel #assistantChat')&&document.querySelector('#dockBack')?.dataset.n==='2');
+  const composer=await page.evaluate(()=>{const t=document.querySelector('#assistantMessage'),m=document.querySelector('.chat-attach-menu'),cs=getComputedStyle(t),bg=getComputedStyle(m).backgroundColor;return {pad:parseFloat(cs.paddingLeft),menuBg:bg};});
+  assert(composer.pad>=10&&/rgba\(0, 0, 0, 0\)|transparent/.test(composer.menuBg),'Assistant field: text inside the field, round + without a square block '+JSON.stringify(composer));
   await page.locator('#dockBack').click();
   await page.waitForFunction(()=>document.querySelector('#dockBack')?.dataset.n==='1'&&!document.querySelector('#contextPanel #assistantChat'));
   await page.locator('#contextPanel').getByText('Client Cadran Fonction').first().waitFor();

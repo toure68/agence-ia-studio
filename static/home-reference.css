@@ -638,3 +638,9 @@ body[data-wall] .context-panel :is(.context-header,.context-footer,.context-scro
 body[data-wall] :is(.context-panel,#modalLayer .modal) .task-row:not(.row-todo):not(.row-quiet){background:#ffffff0c!important;border-color:#ffffff1f!important}
 body[data-wall] :is(.context-panel,#modalLayer .modal) :is(input,select,textarea){background:rgba(0,0,0,.28)!important;border-color:#ffffff29!important}
 body[data-wall].dock-to-focus.dock-expanded .context-layer{background:rgba(5,7,10,.22)!important}
+/* Assistant composer: the text starts inside the field (not on its edge), and the "+" is a clean round button
+   without a square block behind it. */
+:is(.context-panel,#modalLayer .modal) #assistantMessage{padding:12px 14px!important;line-height:1.4;border-radius:16px}
+:is(.context-panel,#modalLayer .modal) .chat-attach-menu,:is(.context-panel,#modalLayer .modal) .chat-attach-menu>summary{background-color:transparent!important;background-image:none!important;box-shadow:none!important}
+:is(.context-panel,#modalLayer .modal) .chat-attach-menu{border:0!important;padding:0!important;border-radius:50%}
+:is(.context-panel,#modalLayer .modal) .chat-attach-menu>summary{border:1px solid #ffffff2b!important;border-radius:50%!important;list-style:none}
