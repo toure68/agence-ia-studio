@@ -65,6 +65,8 @@ async function renderPriorities(initial={}) {
   const all=host.querySelector("#homeAllActions");if(all)all.onclick=()=>openPriorityGroup({module:"all",members:cards},cid);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {
     const group=displayCards[Number(btn.dataset.priorityOpen)];
+    // Same as tapping the function in the function dial: open it there, then dock the action's window on it.
+    if(typeof moduleFocusFromPriority==='function')await moduleFocusFromPriority(group.module);
     if(group.members.length===1)return openPriorityAction(group.members[0]);
     openPriorityGroup(group,cid);
   });
@@ -109,7 +111,7 @@ function openPriorityGroup(group,cid){
  $('#closePriorityGroup').onclick=closeModal;
  $('#modalLayer').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=async()=>{
   if(company?.id!==cid){closeModal();return;}
-  const card=group.members[Number(btn.dataset.priorityItemOpen)];closeModal();await openPriorityAction(card);
+  const card=group.members[Number(btn.dataset.priorityItemOpen)];closeModal();if(document.querySelector('#moduleFocus')&&typeof moduleFocusDock==='function')moduleFocusDock();await openPriorityAction(card);
  });
 }
 

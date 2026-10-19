@@ -137,6 +137,23 @@ function moduleDockSync(){
   }
  }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;}
 }
+// Action cards (green buttons on home): open the matching function in the function dial, bring it into view,
+// then the action's window docks on it exactly as if it had been opened from the dial itself.
+async function moduleFocusFromPriority(module){
+ const known=(homeLayout.workspace?.modules||[]).some(m=>m.key===module);
+ if(!known||!moduleFocusOpen(module))return false;
+ const frame=document.querySelector('#moduleFocus');if(!frame)return false;
+ const r=frame.getBoundingClientRect();
+ if(r.top<8||r.bottom>innerHeight-8){
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  frame.scrollIntoView({block:r.height>innerHeight-16?'start':'center',behavior:reduce?'auto':'smooth'});
+  await new Promise(resolve=>setTimeout(resolve,reduce?30:420));
+ }
+ moduleFocusDock();
+ return true;
+}
+window.moduleFocusFromPriority=moduleFocusFromPriority;
+window.moduleFocusDock=moduleFocusDock;
 // One back button that says how many steps lead back to the function frame ("‹ 3").
 function moduleDockSteps(){try{return Math.max(1,(history.state?.aiaDepth||0)-(contextState?.depth||0));}catch{return 1;}}
 function moduleDockCount(){

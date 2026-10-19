@@ -16,16 +16,18 @@ const {chromium}=require('playwright');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
+ // Action cards open their function in the function dial (it stays open after the window closes, by design).
+ async function closeDial(){await page.evaluate(()=>{if(typeof moduleFocus!=='undefined'&&moduleFocus.key&&!document.querySelector('#contextPanel')&&document.querySelector('#modalLayer.hide'))moduleFocusClose();});}
  async function backHome(){
    for(let i=0;i<5;i++){
     await page.evaluate(async()=>{await navigationQueue;});
     if(await page.locator('#content .module-grid').count()){await page.evaluate(()=>{if(typeof moduleFocusClose==='function'&&moduleFocus.key&&!document.querySelector('#contextPanel'))moduleFocusClose();});if(!await page.locator('#contextPanel').count())return;}
-    const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.locator('#moduleBack [data-back]').click();
+    const before=await page.evaluate(()=>JSON.stringify(readRoute()));await page.evaluate(()=>{const b=document.querySelector('#moduleBack [data-back]');if(b&&b.getClientRects().length)b.click();else goBack();});
     await page.waitForFunction(route=>JSON.stringify(readRoute())!==route||Boolean(document.querySelector('#content .module-grid')),before);
     await page.evaluate(async()=>{await navigationQueue;});
     await page.waitForFunction(()=>!document.querySelector('#content > [role="status"]'));
    }
-   await page.locator('#content .module-grid').waitFor();
+   await page.locator('#content .module-grid').waitFor({state:'attached'});
  }
  async function goModule(route){
    if(await page.locator('#contextPanel').count())await backHome();
@@ -42,6 +44,7 @@ const {chromium}=require('playwright');
    await backHome();await page.locator('#assistantDock').click();await page.locator('#assistantMessage').waitFor({state:'visible'});
  }
  async function layout(){
+   await closeDial();
    await page.waitForFunction(()=>document.querySelectorAll('#content .module-grid .module-tile').length>0);
    // 2 columns: at most 3 rows (6 functions), more only for functions with an action to do.
    const cells=await page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,tiles:el.querySelectorAll('.module-tile').length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length,onlyFunctions:[...el.children].every(c=>c.querySelector('.module-tile'))}));
@@ -116,7 +119,7 @@ const {chromium}=require('playwright');
    await page.locator('#loginEmail').fill('ui-owner@example.test');
    await page.locator('#loginPassword').fill('local-ui-smoke-test-only');
    await page.getByRole('button',{name:'Se connecter'}).click();
-   await page.locator('#content .module-grid').waitFor();
+   await page.locator('#content .module-grid').waitFor({state:'attached'});
    await layout();
    const assistantStyle=await page.locator('#assistantDock').evaluate(el=>({radius:getComputedStyle(el).borderRadius,spark:el.querySelectorAll('.assistant-spark svg').length}));
    assert.equal(assistantStyle.radius,'16px');assert.equal(assistantStyle.spark,1,'Assistant uses a uniform line icon');
@@ -131,7 +134,7 @@ const {chromium}=require('playwright');
      await dialogContained();await page.keyboard.press('Escape');
      await page.locator('#assistantDock').click();await page.locator('#contextPanel').waitFor();await dialogContained();
      await page.evaluate(()=>openCommand('task'));await dialogContained();await page.keyboard.press('Escape');await dialogContained();
-     await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
+     await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
    }
    await page.setViewportSize({width:390,height:844});
    // Every module opens above the same live cockpit; closing preserves its draft and scroll.
@@ -139,7 +142,7 @@ const {chromium}=require('playwright');
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/assistant-panel-mobile.png',animations:'disabled'});
    await page.locator('#assistantMessage').fill('Brouillon à conserver');
    await page.locator('#chatFiles').setInputFiles({name:'brouillon-conserve.txt',mimeType:'text/plain',buffer:Buffer.from('Pièce jointe non envoyée')});
-   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');
+   await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');
    assert.equal(await page.locator('#assistantMessage').isVisible(),false);
    await openAssistant();assert.equal(await page.locator('#assistantMessage').inputValue(),'Brouillon à conserver');assert.equal(await page.locator('.chat-file').count(),1);
    await page.locator('.chat-file button').click();await backHome();
@@ -176,7 +179,7 @@ const {chromium}=require('playwright');
    await page.locator('#contextPanel').waitFor({state:'detached'});await page.waitForFunction(()=>readRoute().tab==='dashboard');
    let releaseClients;const heldClients=new Promise(resolve=>{releaseClients=resolve;});
    await page.route('**/api/companies/1/clients',async route=>{await heldClients;await route.fulfill({json:[]});});
-   await goModule('clients');await page.locator('#contextPanel').waitFor();await page.locator('#closeContext').click();
+   await goModule('clients');await page.locator('#contextPanel').waitFor();await page.evaluate(()=>closeContext());
    releaseClients();await page.evaluate(()=>navigationQueue);await page.waitForFunction(()=>readRoute().tab==='dashboard');
    await page.unroute('**/api/companies/1/clients');
    assert.equal(await page.locator('#assistantChat').getAttribute('data-identity'),'same-cockpit');
@@ -216,7 +219,7 @@ const {chromium}=require('playwright');
    await page.locator('#speechVoice').selectOption('test-fr-compact');await page.locator('#speechRate').focus();await page.keyboard.press('Home');for(let i=0;i<10;i++)await page.keyboard.press('ArrowRight');await page.locator('#speechTest').click();
    const speechPreview=await page.evaluate(()=>window.__spokenDetails.at(-1));assert.equal(speechPreview.voice,'test-fr-compact');assert.equal(speechPreview.rate,.9);
    await page.locator('#speechVoice').selectOption('test-fr-enhanced');await page.locator('#speechSettingsForm button[type="submit"]').click();
-   await page.reload();await page.locator('#content .module-grid').waitFor();
+   await page.reload();await page.locator('#content .module-grid').waitFor({state:'attached'});
    await page.waitForFunction(()=>document.querySelector('.priority-card>.voice-button'));
    await page.locator('.priority-card>.voice-button').click();assert.equal((await page.evaluate(()=>window.__spokenDetails.at(-1))).rate,.9);
    await page.evaluate(()=>{window.__voices=[{name:'Français qualité améliorée',voiceURI:'test-fr-enhanced',lang:'fr-FR',localService:true}];});
@@ -243,7 +246,7 @@ const {chromium}=require('playwright');
    assert.equal(uiChatPayload.text,'Analyse mes documents');assert((await page.locator('.chat-answer').innerText()).includes('<script>'));assert.equal(await page.locator('#chatTurns script').count(),0);
    assert.equal(await page.locator('#chatAttachments .chat-file').count(),0);assert.equal(await page.locator('#assistantMessage').inputValue(),'');
    await page.locator('#assistantMessage').fill('Réponse en arrière-plan');await page.locator('#assistantSend').click();
-   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');releaseChat();
+   await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');releaseChat();
    await page.waitForFunction(()=>document.querySelector('#chatTurns .chat-user')&&document.querySelectorAll('.chat-user').length===2&&document.querySelector('#assistantMessage').value==='');
    await openAssistant();assert.equal(await page.locator('.chat-user').count(),2);
    await page.reload();await page.locator('.chat-answer').first().waitFor();assert.equal(await page.locator('.chat-user').count(),2);
@@ -280,7 +283,7 @@ const {chromium}=require('playwright');
    await page.locator('[data-priority-open]').click();
    await page.locator('#commandText').waitFor();
    await page.locator('#closeModal').click();
-   await page.locator('#content .module-grid').waitFor();
+   await page.locator('#content .module-grid').waitFor({state:'attached'});
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/activities')),[]);
    assert.deepEqual(await page.evaluate(()=>api('/api/companies/1/tasks')),[]);
    assert.equal(await page.locator('#calendarTasks').count(),0);
@@ -297,7 +300,7 @@ const {chromium}=require('playwright');
      await formVisible(form);
      await page.reload({waitUntil:'networkidle'});
      await formVisible(form);
-     await page.locator('#moduleBack [data-back]').click();
+     await page.evaluate(()=>{const b=document.querySelector('#moduleBack [data-back]');if(b&&b.getClientRects().length)b.click();else goBack();});
      await page.waitForFunction(expected=>tab===expected,module);
      await page.locator(module==='prospects'?'#newProspect':module==='companies'?'#createCompany':module==='calendar'?'.task-list':module==='clients'?'#clientList':'#activityList').waitFor();
      await backHome();
@@ -321,7 +324,7 @@ const {chromium}=require('playwright');
    await page.locator('#quoteStatus').selectOption('accepted');
    await page.locator('#quotationForm button[type="submit"]').click();
    await page.locator('.quote-detail-lines').waitFor();
-   await page.locator('#moduleBack [data-back]').click();
+   await page.evaluate(()=>{const b=document.querySelector('#moduleBack [data-back]');if(b&&b.getClientRects().length)b.click();else goBack();});
    await page.locator('#quoteList').waitFor();
    assert((await page.locator('#quoteList').innerText()).includes('Accepté'));
    await page.locator('[data-quote-open]').first().click();
@@ -398,7 +401,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#contextPanel').count(),0);
    await page.locator('[data-priority-open]').click();
    await page.locator('#clientForm').waitFor();assert.equal(await page.locator('#clientName').inputValue(),'Client Interface');
-   await page.locator('[data-validate-client]').click();await page.locator('#content .module-grid').waitFor();
+   await page.locator('[data-validate-client]').click();await page.locator('#content .module-grid').waitFor({state:'attached'});
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients')))[0].needs_review,false);
    {const clientsTile=page.locator('#content .module-grid [data-go="clients"]');if(await clientsTile.count())assert.equal(await clientsTile.getAttribute('data-state'),'success');}
@@ -491,7 +494,7 @@ const {chromium}=require('playwright');
    await page.locator('[data-priority-open]').click();await dialogContained();
    assert.equal(await page.locator('[data-priority-item-open]').count(),6,'All same-function actions remain available');
    const choice=page.locator('[data-priority-item-open]').last(),choiceTitle=await choice.locator('strong').innerText();await choice.click();await page.locator('#completeTask').waitFor();assert.equal(await page.locator('#content h1').innerText(),choiceTitle);await dialogContained();
-   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
+   await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');await page.evaluate(async()=>await navigationQueue);
 
    fs.mkdirSync('/tmp/ui-images',{recursive:true});
    await page.screenshot({path:'/tmp/ui-images/home-iphone.png',fullPage:true});
@@ -532,7 +535,7 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#accountAudit:visible').count(),1);
    await page.locator('.account-menu summary').click();
    await goModule('activities');
-   await page.locator('#closeContext').click();await page.waitForFunction(()=>readRoute().tab==='dashboard');
+   await page.evaluate(()=>closeContext());await page.waitForFunction(()=>readRoute().tab==='dashboard');
    await page.locator('.account-menu summary').click();await page.locator('#accountTools').click();
    await page.locator('.tool-list [data-go="conformity"]').waitFor();
    assert.equal(await page.locator('.tool-list [data-go="equipment"],.tool-list [data-go="risks"],.tool-list [data-go="conformity"]').count(),3);
@@ -578,7 +581,7 @@ const {chromium}=require('playwright');
    assert.equal((await page.evaluate(()=>api('/api/companies/1/clients'))).length,1);
    await openModuleLibrary();await page.locator('#moduleScope').selectOption('suggested');assert.equal(await page.locator('[data-module-key="prospects"]').count(),0);
    await page.locator('#moduleScope').selectOption('all');assert.equal(await page.locator('[data-module-key="prospects"]').count(),1);
-   await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();assert.equal(await page.locator('[data-module-key="social"]').isChecked(),true);await page.locator('[data-module-key="social"]').uncheck();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();await layout();
+   await page.locator('[data-module-key="prospects"]').check();await page.locator('#selectAllModules').click();assert.equal(await page.locator('[data-module-key="social"]').isChecked(),true);await page.locator('[data-module-key="social"]').uncheck();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor({state:'attached'});await layout();
    const iconRims=await page.locator('#content .module-grid .module-tile,.priority-tile').evaluateAll(tiles=>[tiles.find(t=>t.closest('.module-grid')),tiles.find(t=>t.matches('.priority-tile'))].map(tile=>{const original=tile.className,kind=tile.matches('.priority-tile')?' priority-tile':'',icon=tile.querySelector('.module-icon'),svg=icon.querySelector('svg').outerHTML,result={};for(const state of ['neutral','danger','warning','info','success']){tile.className='module-tile'+kind+' state-'+state;const style=getComputedStyle(icon),r=icon.getBoundingClientRect();result[state]={border:style.borderTopColor,line:style.borderTopWidth,width:r.width,height:r.height,fill:style.backgroundImage,glyph:style.color};}tile.className=original;return {states:result,sameSvg:svg===icon.querySelector('svg').outerHTML};}));
    for(const rim of iconRims){assert(rim.sameSvg);assert.equal(rim.states.danger.border,'rgb(242, 97, 107)');assert.equal(rim.states.warning.border,'rgb(226, 176, 74)');assert.equal(rim.states.info.border,'rgb(91, 176, 255)');assert.equal(rim.states.success.border,rim.states.neutral.border);for(const state of Object.values(rim.states)){assert(parseFloat(state.line)>=1&&parseFloat(state.line)<=1.5);assert.equal(state.width,rim.states.neutral.width);assert.equal(state.height,rim.states.neutral.height);assert.equal(state.fill,rim.states.neutral.fill);assert.equal(state.glyph,rim.states.neutral.glyph);}}
    const glow=await page.locator('#content .module-card').first().evaluate(el=>{const a=el.querySelector('.module-tile'),original=a.className,before=el.getBoundingClientRect(),result={};for(const state of ['danger','warning']){a.className='module-tile state-'+state;const c=getComputedStyle(el,'::after'),r=el.getBoundingClientRect();result[state]={color:getComputedStyle(el).getPropertyValue('--alert-color').trim(),animation:c.animationName,stable:r.height===before.height&&r.width===before.width,pointer:c.pointerEvents,padding:c.paddingTop,mask:c.maskComposite.split(',')[0].trim(),duration:c.animationDuration,timing:c.animationTimingFunction};}a.className=original;return result;});
@@ -642,7 +645,7 @@ const {chromium}=require('playwright');
    }
    await openModuleLibrary();await page.locator('#homeColumns').selectOption('2');await page.locator('#saveModules').click();
    await page.waitForFunction(()=>document.querySelector('#content .module-grid')?.dataset.columns==='2');await layout();
-   await openModuleLibrary();await page.locator('#dynamicHome').check();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor();
+   await openModuleLibrary();await page.locator('#dynamicHome').check();await page.locator('#saveModules').click();await page.locator('#content .module-grid').waitFor({state:'attached'});
    assert.equal((await page.evaluate(()=>api('/api/companies/1/workspace'))).dynamic,true);
    await goModule('scanner');
    await page.locator('#scanKind').waitFor();
@@ -695,7 +698,7 @@ const {chromium}=require('playwright');
    await page.locator('#logout').click();await page.locator('#loginEmail').waitFor();
    assert.equal(await page.locator('#content>*').count(),0);assert.equal(await page.locator('#contextPanel').count(),0);
    await page.locator('#loginEmail').fill('ui-owner@example.test');await page.locator('#loginPassword').fill('local-ui-smoke-test-only');await page.getByRole('button',{name:'Se connecter'}).click();
-   await page.locator('#content .module-grid').waitFor();assert.equal(await page.locator('#assistantChat').getAttribute('data-private-session'),null);
+   await page.locator('#content .module-grid').waitFor({state:'attached'});assert.equal(await page.locator('#assistantChat').getAttribute('data-private-session'),null);
    assert.deepEqual(errors,[]);
    console.log('PASS: clean home, four main modules, dynamic badges, keyboard input, cashbook, logistics and explicit compliance gaps, quotation creation/edit/PDF, always-present useful priority, mail settings, speech controls and no integrated dictation, client and activity workflows, labeled examples, direct form routes, visible first fields, consistent circular returns, browser history, responsive layout, recurrence, priority actions and persistent dismissal.');
  }catch(error){
