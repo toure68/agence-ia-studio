@@ -7,7 +7,7 @@ const amount=text=>Math.round(Number(text.replace(/[^\d,−-]/g,'').replace('−
  const base=process.env.DEMO_BASE_URL||'http://127.0.0.1:8123';
  try{
   for(const width of [320,390,768]){
-   const page=await browser.newPage({viewport:{width,height:844},hasTouch:true,isMobile:true,reducedMotion:'reduce'}),errors=[],writes=[];
+   const page=await browser.newPage({viewport:{width,height:844},hasTouch:true,isMobile:true,reducedMotion:'reduce'}),errors=[],writes=[];await page.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
    page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(!['GET','HEAD'].includes(r.method()))writes.push(r.url());});
    await page.goto(base+'/demo');await page.locator('#homeTreasury .bank-dial').waitFor();
    const read=async()=>({balance:amount(await page.locator('#homeTreasury .bank-total').innerText()),flows:await page.locator('#homeTreasury .dial-flows').innerText()});
