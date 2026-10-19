@@ -45,6 +45,9 @@ FREQ = {'once': 1, 'weekly': .9, 'monthly': .95}
 STATUSES = {'Nouveau', 'À rappeler', 'Devis envoyé', 'Signé', 'Perdu'}
 PROSPECT_STAGES = {'À contacter', 'Contacté', 'Réponse reçue', 'Intéressé', 'Démo prévue', 'Accord de principe', 'Signé', 'Refus'}
 RATE_BUCKETS = {}
+# Stay signed in for 6 months on a device (user request 2026-10-19). Changing the password, or the
+# owner recovery, bumps auth_version and still signs every device out at once.
+SESSION_SECONDS = 60 * 60 * 24 * 180
 app = FastAPI(title='Agence IA Studio V2.1', version='2.1')
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 
@@ -316,7 +319,7 @@ def get_user(req):
     if not cookie:
         raise HTTPException(401, 'Authentification nécessaire')
     try:
-        data = TOKEN.loads(cookie, max_age=60 * 60 * 12)
+        data = TOKEN.loads(cookie, max_age=SESSION_SECONDS)
     except (BadSignature, SignatureExpired):
         raise HTTPException(401, 'Session expirée')
     with db() as con:
@@ -393,7 +396,7 @@ def login(data: LoginInput, req: Request, response: Response):
         raise HTTPException(401, 'Identifiants incorrects')
     csrf = secrets.token_urlsafe(32)
     signed = TOKEN.dumps({'uid': user['id'], 'csrf': csrf, 'auth_version': user['auth_version']})
-    response.set_cookie(COOKIE, signed, max_age=43200, httponly=True, secure=APP_ENV == 'production', samesite='lax', path='/')
+    response.set_cookie(COOKIE, signed, max_age=SESSION_SECONDS, httponly=True, secure=APP_ENV == 'production', samesite='lax', path='/')
     return {'ok': True, 'csrf': csrf}
 
 
