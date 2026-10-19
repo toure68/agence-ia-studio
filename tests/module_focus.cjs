@@ -166,6 +166,61 @@ const {chromium}=require('playwright');
     if(await page.locator('#moduleFocus').count())await page.locator('#moduleFocus [data-focus-close]').click();
    }
   }
+  // Every function window, opened from the dial: no card inside a card (no narrower nested box), the app strip
+  // stays available docked AND in full screen (⤢), and the full-screen strip switches function.
+  {
+   const keys=await page.evaluate(()=>(homeLayout.workspace?.modules||[]).map(m=>m.key));
+   await page.locator('#content .module-grid .module-tile[data-go]').first().click();await page.locator('#moduleFocus').waitFor();
+   const report=[],checked=[];
+   const ensureDial=async key=>{
+    if(!await page.locator('#moduleFocus').count()){await page.locator('#content .module-grid .module-tile[data-go]').first().click();await page.locator('#moduleFocus').waitFor();}
+    const app=page.locator(`#moduleFocus [data-focus-app="${key}"]`);if(!await app.count())return false;
+    if(await app.getAttribute('aria-pressed')!=='true'){await app.click();await page.waitForFunction(k=>document.querySelector(`#moduleFocus [data-focus-app="${k}"]`)?.getAttribute('aria-pressed')==='true',key);}
+    return true;
+   };
+   const closeWindow=async()=>{await page.evaluate(()=>{if(document.querySelector('#contextPanel'))closeContext();else if(document.querySelector('#modalLayer:not(.hide)'))closeModal();});await page.evaluate(async()=>{await navigationQueue;});await page.waitForTimeout(150);};
+   for(const key of keys){
+    if(!await ensureDial(key))continue;
+    const open=page.locator('#moduleFocus [data-focus-open]');if(!await open.count())continue;
+    await open.click();
+    const opened=await page.waitForFunction(()=>document.querySelector('#contextPanel .context-scroll')||document.querySelector('#modalLayer:not(.hide) .modal'),null,{timeout:6000}).then(()=>true,()=>false);
+    if(!opened){report.push(key+': no window');continue;}
+    await page.waitForTimeout(600);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+    const m=await page.evaluate(()=>{
+     const win=document.querySelector('#contextPanel .context-scroll')||document.querySelector('#modalLayer:not(.hide) .modal');
+     const deep=[];
+     for(const el of win.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=color]),select,textarea,h1,h2,h3,h4,label')){
+      if(!el.getClientRects().length||el.closest('li,ul,ol,table,button,a,.fg-progress'))continue;
+      let indent=0;for(let a=el.parentElement;a&&a!==win;a=a.parentElement){const cs=getComputedStyle(a);indent+=parseFloat(cs.paddingLeft)+parseFloat(cs.borderLeftWidth)+Math.max(0,parseFloat(cs.marginLeft));}
+      if(indent>8)deep.push(`${el.tagName}:${(el.textContent||el.name||'').trim().slice(0,24)}=${Math.round(indent)}px`);
+     }
+     const strip=document.querySelector('#moduleFocus .focus-apps'),sr=strip?.getBoundingClientRect(),w=(document.querySelector('#contextPanel')||document.querySelector('#modalLayer:not(.hide) .modal')).getBoundingClientRect();
+     return {deep:deep.slice(0,6),strip:!!sr&&sr.height>20&&sr.top>=w.bottom-1&&sr.bottom<=innerHeight+1,docked:document.body.classList.contains('dock-to-focus')};
+    });
+    checked.push(key);
+    if(m.deep.length)report.push(`${key}: nested box ${m.deep.join(', ')}`);
+    if(m.docked&&!m.strip)report.push(key+': app strip hidden under the docked window');
+    if(await page.locator('#dockExpand').count()){
+     await page.locator('#dockExpand').click();
+     const x=await page.evaluate(()=>{const b=document.querySelector('#dockAppBar'),p=document.querySelector('#contextPanel').getBoundingClientRect();if(!b)return {bar:false};const r=b.getBoundingClientRect();return {bar:r.height>20&&r.bottom<=innerHeight+1,above:p.bottom<=r.top+1,apps:b.querySelectorAll('[data-focus-app]').length,dial:document.querySelectorAll('#moduleFocus .focus-apps [data-focus-app]').length};});
+     if(!x.bar)report.push(key+': app strip missing in full screen');else{if(!x.above)report.push(key+': full-screen window covers the strip');if(x.apps!==x.dial)report.push(key+': full-screen strip differs from the dial');}
+     await page.locator('#dockExpand').click();
+     if(await page.locator('#dockAppBar').count())report.push(key+': strip left after leaving full screen');
+    }
+    await closeWindow();
+   }
+   assert(checked.length>=3,'Enough function windows checked '+checked.join(','));
+   assert.deepEqual(report,[],'All function windows: '+report.join(' | '));
+   // Full-screen strip switches function: the window closes and the dial shows the touched function.
+   const [first,second]=checked;
+   await ensureDial(first);await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel').waitFor();await page.waitForFunction(()=>document.querySelector('#dockExpand'));
+   await page.locator('#dockExpand').click();await page.locator(`#dockAppBar [data-focus-app="${second}"]`).click();
+   await page.locator('#contextPanel').waitFor({state:'detached'});await page.evaluate(async()=>{await navigationQueue;});
+   await page.waitForFunction(k=>document.querySelector(`#moduleFocus [data-focus-app="${k}"]`)?.getAttribute('aria-pressed')==='true',second);
+   assert.equal(await page.locator('#dockAppBar').count(),0);assert(!await page.evaluate(()=>document.body.classList.contains('dock-expanded')));
+   console.log('Function windows checked:',checked.join(', '));
+   await page.locator('#moduleFocus [data-focus-close]').click();
+  }
   // Preview endpoint is company-scoped and read-only.
   const peek=await page.evaluate(async()=>api(`/api/companies/${company.id}/module-peek/clients`));
   assert(peek.items.length>=1&&peek.items.length<=3);

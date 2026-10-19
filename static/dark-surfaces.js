@@ -26,11 +26,34 @@
    if(color&&lum(color)<0.22)el.classList.add('text-was-dark'); // very dark ink only: red/green status colors keep their meaning
   }
  }
+ // Nested boxes: in a window, a card inside a card inside a card makes every level narrower. Any framed
+ // block (border, background or shadow, with side padding) that spans most of the window is flattened into
+ // a plain section with a separator, so every window keeps the full width of the first one.
+ const flatSkip='.btn,.badge,[class*="chip"],[class*="pill"],[class*="tag"],.field,label,a,button,[role=button],[tabindex],table,thead,tbody,tr,td,th,.fg-progress,.box-flat';
+ function framed(cs){
+  const bg=rgb(cs.backgroundColor),border=['Left','Right','Top','Bottom'].some(k=>parseFloat(cs['border'+k+'Width'])>0&&cs['border'+k+'Style']!=='none');
+  return border||(bg&&bg.a>0.02)||(cs.boxShadow&&cs.boxShadow!=='none')||/gradient/.test(cs.backgroundImage);
+ }
+ function flatten(root){
+  if(!root||!root.isConnected)return;
+  const full=root.clientWidth;if(!full)return;
+  for(const el of root.querySelectorAll('div,section,article,form,fieldset,aside,details,ul,ol,li,.card,.stack')){
+   if(el.closest('svg')||el.matches(flatSkip)||!el.firstElementChild)continue;
+   const cs=getComputedStyle(el);
+   if(/inline|contents|none/.test(cs.display)||/fixed|sticky|absolute/.test(cs.position))continue;
+   const side=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)+parseFloat(cs.marginLeft)+parseFloat(cs.marginRight);
+   const frame=framed(cs);
+   if(!frame&&(side<8||/^(UL|OL|LI)$/.test(el.tagName)))continue; // plain bullet lists keep their indent
+   if(el.getBoundingClientRect().width<full*0.45)continue; // small tiles (calendar days, KPI) keep their frame
+   el.classList.add('box-flat');
+  }
+ }
  let queued=false;
  function run(){
   queued=false;
-  scan(document.querySelector('#contextPanel'));
-  const modal=document.querySelector('#modalLayer:not(.hide) .modal');if(modal)scan(modal);
+  const panel=document.querySelector('#contextPanel');
+  scan(panel);flatten(panel?.querySelector('.context-scroll'));
+  const modal=document.querySelector('#modalLayer:not(.hide) .modal');if(modal){scan(modal);flatten(modal);}
  }
  const schedule=()=>{if(!queued){queued=true;requestAnimationFrame(run);}};
  new MutationObserver(records=>{

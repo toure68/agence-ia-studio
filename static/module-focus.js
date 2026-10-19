@@ -137,7 +137,7 @@ function moduleDockSync(){
   const header=layer?.querySelector('.context-header');
   if(header&&!header.querySelector('#dockExpand')){
    const expand=document.createElement('button');expand.type='button';expand.id='dockExpand';expand.className='dock-expand';expand.setAttribute('aria-label','Déployer en plein écran');expand.title='Déployer en plein écran';expand.textContent='⤢';
-   expand.onclick=()=>{document.body.classList.toggle('dock-expanded');const shell=document.querySelector('#shell');if(shell)shell.inert=document.body.classList.contains('dock-expanded');expand.textContent=document.body.classList.contains('dock-expanded')?'⤡':'⤢';expand.setAttribute('aria-label',document.body.classList.contains('dock-expanded')?'Revenir au cadre':'Déployer en plein écran');};
+   expand.onclick=()=>{document.body.classList.toggle('dock-expanded');const shell=document.querySelector('#shell');if(shell)shell.inert=document.body.classList.contains('dock-expanded');moduleDockBar(document.body.classList.contains('dock-expanded'));expand.textContent=document.body.classList.contains('dock-expanded')?'⤡':'⤢';expand.setAttribute('aria-label',document.body.classList.contains('dock-expanded')?'Revenir au cadre':'Déployer en plein écran');};
    header.append(expand);
    const apps=document.createElement('button');apps.type='button';apps.id='dockApps';apps.className='dock-apps';apps.setAttribute('aria-label','Toutes les fonctions');apps.title='Toutes les fonctions';
    apps.innerHTML=document.querySelector('#moduleFocus .focus-apps-button')?.innerHTML||'⋯';
@@ -147,7 +147,25 @@ function moduleDockSync(){
    header.prepend(apps,back);moduleDockCount();
    new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
- }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;}
+ }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);}
+}
+// Full screen (⤢): the home is covered, so the same app strip is shown fixed under the window.
+// Touching an app closes the window and switches the function dial, exactly like the strip on the dial.
+function moduleDockBar(on){
+ document.querySelector('#dockAppBar')?.remove();
+ if(!on){document.documentElement.style.removeProperty('--dock-bar-h');return;}
+ const source=document.querySelector('#moduleFocus .focus-apps');if(!source)return;
+ const bar=document.createElement('nav');bar.id='dockAppBar';bar.className='reference-home dock-app-bar';bar.setAttribute('aria-label','Toutes les fonctions');
+ bar.innerHTML=source.innerHTML;
+ bar.addEventListener('click',e=>{
+  const app=e.target.closest('[data-focus-app]');if(!app)return;
+  e.preventDefault();const key=app.dataset.focusApp;
+  document.body.classList.remove('dock-expanded');moduleDockBar(false);closeContext();
+  if(!moduleFocusOpen(key))openTab(key);
+ });
+ document.body.append(bar);
+ document.documentElement.style.setProperty('--dock-bar-h',Math.ceil(bar.getBoundingClientRect().height)+'px');
+ const current=bar.querySelector('.is-current');if(current)bar.scrollLeft=Math.max(0,current.offsetLeft-(bar.clientWidth-current.offsetWidth)/2);
 }
 // Action cards (green buttons on home): open the matching function in the function dial, bring it into view,
 // then the action's window docks on it exactly as if it had been opened from the dial itself.

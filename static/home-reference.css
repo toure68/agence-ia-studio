@@ -509,3 +509,17 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 .reference-home .focus-list li{list-style:none}
 .reference-home .focus-row.is-action{width:100%;border:0;border-radius:10px;background:#ffffff08;color:var(--home-text);font:inherit;text-align:left;cursor:pointer;padding:0 8px;margin:0 0 4px;height:34px}
 .reference-home .focus-row.is-action b{color:var(--home-muted);font-size:16px;min-width:0}
+/* Every window keeps the full width of the first one: framed blocks inside a window (tagged by dark-surfaces.js)
+   become plain sections separated by a thin line, never a narrower card inside a card. */
+:is(.context-panel,#modalLayer .modal) .box-flat{padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important;border:0!important;border-radius:0!important;background:transparent!important;background-image:none!important;box-shadow:none!important;max-width:none!important}
+:is(.context-panel,#modalLayer .modal) .box-flat:not(:first-child){border-top:1px solid #ffffff14!important;padding-top:14px!important}
+:is(.context-panel,#modalLayer .modal) .box-flat .box-flat{padding-top:12px!important}
+/* Full screen (⤢): the app strip stays available, fixed under the window. */
+.dock-app-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior:contain;scrollbar-width:none;padding:6px 10px max(8px,env(safe-area-inset-bottom));background:#0d1a1fee;border-top:1px solid #ffffff14;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.dock-app-bar::-webkit-scrollbar{display:none}
+.dock-app-bar .focus-app{position:relative;flex:0 0 56px;width:56px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 0;border:0;border-radius:12px;background:none;cursor:pointer;opacity:.75;color:#e9f2ef}
+.dock-app-bar .focus-app.is-current{opacity:1}
+.dock-app-bar .focus-app-name{display:block;width:56px;height:18px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#9fb2ad;font-size:10px;font-weight:700}
+.dock-app-bar .focus-app.is-current .focus-app-name{color:#fff}
+body.dock-expanded .context-layer{padding-bottom:calc(var(--dock-bar-h,84px) + 6px)!important;align-items:flex-end}
+body.dock-expanded .context-panel{max-height:calc(var(--dialog-height,100dvh) - var(--dock-bar-h,84px) - 14px)!important}
