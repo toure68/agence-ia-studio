@@ -46,16 +46,25 @@ function moduleFocusMarkup(key){
 <div class="focus-actions${create?'':' is-single'}"><a class="focus-btn" data-focus-go="${key}" data-focus-open href="#/${key}${id?'/'+id:''}"${id?` data-company-id="${id}"`:''}>Voir tout →</a>${create}</div>
 <nav class="focus-apps" aria-label="Autres fonctions">${strip}</nav>`;
 }
+// The frame takes exactly the grid's size (measured with the grid briefly shown, before any paint),
+// whatever the function's content: the content adapts, the frame never grows.
+function moduleFocusSize(){
+ const home=moduleFocusHome(),grid=home?.querySelector('.module-grid:not(.module-reserve-grid-inline)'),frame=home?.querySelector('#moduleFocus');if(!grid||!frame)return;
+ const key=home.dataset.moduleFocus;delete home.dataset.moduleFocus;frame.hidden=true;
+ const height=Math.round(grid.getBoundingClientRect().height);
+ frame.hidden=false;if(key)home.dataset.moduleFocus=key;
+ if(height)frame.style.height=height+'px';
+}
+addEventListener('resize',()=>{if(moduleFocus.key)moduleFocusSize();});
 function moduleFocusOpen(key){
  const home=moduleFocusHome(),grid=home?.querySelector('.module-grid:not(.module-reserve-grid-inline)');if(!home||!grid)return false;
- if(!moduleFocus.key)moduleFocus.height=Math.round(grid.getBoundingClientRect().height);
  let frame=home.querySelector('#moduleFocus');
  if(!frame){frame=document.createElement('section');frame.id='moduleFocus';frame.className='module-focus';frame.setAttribute('aria-live','polite');grid.before(frame);}
  const switching=!!moduleFocus.key&&moduleFocus.key!==key;
  moduleFocus.key=key;home.dataset.moduleFocus=key;
- frame.style.minHeight=Math.max(moduleFocus.height,360)+'px';
+ moduleFocusSize();
  frame.setAttribute('aria-label',(moduleFocusModules().find(m=>m.key===key)?.label||key));
- frame.innerHTML=moduleFocusMarkup(key);
+ frame.innerHTML=`<div class="focus-inner">${moduleFocusMarkup(key)}</div>`;
  frame.classList.remove('is-entering','is-switching');void frame.offsetWidth;frame.classList.add(switching?'is-switching':'is-entering');
  const reserve=home.querySelector('#homeReserve');if(reserve&&!reserve.hidden){reserve.hidden=true;home.querySelector('[data-reserve-toggle]')?.setAttribute('aria-expanded','false');}
  moduleFocusLoad(key);

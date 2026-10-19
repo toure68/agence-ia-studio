@@ -367,9 +367,9 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 @media(prefers-reduced-motion:reduce){#homeTreasury .bank-dial .dial-arc{animation:none}#homeTreasury .bank-dial .dial-row,#homeTreasury .bank-dial .dial-head h2 .bank-home-name{animation:dial-dissolve .2s linear both;animation-delay:0s}#homeTreasury .bank-dial .is-alert .dial-pulse{animation:none}#homeTreasury .bank-dial .bank-pill,#homeTreasury .bank-dial .dial-tab,#homeTreasury .bank-dial .dial-more{transition:none}#homeTreasury .bank-dial .bank-pill[aria-pressed="true"]{transform:none}}
 /* Function dial: a function opens in place of the grid, same frame; other functions in a small strip at the bottom. */
 .reference-home[data-module-focus] .module-grid:not(.module-reserve-grid-inline),.reference-home[data-module-focus] .module-reserve-launch,.reference-home[data-module-focus] #homeReserve{display:none!important}
-.reference-home .module-focus{box-sizing:border-box;display:flex;flex-direction:column;gap:12px;margin:0 0 12px;padding:14px 14px 10px;border:1px solid var(--home-border);border-radius:22px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08;color:var(--home-text);font-variant-numeric:tabular-nums}
+.reference-home .module-focus{box-sizing:border-box;display:block;overflow:hidden;container-type:size;margin:0 0 12px;padding:0;border:1px solid var(--home-border);border-radius:22px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08;color:var(--home-text);font-variant-numeric:tabular-nums}
 .reference-home .module-focus.is-entering{animation:focus-in .38s cubic-bezier(.2,.8,.2,1) both}
-.reference-home .module-focus.is-switching>:not(.focus-apps){animation:focus-swap .3s cubic-bezier(.2,.8,.2,1) both}
+.reference-home .module-focus.is-switching .focus-inner>:not(.focus-apps){animation:focus-swap .3s cubic-bezier(.2,.8,.2,1) both}
 .reference-home .focus-head{display:flex;align-items:center;gap:10px;min-width:0}
 .reference-home .focus-back{width:32px;height:32px;flex:0 0 32px;margin-left:-4px;border:0;border-radius:50%;background:#ffffff12;color:var(--home-text);font-size:22px;line-height:1;cursor:pointer}
 .reference-home .focus-head .module-icon{width:34px;height:34px;flex:0 0 34px;border-radius:11px}
@@ -386,7 +386,8 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 .reference-home .focus-kpis span{display:block;color:var(--home-muted);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reference-home .focus-kpis b{display:block;margin-top:2px;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reference-home .focus-kpis .focus-state{font-size:14px}
-.reference-home .focus-body{flex:1;min-height:84px}
+.reference-home .focus-head,.reference-home .focus-kpis,.reference-home .focus-actions,.reference-home .focus-apps{flex:none}
+.reference-home .focus-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .reference-home .focus-list{margin:0;padding:0;list-style:none}
 .reference-home .focus-row{display:grid;grid-template-columns:7px minmax(0,1fr) auto auto;align-items:center;gap:8px;height:30px;font-size:13px;animation:dial-rise .4s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 55ms)}
 .reference-home .focus-dot{width:7px;height:7px;border-radius:50%;background:var(--home-muted)}
@@ -415,4 +416,11 @@ body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-fl
 @keyframes focus-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 @keyframes focus-swap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes focus-shimmer{to{background-position:-200% 0}}
-@media(prefers-reduced-motion:reduce){.reference-home .module-focus.is-entering,.reference-home .module-focus.is-switching>*{animation:dial-dissolve .2s linear both}.reference-home .focus-row{animation:none}.reference-home .focus-skeleton,.reference-home .focus-status.is-danger i{animation:none}.reference-home .focus-app{transition:none}}
+@media(prefers-reduced-motion:reduce){.reference-home .module-focus.is-entering,.reference-home .module-focus.is-switching .focus-inner>*{animation:dial-dissolve .2s linear both}.reference-home .focus-row{animation:none}.reference-home .focus-skeleton,.reference-home .focus-status.is-danger i{animation:none}.reference-home .focus-app{transition:none}}
+.reference-home #moduleFocus[hidden]{display:none}
+.reference-home .focus-inner{box-sizing:border-box;display:flex;flex-direction:column;gap:10px;height:100%;padding:14px 14px 10px}
+/* Small grids: the frame keeps the grid's size and drops secondary parts instead of growing. */
+@container (max-height:330px){.reference-home .focus-kpis{display:none}}
+@container (max-height:250px){.reference-home .focus-body{display:none}.reference-home .focus-inner{justify-content:space-between}}
+@container (max-height:170px){.reference-home .focus-apps{display:none}.reference-home .focus-inner{padding:10px 12px}}
+@container (max-height:120px){.reference-home .focus-inner{flex-direction:row;align-items:center;gap:8px;padding:8px 10px}.reference-home .focus-head{flex:1;min-width:0}.reference-home .focus-head .module-icon,.reference-home .focus-status,.reference-home .focus-actions .is-primary{display:none}.reference-home .focus-actions{display:flex}.reference-home .focus-btn{min-height:36px;font-size:13px}}

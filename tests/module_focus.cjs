@@ -17,16 +17,18 @@ const {chromium}=require('playwright');
   await page.evaluate(async()=>{
    const cid=company.id,w=await api(`/api/companies/${cid}/workspace`);
    await api(`/api/companies/${cid}/clients`,{method:'POST',body:JSON.stringify({name:'Client Cadran Fonction',phone:'0600000000'})});
-   if(!w.visible.includes('clients'))await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:['clients',...w.visible],version:w.version,columns:w.columns||2,rows:10})});
+   await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:w.visible.includes('clients')?w.visible:['clients',...w.visible],version:w.version,columns:2,rows:10})});
   });
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid [data-go="clients"]').waitFor();
   await page.locator('#content .module-grid [data-go="clients"]').scrollIntoViewIfNeeded();
-  const before=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#content .module-grid').getBoundingClientRect().top,url:location.href,tiles:document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-tile').length}));
+  const before=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#content .module-grid').getBoundingClientRect().top,height:Math.round(document.querySelector('#content .module-grid').getBoundingClientRect().height),url:location.href,tiles:document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-tile').length}));
   await page.locator('#content .module-grid [data-go="clients"]').click();
   const frame=page.locator('#moduleFocus');await frame.waitFor();
   const after=await page.evaluate(()=>({scroll:scrollY,top:document.querySelector('#moduleFocus').getBoundingClientRect().top,url:location.href}));
   assert.equal(after.url,before.url,'No screen change');assert(Math.abs(after.scroll-before.scroll)<2,'No scroll');assert(Math.abs(after.top-before.top)<2,'Same place as the grid '+JSON.stringify({before,after}));
   assert(await page.locator('#content .module-grid:not(.module-reserve-grid-inline)').isHidden(),'Grid hidden');
+  const frameHeight=()=>frame.evaluate(e=>Math.round(e.getBoundingClientRect().height));
+  assert(Math.abs(await frameHeight()-before.height)<=1,'Frame keeps exactly the grid size '+JSON.stringify({grid:before.height,frame:await frameHeight()}));
   assert(await page.locator('.module-reserve-launch').isHidden(),'Reserve button hidden');
   assert(await page.locator('#homeTreasury').isVisible(),'Treasury dial stays above');
   assert.equal(await page.locator('#moduleFocus .focus-title-main').innerText(),'Clients');
@@ -37,7 +39,7 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),'clients');
   const box=await strip.first().boundingBox();assert(box.width<=44&&box.height<=44,'Small format');
   const other=await page.locator('#moduleFocus .focus-app[aria-pressed="false"]').first();
-  if(await other.count()){const key=await other.getAttribute('data-focus-app');await other.click();assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),key);assert.equal(await page.locator('#moduleFocus').count(),1);await page.locator('#moduleFocus [data-focus-app="clients"]').click();}
+  if(await other.count()){const key=await other.getAttribute('data-focus-app');await other.click();assert.equal(await page.locator('#moduleFocus .focus-app[aria-pressed="true"]').getAttribute('data-focus-app'),key);assert.equal(await page.locator('#moduleFocus').count(),1);assert(Math.abs(await frameHeight()-before.height)<=1,'Same size for another function');await page.locator('#moduleFocus [data-focus-app="clients"]').click();}
   // Buttons readable before any tap (no white on white), same height.
   const buttons=await page.locator('#moduleFocus .focus-btn').evaluateAll(es=>es.map(e=>{const c=getComputedStyle(e),r=e.getBoundingClientRect();return {text:e.innerText.trim(),color:c.color,bg:c.backgroundColor,h:Math.round(r.height)};}));
   assert.deepEqual(buttons.map(b=>b.text),['Voir tout →','＋ Nouveau client']);
@@ -52,6 +54,15 @@ const {chromium}=require('playwright');
   assert(await page.locator('#content .module-grid [data-go="clients"]').isVisible());
   await page.locator('#content .module-grid [data-go="clients"]').click();await page.locator('#moduleFocus [data-focus-close]').click();
   assert(await page.locator('.module-reserve-launch').isVisible(),'Reserve button back');
+  // Tiny grid (4 columns, 1 row): the frame still keeps the grid's size; content adapts.
+  await page.evaluate(async()=>{const cid=company.id,w=await api(`/api/companies/${cid}/workspace`);await api(`/api/companies/${cid}/workspace`,{method:'PUT',body:JSON.stringify({domain:w.domain,visible:w.visible,version:w.version,columns:4,rows:1})});});
+  await page.reload({waitUntil:'networkidle'});const small=page.locator('#content .module-grid .module-tile').first();await small.waitFor();
+  const smallGrid=await page.locator('#content .module-grid').evaluate(e=>Math.round(e.getBoundingClientRect().height));
+  await small.click();await frame.waitFor();
+  assert(Math.abs(await frameHeight()-smallGrid)<=1,'Small grid: same size '+JSON.stringify({grid:smallGrid,frame:await frameHeight()}));
+  assert(await frame.locator('[data-focus-open]').isVisible(),'Voir tout stays reachable');
+  assert(await frame.evaluate(e=>[...e.querySelectorAll('button,a')].filter(b=>b.offsetParent).every(b=>b.getBoundingClientRect().bottom<=e.getBoundingClientRect().bottom+1)),'Nothing spills out of the frame');
+  await page.locator('#moduleFocus [data-focus-close]').click();
   // Preview endpoint is company-scoped and read-only.
   const peek=await page.evaluate(async()=>api(`/api/companies/${company.id}/module-peek/clients`));
   assert(peek.items.length>=1&&peek.items.length<=3);
