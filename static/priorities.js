@@ -27,6 +27,13 @@ function homePriorityCopy(c){
  const description=c.home_detail??(generic.has(c.description)?'':(c.description||''));
  return {title,description:description.replace(/^(\d+) à remplacer$/,'Quantité : $1')};
 }
+// Dates in clear words on the cards: "Échéance : 2026-10-19" → "Échéance aujourd’hui".
+function priorityFriendly(text){
+ const day=iso=>{const d=new Date(iso+'T12:00:00Z'),today=new Date(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris'}).format(new Date())+'T12:00:00Z'),diff=Math.round((d-today)/86400000);
+  if(diff===0)return 'aujourd’hui';if(diff===1)return 'demain';if(diff===-1)return 'hier';
+  return 'le '+new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',timeZone:'Europe/Paris'}).format(d);};
+ return String(text||'').replace(/\s*:\s*(?=\d{4}-\d{2}-\d{2})/g,' ').replace(/\d{4}-\d{2}-\d{2}/g,day);
+}
 function priorityMarkup(cards){
  const visible=cards.slice(0,3);
  return `<h2 class="home-section-title">À faire maintenant</h2><div class="priority-stack" aria-label="Priorités par importance">${visible.map((c,i)=>{
@@ -34,7 +41,7 @@ function priorityMarkup(cards){
   const tone=['equipment','material','risk'].includes(c.action.type)?'red':c.action.type==='quote'?'green':c.action.type==='document'?'gold':'blue';
   const copy=homePriorityCopy(c);
   const action=c.members.length>1?'Voir les '+c.members.length+' actions':c.action_label||'Ouvrir le dossier';
-  return `<article class="priority-card priority-tier-${i+1} tone-${tone} ${c.fallback?'routine-card':''} ${c.example?'example-card':''}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button type="button" class="module-tile priority-tile tone-${tone} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}"><span class="priority-top"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="priority-copy"><strong>${clean(copy.title)}</strong><span class="priority-labels"><span class="importance">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}</span></span></span>${copy.description?`<span class="priority-description">${clean(copy.description)}</span>`:''}<span class="priority-cta">${clean(action)}</span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
+  return `<article class="priority-card priority-tier-${i+1} tone-${tone} ${c.fallback?'routine-card':''} ${c.example?'example-card':''}" data-priority="${clean(c.key)}" data-priority-module="${clean(c.module)}"><button type="button" class="module-tile priority-tile tone-${tone} state-${presentation.state}" data-state="${presentation.state}" data-priority-open="${i}" aria-label="Priorité ${i+1} : ${clean(c.title)} · ${clean(presentation.label)}"><span class="priority-top"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="priority-copy"><strong>${clean(copy.title)}</strong><span class="priority-labels"><span class="importance">${clean(presentation.label)}</span>${c.members.length>1?`<span class="priority-group-count">${c.members.length} actions</span>`:''}${copy.description?`<span class="priority-description priority-when" title="${clean(priorityFriendly(copy.description))}">${clean(priorityFriendly(copy.description))}</span>`:''}</span></span></span><span class="priority-cta">${clean(action)}</span></button>${!c.fallback?`<button class="priority-dismiss" data-priority-dismiss="${i}" aria-label="Masquer : ${clean(c.title)}" title="Masquer cette priorité">×</button>`:''}</article>`;
  }).join('')}</div>${cards.length>3?`<button class="btn home-all-actions" id="homeAllActions">Toutes les actions · ${cards.reduce((n,c)=>n+c.members.length,0)}</button>`:''}`;
 }
 'use strict';
@@ -107,14 +114,20 @@ async function openPriorityAction(card){
     } catch (e) { notify(e.message); }
 
 }
+// Several actions of one function (or all of them): their list opens as a window like any other (maximized,
+// app strip, back arrow, assistant), never as a separate small sheet.
+let priorityGroupView=null;
 function openPriorityGroup(group,cid){
- const names={activities:'Activités',calendar:'Agenda',clients:'Clients',scanner:'Documents',leads:'Devis',emails:'E-mails',equipment:'Matériel',risks:'Prévention',social:'Publications',prospects:'Prospection',requests:'Demandes'};
- openModal(`<h2>${clean(names[group.module]||'Actions à traiter')}</h2><p class="sub">${group.members.length} actions à traiter</p><div class="task-list priority-group-list">${group.members.map((card,i)=>`<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}</small></span><span aria-hidden="true">›</span></button>`).join('')}</div><button type="button" class="btn" id="closePriorityGroup">Fermer et retrouver l’accueil</button>`);
- $('#closePriorityGroup').onclick=closeModal;
- $('#modalLayer').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=async()=>{
-  if(company?.id!==cid){closeModal();return;}
-  const card=group.members[Number(btn.dataset.priorityItemOpen)];closeModal();if(document.querySelector('#moduleFocus')&&typeof moduleFocusDock==='function')moduleFocusDock();await openPriorityAction(card);
- });
+ priorityGroupView={module:group.module,keys:group.members.map(c=>c.key),cid};
+ return openTab('actions');
+}
+async function renderPriorityGroupPanel(){
+ const names={all:'Toutes les actions',activities:'Activités',calendar:'Agenda',clients:'Clients',scanner:'Documents',leads:'Devis',emails:'E-mails',equipment:'Matériel',material:'Matériel',risks:'Prévention',social:'Publications',prospects:'Prospection',requests:'Demandes'};
+ if(!priorityCards.length&&company)priorityCards=(await api(`/api/companies/${company.id}/priorities`)).sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
+ const view=priorityGroupView&&priorityGroupView.cid===company?.id?priorityGroupView:{module:'all',keys:null};
+ const members=view.keys?view.keys.map(k=>priorityCards.find(c=>c.key===k)).filter(Boolean):priorityCards.filter(c=>!c.fallback&&!c.example);
+ $('#content').innerHTML=`<h1>${clean(names[view.module]||'Actions à faire')}</h1><p class="sub">${members.length} action${members.length>1?'s':''} à traiter</p><div class="task-list priority-group-list">${members.map((card,i)=>`<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}${card.description?' · '+clean(priorityFriendly(card.description)):''}</small></span><span aria-hidden="true">›</span></button>`).join('')||'<p class="sub">Rien à traiter pour le moment.</p>'}</div>`;
+ $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=()=>openPriorityAction(members[Number(btn.dataset.priorityItemOpen)]));
 }
 
 function renderCalendarPage(html) {
