@@ -57,6 +57,8 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
   const depth=history.state?.aiaDepth||0;
   const state={aiaDepth:depth+(push?1:0),aiaFrom:push?previousTab:history.state?.aiaFrom||previousTab,aiaPanel:panelRoute,aiaHomeUrl:contextState.homeUrl,aiaCockpitDepth:contextState.depth};
   if(push)history.pushState(state,'',contextState.homeUrl);else history.replaceState(state,'',contextState.homeUrl);
+  // First step of a window: × closes it, so no back arrow next to it (one way out, not two).
+  $('#contextPanel')?.classList.toggle('is-root',(history.state?.aiaDepth||0)-contextState.depth<=1);
  }
  const active=({'prospect-new':'prospects','task-new':'calendar','company-new':'companies','company-edit':'companies',team:'companies'})[next]||next;
  document.querySelectorAll('.owner-only').forEach(x=>x.classList.toggle('hide',me.role!=='owner'));

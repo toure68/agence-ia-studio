@@ -143,6 +143,20 @@ const {chromium}=require('playwright');
   const fit=await page.locator('#modalLayer .modal').evaluate(m=>{const r=m.getBoundingClientRect();return [...m.querySelectorAll('input,select,textarea')].filter(i=>i.getClientRects().length).every(i=>i.getBoundingClientRect().right<=r.right+1);});
   assert(fit,'Fields stay inside the form');
   await page.keyboard.press('Escape');await page.locator('#modalLayer.hide').waitFor({state:'attached'});
+  // Window header outside the frame (e.g. the assistant from the home): equal round buttons on one line, and at the
+  // first step only × (no second way out); the back arrow comes back one step deeper.
+  await page.evaluate(()=>{openTab('clients');});await page.locator('#contextPanel').waitFor();await page.evaluate(async()=>{await navigationQueue;});
+  const head=()=>page.evaluate(()=>{const vis=e=>!!e&&e.getClientRects().length>0,box=e=>{const r=e.getBoundingClientRect();return {h:Math.round(r.height),w:Math.round(r.width),c:Math.round(r.top+r.height/2)};};
+   const back=document.querySelector('#moduleBack [data-back]'),close=document.querySelector('#closeContext'),voice=document.querySelector('.context-header .voice-button');
+   return {back:vis(back)?box(back):null,close:vis(close)?box(close):null,voice:vis(voice)?box(voice):null};});
+  let h=await head();
+  assert(!h.back&&h.close,'First step: × only, no duplicate back arrow '+JSON.stringify(h));
+  for(const b of [h.close,h.voice].filter(Boolean))assert(b.h===40&&b.w===40,'Same size buttons '+JSON.stringify(h));
+  if(h.voice)assert(Math.abs(h.voice.c-h.close.c)<=1,'Buttons on one line '+JSON.stringify(h));
+  await page.evaluate(()=>{openTab('client-new');});await page.locator('#contextPanel #clientName').waitFor();await page.evaluate(async()=>{await navigationQueue;});
+  h=await head();
+  assert(h.back&&h.back.h===40&&Math.abs(h.back.c-h.close.c)<=1,'One step deeper: back arrow, same size, same line '+JSON.stringify(h));
+  await page.evaluate(()=>closeContext());await page.waitForFunction(()=>!document.querySelector('#contextPanel'));await page.evaluate(async()=>{await navigationQueue;});
   // Typing in any form (not only on the function frame): the form fills the visible area above the keyboard,
   // the close bar steps aside and the active field is in view; everything comes back when the keyboard closes.
   await page.evaluate(()=>{openTab('client-new');});await page.locator('#contextPanel #clientName').waitFor();await page.evaluate(async()=>{await navigationQueue;});

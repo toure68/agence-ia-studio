@@ -623,3 +623,11 @@ body.kb-open :is(.context-scroll,#modalLayer .modal) :is(input,select,textarea){
  :is(.context-panel,#modalLayer .modal) .tablewrap td{padding:2px 0!important;border:0!important;white-space:normal;word-break:normal;overflow-wrap:break-word}
  :is(.context-panel,#modalLayer .modal) .tablewrap td:empty{display:none}
 }
+/* Window header (windows opened outside the function frame, e.g. the assistant from the home): one row of equal
+   40px round buttons, centred on the same line, evenly spaced; at the first step only × (no duplicate back arrow). */
+body:not(.dock-to-focus) .context-header{display:flex;align-items:center;gap:8px}
+body:not(.dock-to-focus) .context-header #moduleBack{display:flex;align-items:center;gap:8px;margin:0}
+body:not(.dock-to-focus) .context-header :is(#moduleBack .back-circle,#closeContext,.voice-button){width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;flex:0 0 40px!important;margin:0!important;padding:0!important;display:inline-grid;place-items:center;border-radius:50%}
+body:not(.dock-to-focus) .context-header #moduleBack .back-circle svg{width:24px;height:24px}
+body:not(.dock-to-focus) .context-header #closeContext{font-size:22px!important;line-height:1}
+body:not(.dock-to-focus) .context-panel.is-root .context-header #moduleBack .back-circle{display:none!important}
