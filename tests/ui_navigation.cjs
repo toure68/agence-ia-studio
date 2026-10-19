@@ -30,7 +30,7 @@ const {chromium}=require('playwright');
  async function goModule(route){
    if(await page.locator('#contextPanel').count())await backHome();
    const tile=page.locator('#content .module-grid [data-go="'+route+'"]');
-   if(await tile.count()){await page.evaluate(()=>{if(moduleFocus.key)moduleFocusClose();});await tile.click();await page.locator('#moduleFocus [data-focus-open]').click();}
+   if(await tile.count()){await page.evaluate(()=>{if(moduleFocus.key)moduleFocusClose();});await page.evaluate(r=>openTab(r),route);await page.evaluate(()=>navigationQueue);}
    else if(await page.evaluate(async r=>(await api(`/api/companies/${company.id}/workspace`)).modules.some(m=>m.key===r),route)){
      // Functions kept in the reserve open through their own route.
      await page.evaluate(r=>openTab(r),route);await page.evaluate(()=>navigationQueue);
@@ -144,7 +144,8 @@ const {chromium}=require('playwright');
    await openAssistant();assert.equal(await page.locator('#assistantMessage').inputValue(),'Brouillon à conserver');assert.equal(await page.locator('.chat-file').count(),1);
    await page.locator('.chat-file button').click();await backHome();
    await page.evaluate(()=>{document.querySelector('#assistantChat').dataset.identity='same-cockpit';});
-   await page.locator('#content .module-grid [data-go="clients"]').click();await page.locator('#moduleFocus [data-focus-open]').click();await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
+   // Generic floating panel (opened outside the function dial, which docks its own windows; see module_focus.cjs).
+   await page.evaluate(()=>openTab('clients'));await page.locator('#contextPanel #content h1').waitFor();await dialogContained();
    assert((await page.locator('#cockpitContent .module-grid .module-card').count())>=2,'Cockpit grid stays mounted behind the panel');
    fs.mkdirSync('/tmp/ui-images',{recursive:true});await page.screenshot({path:'/tmp/ui-images/panel-mobile.png',animations:'disabled'});
    await page.setViewportSize({width:1280,height:900});assert.equal(await page.locator('#contextPanel').count(),1);await page.screenshot({path:'/tmp/ui-images/panel-desktop.png',animations:'disabled'});await page.setViewportSize({width:390,height:844});
