@@ -233,9 +233,13 @@ function moduleDockKeyboard(){
  const vv=window.visualViewport,active=document.activeElement;
  const typing=!!active&&active.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]),textarea,select,[contenteditable="true"]')&&!!active.closest('#contextPanel,#modalLayer .modal');
  const keyboard=!!vv&&innerHeight-vv.height>120;
- const on=document.body.classList.contains('dock-to-focus')&&typing&&keyboard;
+ // Typing mode, for every window and form: the window takes the whole visible area above the keyboard, the
+ // non-essential parts (close bar, handle, speaker) step aside, and the active field is brought to the middle.
+ const kb=typing&&keyboard;
+ document.body.classList.toggle('kb-open',kb);
+ const on=document.body.classList.contains('dock-to-focus')&&kb;
  document.body.classList.toggle('dock-keyboard',on);
- if(on)requestAnimationFrame(()=>active.scrollIntoView({block:'nearest',inline:'nearest'}));
+ if(kb)requestAnimationFrame(()=>active.scrollIntoView({block:'center',inline:'nearest'}));
 }
 window.visualViewport?.addEventListener('resize',moduleDockKeyboard,{passive:true});
 window.visualViewport?.addEventListener('scroll',moduleDockKeyboard,{passive:true});
