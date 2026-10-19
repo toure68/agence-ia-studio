@@ -50,7 +50,10 @@ const {chromium}=require('playwright');
   const stepRows=async delta=>{const saved=page.waitForResponse(r=>r.url().endsWith('/workspace')&&r.request().method()==='PUT');await page.locator(`[data-rows-step="${delta}"]`).click();assert((await saved).ok());};
   await toggle.click();assert.equal(await page.locator('#homeRowsValue').innerText(),'3','Default 3 rows in 2 columns');
   await stepRows(1);await stepRows(1);assert.equal(await page.locator('#homeRowsValue').innerText(),'5');
-  let grid=await cellsNow();assert.equal(grid.cells,Math.max(10,grid.urgent),'5 rows × 2 columns');
+  // The grid shows exactly the checked functions (plus urgent ones), capped by rows × columns:
+  // with fewer than 10 eligible functions it shows them all (the count depends on earlier tests' data).
+  let grid=await cellsNow();const eligible=await page.evaluate(()=>homeGridModules({...homeLayout.workspace,rows:10,columns:2},homeLayout.state).modules.length);
+  assert.equal(grid.cells,Math.max(Math.min(10,eligible),grid.urgent),'5 rows × 2 columns '+JSON.stringify({grid,eligible}));
   assert(await chooser.isVisible(),'Stepper keeps the chooser open');
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').waitFor();
   await toggle.click();assert.equal(await page.locator('#homeRowsValue').innerText(),'5','Row choice is saved');

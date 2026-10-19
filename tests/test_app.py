@@ -176,3 +176,11 @@ def test_owner_password_recovery_from_host_variables(env,monkeypatch):
     monkeypatch.setenv('ADMIN_PASSWORD','short')
     env.init_db()
     auth(TestClient(env.app),'owner@demo.test','a brand new recovery password')
+
+
+def test_stay_signed_in_for_six_months(env):
+    client=TestClient(env.app)
+    r=client.post('/api/login',json={'email':'owner@demo.test','password':'correct horse battery staple'})
+    assert r.status_code==200
+    assert 'Max-Age=15552000' in r.headers['set-cookie']
+    assert env.SESSION_SECONDS==15552000
