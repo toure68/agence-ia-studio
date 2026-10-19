@@ -7,7 +7,7 @@
  let cache={t:0,cid:null,list:[]},queued=false;
  async function actions(){
   if(typeof company==='undefined'||!company)return [];
-  if(cache.cid===company.id&&Date.now()-cache.t<400)return cache.list;
+  // Always fresh: an action just handled must turn grey at once.
   const list=await api(`/api/companies/${company.id}/priorities`);cache={t:Date.now(),cid:company.id,list};return list;
  }
  const friendly=t=>typeof priorityFriendly==='function'?priorityFriendly(t):t;
