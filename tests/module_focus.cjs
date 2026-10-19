@@ -58,7 +58,9 @@ const {chromium}=require('playwright');
   const vh=await page.evaluate(()=>innerHeight),top=Math.max(8,frameBox.y),visible={x:frameBox.x,y:top,width:frameBox.width,height:Math.min(vh-8,stripTop-6)-top};
   for(const k of ['x','y','width','height'])assert(Math.abs(panelBox[k]-visible[k])<=2,'Second window on the (visible) frame '+JSON.stringify({visible,panelBox}));
   const dark=await page.locator('#contextPanel').evaluate(e=>{const m=getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number);return (m[0]+m[1]+m[2])/3;});assert(dark<60,'Dark window '+dark);
-  assert.equal(await page.locator('#dockBack').innerText(),'‹ 1','Single back button with the number of steps');
+  assert.equal((await page.locator('#dockBack').innerText()).trim(),'1','Single back button with the number of steps');
+  const backLook=await page.locator('#dockBack').evaluate(b=>{const i=b.querySelector('svg').getBoundingClientRect(),n=parseFloat(getComputedStyle(b.querySelector('.dock-back-n')).fontSize),r=b.getBoundingClientRect();return {icon:i.height,n,h:r.height};});
+  assert(backLook.icon>=22&&backLook.n<backLook.icon&&backLook.h>=40,'Large iOS-style back chevron, smaller step number '+JSON.stringify(backLook));
   assert(await page.locator('#dockApps').isVisible(),'Apps button to go straight back to all functions');
   assert(await page.locator('#moduleFocus .focus-apps').evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&e.contains(hit);}),'App strip stays visible under the window');
   // Switching function from the strip while a window is open closes it and opens the other function in the frame.

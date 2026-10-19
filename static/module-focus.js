@@ -179,12 +179,12 @@ async function moduleFocusFromPriority(module){
 }
 window.moduleFocusFromPriority=moduleFocusFromPriority;
 window.moduleFocusDock=moduleFocusDock;
-// One back button that says how many steps lead back to the function frame ("‹ 3").
+// One back button, iOS style: a large chevron, with a small number of the steps back to the function frame.
 function moduleDockSteps(){try{return Math.max(1,(history.state?.aiaDepth||0)-(contextState?.depth||0));}catch{return 1;}}
 function moduleDockCount(){
  const back=document.querySelector('#dockBack');if(!back)return;
- const n=moduleDockSteps(),text=`‹ ${n}`;
- if(back.textContent!==text)back.textContent=text;
+ const n=moduleDockSteps();
+ if(back.dataset.n!==String(n)){back.dataset.n=n;back.innerHTML='<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dock-back-n">'+n+'</span>';}
  back.setAttribute('aria-label',n>1?`Revenir en arrière (${n} étapes jusqu’à la fonction)`:'Revenir à la fonction');
 }
 addEventListener('popstate',()=>setTimeout(moduleDockCount,0));

@@ -125,7 +125,7 @@ function readRoute(){
  const id=/^\d+$/.test(parts[1]||'')?Number(parts[1]):null;
  return {tab:parts[0]||'dashboard',taskId:parts[0]==='calendar'?id:null,companyId:['company-edit','team'].includes(parts[0])?id:null,recordId:['client-edit','activity','activity-edit','draft','priority-example','quote','quote-edit','email','equipment','risks','material','document','quote-sign','social-new','social-post'].includes(parts[0])?id:null};
 }
-function backIcon(){return '<svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+function backIcon(){return '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
 function renderFormPage(html){
   $('#content').innerHTML='<section class="form-page">'+html+'</section>';
 }

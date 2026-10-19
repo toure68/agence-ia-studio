@@ -544,3 +544,16 @@ body[data-wall] :is(.context-panel,#modalLayer .modal){background:rgba(13,17,23,
 .wall-swatch i{display:block;width:100%;max-width:100%;aspect-ratio:3/4;border-radius:16px;border:2px solid #ffffff2e;background-size:cover!important;background-position:center!important}
 .wall-swatch[aria-pressed="true"] i{border-color:#fff;box-shadow:0 0 0 2px #22c55e}
 .wall-swatch:focus-visible{outline:none}.wall-swatch:focus-visible i{box-shadow:0 0 0 3px #4ade80}
+/* Back buttons, iOS style: a large chevron everywhere; the number of steps is smaller, next to it. */
+body.dock-to-focus .context-header :is(.dock-apps,.dock-back){height:40px}
+body.dock-to-focus .context-header .dock-back{gap:2px;min-width:58px;padding:0 12px 0 6px}
+body.dock-to-focus .context-header .dock-back svg{width:24px;height:24px;flex:none}
+.dock-back-n{font-size:13px;font-weight:700;line-height:1;color:#aab4be;font-variant-numeric:tabular-nums}
+body.dock-to-focus:not(.dock-expanded) .context-header #closeContext::before{content:"";width:24px;height:24px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15 4.5 7.5 12l7.5 7.5' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15 4.5 7.5 12l7.5 7.5' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+#homeTreasury .bank-dial .bank-back{width:36px;height:36px;flex:0 0 36px;display:inline-grid;place-items:center}
+/* Autofill (Safari / Chrome suggestions, saved e-mails, strong passwords): never the yellow light field with
+   pale text; filled fields keep the dark field of the app's universe with readable text. */
+:is(.context-panel,#modalLayer .modal,.reference-home) :is(input,textarea,select):is(:-webkit-autofill,:-webkit-autofill:hover,:-webkit-autofill:focus){-webkit-text-fill-color:#f2f5f7!important;caret-color:#f2f5f7;-webkit-box-shadow:0 0 0 1000px #1a1f27 inset!important;box-shadow:0 0 0 1000px #1a1f27 inset!important;transition:background-color 99999s ease-out 0s}
+:is(.context-panel,#modalLayer .modal,.reference-home) :is(input,textarea,select):-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px #1a1f27 inset,0 0 0 3px #4ade8033!important;box-shadow:0 0 0 1000px #1a1f27 inset,0 0 0 3px #4ade8033!important}
+:is(.context-panel,#modalLayer .modal,.reference-home) :is(input,textarea,select):autofill{-webkit-text-fill-color:#f2f5f7!important;box-shadow:0 0 0 1000px #1a1f27 inset!important}
+body.dock-to-focus .context-header .dock-apps{width:40px}
