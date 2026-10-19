@@ -654,3 +654,28 @@ body :is(.context-panel,#modalLayer .modal) .chat-attach-menu.chat-attach-menu,b
 .context-panel>.dock-app-bar{border-top:1px solid #ffffff14;padding:6px 10px max(8px,env(safe-area-inset-bottom,0px))!important}
 #modalLayer .modal>.dock-app-bar{position:sticky!important;bottom:0!important;margin-top:14px;border-top:1px solid #ffffff14;padding:6px 10px max(8px,env(safe-area-inset-bottom,0px))!important}
 #modalLayer .modal:has(>.dock-app-bar){padding-bottom:0!important}
+/* Option C — actions finished in place (inline-actions.js): the unfolded panel under a card or a row. */
+.inline-panel{margin:8px 0 2px;padding:12px 14px;border-radius:16px;border:1px solid #ffffff21;background:#0b1013b8;display:flex;flex-direction:column;gap:12px;animation:inline-open .18s ease-out}
+.reference-home .priority-card .inline-panel{margin:0 14px 14px}
+.inline-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0;font-size:13.5px;line-height:1.45}
+.inline-facts dt{color:#9aa6b2}
+.inline-facts dd{margin:0;color:#f2f5f7;font-weight:700;overflow-wrap:anywhere}
+.inline-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.inline-buttons button{min-height:44px;padding:0 16px;border-radius:12px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.inline-primary{flex:1 1 140px;border:0;background:#4ade80;color:#06210f}
+.inline-secondary{flex:0 1 auto;border:1px solid #ffffff2e;background:#ffffff0c;color:#f2f5f7}
+.inline-buttons button:disabled{opacity:.5}
+.inline-done{margin:0;color:#4ade80;font-weight:800}
+:is(.context-panel,#modalLayer .modal) .task-row .row-chip.is-done{background:#4ade8022;color:#4ade80}
+@keyframes inline-open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.inline-panel{animation:none}}
+/* List rows: title block takes the room, chip and chevron stay on the same line (no chevron alone below). */
+:is(.context-panel,#modalLayer .modal) .task-row{display:flex!important;align-items:center;gap:10px;flex-wrap:nowrap!important}
+:is(.context-panel,#modalLayer .modal) .task-row>span:first-child{flex:1 1 auto;min-width:0}
+:is(.context-panel,#modalLayer .modal) .task-row>span:last-child{flex:none}
+/* Assistant: the "+" menu (Photos, Prendre une photo, Fichiers) in the dark universe, readable. */
+:is(.context-panel,#modalLayer .modal) .chat-attach-options{background:#151c22!important;border:1px solid #ffffff2b!important;box-shadow:0 12px 30px #0009!important}
+:is(.context-panel,#modalLayer .modal) .chat-attach-options label{display:block;padding:11px 12px;border-radius:10px;color:#f2f5f7!important;font-weight:700;cursor:pointer}
+:is(.context-panel,#modalLayer .modal) .chat-attach-options label:hover{background:#ffffff10}
+:is(.context-panel,#modalLayer .modal) .chat-file{background:#ffffff0d!important;border:1px solid #ffffff1f;color:#f2f5f7}
+:is(.context-panel,#modalLayer .modal) .chat-file button{width:36px;height:36px;border-radius:50%!important;border:1px solid #ffffff2b!important;background:#ffffff0a!important;color:#f2f5f7!important;display:grid;place-items:center;padding:0!important;font-size:18px}
