@@ -604,3 +604,22 @@ body.kb-open:not(.dock-to-focus) :is(.context-layer,.modal-wrap){padding:0!impor
 body.kb-open:not(.dock-to-focus) .context-panel{height:100%!important;max-height:100%!important;border-radius:0!important;padding-top:env(safe-area-inset-top,0px)}
 body.kb-open:not(.dock-to-focus) #modalLayer .modal{height:100%!important;max-height:100%!important;border-radius:0!important;padding-top:max(12px,env(safe-area-inset-top,0px))}
 body.kb-open :is(.context-scroll,#modalLayer .modal) :is(input,select,textarea){scroll-margin:96px 0 24px}
+/* Lists in windows (list-status.js): rows waiting for you stand out with a readable chip; rows with nothing to do
+   are quieter. */
+:is(.context-panel,#modalLayer .modal) .task-row.row-todo{border-color:#e2b04a59!important;background:#e2b04a10!important}
+:is(.context-panel,#modalLayer .modal) .task-row .row-chip{flex:none;margin-left:auto;padding:4px 10px;border-radius:999px;background:#e2b04a26;color:#f0c35c;font-size:12px;font-weight:800;line-height:1.2;white-space:nowrap}
+:is(.context-panel,#modalLayer .modal) .task-row .row-chip.is-danger{background:#f2616b24;color:#ff8b92}
+:is(.context-panel,#modalLayer .modal) .task-row.row-todo:has(.row-chip.is-danger){border-color:#f2616b59!important;background:#f2616b0d!important}
+:is(.context-panel,#modalLayer .modal) .task-row.row-quiet{background:transparent!important;border-color:#ffffff12!important}
+:is(.context-panel,#modalLayer .modal) .task-row.row-quiet strong{color:#aab4be!important;font-weight:700}
+:is(.context-panel,#modalLayer .modal) .task-row.row-quiet :is(small,span:last-child){color:#6f7b86!important}
+/* Tables: no white row after a tap (iPhone keeps the hover), and on a phone each row becomes a readable block. */
+:is(.context-panel,#modalLayer .modal) tbody tr:hover{background:#ffffff08!important}
+@media (hover:none){tbody tr:hover{background:transparent}}
+@media (max-width:640px){
+ :is(.context-panel,#modalLayer .modal) .tablewrap :is(table,tbody,tr,td){display:block;width:100%}
+ :is(.context-panel,#modalLayer .modal) .tablewrap thead{display:none}
+ :is(.context-panel,#modalLayer .modal) .tablewrap tr{padding:12px 0;border-bottom:1px solid #ffffff14}
+ :is(.context-panel,#modalLayer .modal) .tablewrap td{padding:2px 0!important;border:0!important;white-space:normal;word-break:normal;overflow-wrap:break-word}
+ :is(.context-panel,#modalLayer .modal) .tablewrap td:empty{display:none}
+}

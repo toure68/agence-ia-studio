@@ -564,9 +564,14 @@ const {chromium}=require('playwright');
    await page.locator('#previewCommand').click();await page.locator('#confirmCommand').click();
    await page.locator('[data-asset]').waitFor();
    assert((await page.locator('#content').innerText()).includes('En panne'));
+   // A row waiting for you stands out with a readable chip; once handled it becomes quiet (grey).
+   await page.waitForFunction(()=>document.querySelector('[data-asset]')?.classList.contains('row-todo')&&document.querySelector('[data-asset] .row-chip'));
+   assert(await page.locator('[data-asset] .row-chip').isVisible(),'Equipment to handle shows a readable chip');
    await page.locator('[data-asset]').click();await page.locator('#assetForm select[name="condition"]').selectOption('ready');
    await page.locator('#assetForm button.btn.primary').click();await page.locator('[data-asset]').waitFor();
-   assert((await page.locator('#content').innerText()).includes('Disponible'));await backHome();
+   assert((await page.locator('#content').innerText()).includes('Disponible'));
+   await page.waitForFunction(()=>document.querySelector('[data-asset]')?.classList.contains('row-quiet')&&!document.querySelector('[data-asset] .row-chip'));
+   await backHome();
    const wid=await page.evaluate(async()=>{const w=await api('/api/companies/1/activities',{method:'POST',body:JSON.stringify({title:'Chantier matériel test'})});return w.id;});
    await page.evaluate(id=>openTab('material',{recordId:id}),wid);await page.locator('#materialNeeds').fill('Perceuse : 3');
    await Promise.all([page.waitForResponse(r=>r.url().includes('/material')&&r.request().method()==='PUT'&&r.status()===200),page.locator('#materialForm button.btn.primary').click()]);
