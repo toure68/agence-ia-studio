@@ -474,3 +474,6 @@ html,body{max-width:100%;overflow-x:clip}
 @supports not (overflow:clip){html,body{overflow-x:hidden}}
 @media(max-width:750px){input,select,textarea{font-size:max(16px,1em)}}
 .reference-home .module-focus{text-align:left}
+/* Keyboard open in a docked window: use the whole visible area above the keyboard (below the camera). */
+body.dock-to-focus.dock-keyboard .context-panel,body.dock-to-focus.dock-keyboard #modalLayer .modal{top:calc(var(--dialog-top,0px) + env(safe-area-inset-top,0px) + 6px)!important;height:calc(var(--dialog-height,100dvh) - env(safe-area-inset-top,0px) - 12px)!important;animation:none!important}
+body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}

@@ -135,7 +135,7 @@ function moduleDockSync(){
    header.prepend(apps,back);moduleDockCount();
    new MutationObserver(moduleDockCount).observe(layer,{childList:true,subtree:true});
   }
- }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded');moduleDock.seen=false;}
+ }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;}
 }
 // One back button that says how many steps lead back to the function frame ("‹ 3").
 function moduleDockSteps(){try{return Math.max(1,(history.state?.aiaDepth||0)-(contextState?.depth||0));}catch{return 1;}}
@@ -146,6 +146,21 @@ function moduleDockCount(){
  back.setAttribute('aria-label',n>1?`Revenir en arrière (${n} étapes jusqu’à la fonction)`:'Revenir à la fonction');
 }
 addEventListener('popstate',()=>setTimeout(moduleDockCount,0));
+// Typing in a docked window: while the keyboard is open, the window leaves the frame and fills the whole
+// visible area between the top of the screen and the keyboard, with the active field kept in view.
+// When the keyboard closes, it goes back exactly onto the function frame.
+function moduleDockKeyboard(){
+ const vv=window.visualViewport,active=document.activeElement;
+ const typing=!!active&&active.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]),textarea,select,[contenteditable="true"]')&&!!active.closest('#contextPanel,#modalLayer .modal');
+ const keyboard=!!vv&&innerHeight-vv.height>120;
+ const on=document.body.classList.contains('dock-to-focus')&&typing&&keyboard;
+ document.body.classList.toggle('dock-keyboard',on);
+ if(on)requestAnimationFrame(()=>active.scrollIntoView({block:'nearest',inline:'nearest'}));
+}
+window.visualViewport?.addEventListener('resize',moduleDockKeyboard,{passive:true});
+window.visualViewport?.addEventListener('scroll',moduleDockKeyboard,{passive:true});
+document.addEventListener('focusin',()=>setTimeout(moduleDockKeyboard,60));
+document.addEventListener('focusout',()=>setTimeout(moduleDockKeyboard,60));
 new MutationObserver(moduleDockSync).observe(document.body,{childList:true,subtree:false});
 {const m=document.querySelector('#modalLayer');if(m)new MutationObserver(moduleDockSync).observe(m,{attributes:true,attributeFilter:['class']});}
 // The home is rebuilt when the dashboard is opened again: start from the grid.
