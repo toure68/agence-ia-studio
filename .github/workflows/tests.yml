@@ -77,6 +77,14 @@ jobs:
             echo "::error title=bank_pills::$msg"
             exit 1
           fi
+      - name: Run node tests/demo_treasury.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/demo_treasury.cjs 2>&1 | tee /tmp/demo-treasury.log; then
+            msg=$(tail -c 3000 /tmp/demo-treasury.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=demo_treasury::$msg"
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

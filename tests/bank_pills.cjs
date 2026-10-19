@@ -1,10 +1,10 @@
 'use strict';
-// Real-app home treasury: bank pills, automatic alert, latest movements, return to "Tous".
+// Real-app home treasury dial: bank pills, header alert, Derniers/À venir, constant size, motion settings.
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{}),...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
- const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),errors=[];
+ const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});
@@ -25,60 +25,83 @@ const {chromium}=require('playwright');
    await post('/bank-debits',{bank_id:rivage.id,label:'Assurance professionnelle',amount:'650',due:tomorrow,operation_id:crypto.randomUUID()});
   });
   await page.reload({waitUntil:'networkidle'});
-  const card=page.locator('#homeTreasury .bank-home');await card.waitFor();
-  // Airy typography: small TRÉSORERIE label with the bank name on the right, large balance, readable flows.
-  const typo=await page.evaluate(()=>{const q=s=>document.querySelector('#homeTreasury '+s),r=e=>e.getBoundingClientRect(),label=q('.treasury-label'),name=q('.bank-home-name'),total=q('.bank-total'),flow=q('.home-flow b');return {label:label.textContent,labelSize:parseFloat(getComputedStyle(label.parentElement).fontSize),sameRow:Math.abs(r(label).top-r(name).top)<6,nameRight:r(name).right>r(label).right,total:parseFloat(getComputedStyle(total).fontSize),flow:parseFloat(getComputedStyle(flow).fontSize),gap:r(total).top-r(label).bottom};});
-  assert.equal(typo.label,'Trésorerie');assert(typo.labelSize<=14&&typo.sameRow&&typo.nameRight,'Header row: label left, bank right '+JSON.stringify(typo));
-  assert(typo.total>=30&&typo.flow>=17&&typo.gap>=14,'Large balance, readable flows, airy spacing '+JSON.stringify(typo));
-  // Default view is always "Tous", with the alert visible without any click.
+  const card=page.locator('#homeTreasury .bank-dial');await card.waitFor();
+  const height=()=>page.locator('#homeTreasury .bank-dial').evaluate(e=>Math.round(e.getBoundingClientRect().height));
+  // Watch-face layout: one header row (label, scope, status), ring + balance, Derniers/À venir, pills + Voir tout.
+  const face=await page.evaluate(()=>{const q=s=>document.querySelector('#homeTreasury '+s),r=e=>e.getBoundingClientRect(),card=r(q('.bank-dial'));return {label:q('.treasury-label').textContent,name:q('.bank-home-name').textContent,ring:!!q('.dial-ring .dial-arc-in'),total:parseFloat(getComputedStyle(q('.bank-total')).fontSize),inside:[...document.querySelectorAll('#homeTreasury .bank-dial button')].every(b=>{const x=r(b);return x.width>0&&x.top>=card.top-1&&x.bottom<=card.bottom+1;}),scroll:document.documentElement.scrollWidth<=innerWidth};});
+  assert.equal(face.label,'Trésorerie');assert.equal(face.name,'Toutes');assert(face.ring&&face.total>=24&&face.inside&&face.scroll,'Compact face, nothing clipped '+JSON.stringify(face));
   assert.equal(await card.getAttribute('data-bank-selected'),'all');
   assert.equal(await page.locator('[data-bank-pill="all"].bank-pill').getAttribute('aria-pressed'),'true');
-  assert(await page.locator('.bank-home-detail').isHidden(),'Bank detail stays closed on the summary');
   const banks=await page.locator('.bank-pill[data-bank-pill]:not([data-bank-pill="all"])').count();assert(banks>=3);
   assert.equal(await page.locator('.bank-pill[data-bank-add]').count(),1);
   const alert=page.locator('.bank-global-alert',{hasText:'Pastille Rivage'});assert.equal(await alert.count(),1);
-  assert((await alert.innerText()).includes('demain'),'Global alert names the upcoming debit');
+  assert((await alert.innerText()).includes('demain'),'Header alert names the upcoming debit');
   assert.equal(await page.locator('[data-bank-pill] .bank-pill-dot').count(),1,'Only the bank in deficit has a red dot');
-  for(const pill of await page.locator('.bank-pill').all()){const box=await pill.boundingBox();assert.equal(Math.round(box.width),44);assert.equal(Math.round(box.height),44);assert(await pill.getAttribute('aria-label'));}
-  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
-  // Bank in alert: balance in red and alert expanded automatically.
-  const summaryHeight=await page.locator('#homeTreasury .bank-home').evaluate(e=>Math.round(e.getBoundingClientRect().height));
-  const rivage=page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"]');await rivage.click();
-  // The card keeps exactly the summary size; the bank view replaces its content in place.
-  assert(Math.abs(await page.locator('#homeTreasury .bank-home').evaluate(e=>e.getBoundingClientRect().height)-summaryHeight)<=1,'Card size unchanged in the bank view');
-  assert(await page.locator('#homeTreasury .bank-focus .bank-back').isVisible(),'Back arrow at the top');
+  for(const pill of await page.locator('.bank-pill').all()){const box=await pill.boundingBox();assert.equal(Math.round(box.width),36);assert.equal(Math.round(box.height),36);assert(await pill.getAttribute('aria-label'));}
+  // Two equal, always-visible buttons: readable label and opaque background before any tap.
+  const tabs=await page.locator('.dial-tab').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect(),c=getComputedStyle(e);return {w:Math.round(r.width),h:Math.round(r.height),text:e.innerText.trim(),color:c.color,bg:c.backgroundColor,pressed:e.getAttribute('aria-pressed')};}));
+  assert.equal(tabs.length,2);assert.equal(tabs[0].w,tabs[1].w);assert.equal(tabs[0].h,tabs[1].h);
+  assert.deepEqual(tabs.map(t=>t.text),['Derniers','À venir']);
+  for(const t of tabs){assert(t.bg!=='rgba(0, 0, 0, 0)'&&t.color!==t.bg,'Tab visible before tap '+JSON.stringify(t));}
+  assert.equal(tabs[0].pressed,'true');
+  assert.equal(await page.locator('.dial-row').count(),3,'Three latest movements across banks');
+  await page.locator('[data-dial-tab="next"]').click();
+  assert.equal(await page.locator('[data-dial-tab="next"]').getAttribute('aria-pressed'),'true');
+  const next=page.locator('.dial-row.is-next');assert(await next.count()>=1);
+  assert((await page.locator('.dial-row.is-risk').innerText()).includes('à couvrir'),'Uncovered debit flagged');
+  assert((await page.locator('.dial-row.is-risk b').innerText()).includes('650,00'));
+  assert.equal(await page.locator('.dial-tab-dot.is-risk').count(),1);
+  await page.locator('[data-dial-tab="last"]').click();
+  const summaryHeight=await height();
+  // Bank in alert: same card size, balance in red, funding action instead of the list.
+  await page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"]').click();
+  assert(Math.abs(await height()-summaryHeight)<=1,'Card size unchanged in the bank view');
+  assert(await page.locator('#homeTreasury .bank-dial .bank-back').isVisible(),'Back arrow at the top');
   assert((await page.locator('.bank-home-name').innerText()).toLowerCase().includes('rivage'));
   assert(await page.locator('.bank-total.bank-negative').isVisible());
+  assert((await page.locator('.dial-status.is-alert').innerText()).includes('1 000,00'));
   const fund=page.locator('.bank-home-alert .bank-fund');assert(await fund.isVisible());
   assert((await page.locator('.bank-home-alert').innerText()).includes('1 000,00'),'Missing amount covers overdraft plus debit');
   assert((await fund.innerText()).startsWith('Approvisionner depuis'));
   // Tapping the selected bank again returns to the summary.
   await page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"]').click();
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
-  // Bank without alert: month flows and the 5 latest movements.
+  // Bank without alert: month flows and the 3 latest movements.
   await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').click();
-  assert(Math.abs(await page.locator('#homeTreasury .bank-home').evaluate(e=>e.getBoundingClientRect().height)-summaryHeight)<=1,'Same size for a bank without alert');
-  assert.equal(await page.locator('.bank-row').count(),3,'Focus view keeps the 3 latest movements');
+  assert(Math.abs(await height()-summaryHeight)<=1,'Same size for a bank without alert');
+  assert.equal(await page.locator('.dial-row').count(),3,'Bank view keeps the 3 latest movements');
   assert(await page.locator('.bank-view-all').isVisible());
   assert.equal(await page.locator('.bank-home-alert').count(),0);
-  assert((await page.locator('.bank-focus-flows').innerText()).includes('60,00'));
-  assert.equal(await page.locator('#homeTreasury .home-flow').count(),0,'Summary details are hidden in the bank view');
-  // Escape and the fold button both return to "Tous".
+  assert((await page.locator('.dial-flows').innerText()).includes('60,00'));
+  assert.equal(await page.locator('.dial-status.is-ok').innerText(),'À jour');
+  await page.locator('[data-dial-tab="next"]').click();assert.equal(await page.locator('.dial-empty').innerText(),'Aucun prélèvement prévu');
+  await page.locator('[data-dial-tab="last"]').click();
+  // Escape and the back arrow both return to "Tous".
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
   await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').click();await page.locator('.bank-fold').click();
   assert.equal(await page.locator('#homeTreasury .bank-home').getAttribute('data-bank-selected'),'all');
+  // Motion on: rings fill and amounts tick, then settle on the exact value.
+  const motion=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});
+  await motion.context().addCookies(await page.context().cookies());
+  await motion.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});await motion.locator('#homeTreasury .bank-dial').waitFor();
+  assert.equal(await motion.locator('#homeTreasury .dial-arc-in').evaluate(e=>getComputedStyle(e).animationName),'dial-fill');
+  const final=await page.locator('#homeTreasury .bank-total').innerText();
+  await motion.waitForFunction(t=>document.querySelector('#homeTreasury .bank-total').innerText===t,final,{timeout:3000});
+  await motion.close();
+  // Reduce Motion: no ring sweep, values shown at once.
+  assert.equal(await page.locator('#homeTreasury .dial-arc-in').evaluate(e=>getComputedStyle(e).animationName),'none');
   // A bank logo uploaded by the user replaces the initials in its pill.
   const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#1e7a4f';g.fillRect(0,0,64,64);return c.toDataURL('image/png');});
   await page.evaluate(async image=>{const banks=(await api(`/api/companies/${company.id}/banks`)).banks;const atlas=banks.find(b=>b.name==='Banque Pastille Atlas');await api(`/api/companies/${company.id}/banks/${atlas.id}/logo`,{method:'PUT',body:JSON.stringify({image})});},png);
-  await page.reload({waitUntil:'networkidle'});await page.locator('#homeTreasury .bank-home').waitFor();
+  await page.reload({waitUntil:'networkidle'});await page.locator('#homeTreasury .bank-dial').waitFor();
   const logo=page.locator('.bank-pill[aria-label="Banque Pastille Atlas"] img.bank-pill-logo');assert.equal(await logo.count(),1,'Logo shown in the pill');
-  const box=await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').boundingBox();assert.equal(Math.round(box.width),44);
+  const box=await page.locator('.bank-pill[aria-label="Banque Pastille Atlas"]').boundingBox();assert.equal(Math.round(box.width),36);
   assert.equal(await page.locator('.bank-pill[aria-label^="Banque Pastille Rivage"] img').count(),0,'Banks without a logo keep their initials');
   // "+" opens the manual bank editor.
   await page.locator('.bank-pill[data-bank-add]').click();await page.locator('#bankEditor').waitFor();
   assert.deepEqual(errors,[]);
-  console.log('Home bank pills: Tous by default, alert expanded, latest movements, return to summary.');
+  console.log('Treasury dial: compact face, equal visible tabs, latest/upcoming rows, alert funding, constant size, motion and reduced motion.');
  }catch(error){
   console.error('Bank pills details',JSON.stringify({url:page.url(),errors,body:(await page.locator('#homeTreasury').innerText().catch(()=>'')).slice(0,1500)}));
   throw error;
