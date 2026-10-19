@@ -143,6 +143,21 @@ const {chromium}=require('playwright');
   const fit=await page.locator('#modalLayer .modal').evaluate(m=>{const r=m.getBoundingClientRect();return [...m.querySelectorAll('input,select,textarea')].filter(i=>i.getClientRects().length).every(i=>i.getBoundingClientRect().right<=r.right+1);});
   assert(fit,'Fields stay inside the form');
   await page.keyboard.press('Escape');await page.locator('#modalLayer.hide').waitFor({state:'attached'});
+  // Typing in any form (not only on the function frame): the form fills the visible area above the keyboard,
+  // the close bar steps aside and the active field is in view; everything comes back when the keyboard closes.
+  await page.evaluate(()=>{openTab('client-new');});await page.locator('#contextPanel #clientName').waitFor();await page.evaluate(async()=>{await navigationQueue;});
+  assert(!await page.evaluate(()=>document.body.classList.contains('dock-to-focus')),'A plain window, not on the frame');
+  const lastField=page.locator('#contextPanel input:not([type=hidden])').last();await lastField.focus();
+  const typingMode=await page.evaluate(()=>{const real=window.visualViewport;Object.defineProperty(window,'visualViewport',{configurable:true,value:{height:innerHeight-340,width:innerWidth,offsetTop:0,offsetLeft:0,addEventListener(){}}});
+   document.documentElement.style.setProperty('--dialog-height',(innerHeight-340)+'px');document.documentElement.style.setProperty('--dialog-top','0px');moduleDockKeyboard();window.__realVV=real;
+   const r=document.querySelector('#contextPanel').getBoundingClientRect(),foot=document.querySelector('.context-footer');
+   return {on:document.body.classList.contains('kb-open'),top:r.top,bottom:r.bottom,limit:innerHeight-340,footer:foot?getComputedStyle(foot).display:'none'};});
+  assert(typingMode.on&&typingMode.top<=2&&typingMode.bottom<=typingMode.limit+1&&typingMode.footer==='none','Form fills the space above the keyboard, close bar hidden '+JSON.stringify(typingMode));
+  await page.waitForTimeout(350);
+  const lastBox=await lastField.boundingBox();assert(lastBox.y>=40&&lastBox.y+lastBox.height<=typingMode.limit+1,'Active field visible above the keyboard '+JSON.stringify(lastBox));
+  await page.evaluate(()=>{Object.defineProperty(window,'visualViewport',{configurable:true,value:window.__realVV});syncDialogViewport();document.activeElement.blur();moduleDockKeyboard();});
+  assert(!await page.evaluate(()=>document.body.classList.contains('kb-open')),'Normal window again when the keyboard closes');
+  await page.evaluate(()=>closeContext());await page.waitForFunction(()=>!document.querySelector('#contextPanel'));await page.evaluate(async()=>{await navigationQueue;});
   // The apps button of the window returns to all functions.
   await page.locator('#content .module-grid [data-go="clients"]').click();await waitWindow('clients');
   await page.locator('#dockApps').click();await page.evaluate(async()=>{await navigationQueue;});
