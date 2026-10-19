@@ -109,7 +109,7 @@ const {chromium}=require('playwright');
   await page.keyboard.type('guide@example.test');await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement.id),'clientPhone');
   await page.keyboard.type('0612345678');await page.waitForFunction(()=>document.activeElement.id==='clientAddress');
-  const guide=await page.evaluate(()=>{const b=document.querySelector('#clientForm .fg-primary');return {sticky:b&&getComputedStyle(b).position==='sticky',current:!!document.querySelector('#clientAddress').closest('.fg-current'),progress:document.querySelector('#clientForm .fg-progress span')?.textContent||''};});
+  const guide=await page.evaluate(()=>{const b=document.querySelector('#clientForm .fg-primary');const typing=getComputedStyle(b).position;const cur=document.activeElement;cur.blur();const idle=getComputedStyle(b).position;cur.focus();return {sticky:typing==='static'&&idle==='sticky',current:!!document.querySelector('#clientAddress').closest('.fg-current'),progress:document.querySelector('#clientForm .fg-progress span')?.textContent||''};});
   assert(guide.sticky&&guide.current&&/\d+ \/ \d+/.test(guide.progress),'Guided entry '+JSON.stringify(guide));
   assert.equal(await page.evaluate(async()=>(await api(`/api/companies/${company.id}/clients`)).some(c=>c.name==='Client Guidé')),false,'Never submits on its own');
   const ring=await page.evaluate(()=>{const f=document.querySelector('#clientAddress');f.focus();const w=f.closest('.fg-current'),cs=getComputedStyle(f);return {wrapOutline:w?getComputedStyle(w).outlineStyle:'none',inputOutline:cs.outlineStyle,shadow:cs.boxShadow};});
