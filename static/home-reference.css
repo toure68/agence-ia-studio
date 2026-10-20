@@ -688,3 +688,14 @@ body :is(.context-panel,#modalLayer .modal) .chat-attach-menu.chat-attach-menu,b
 body[data-wall="sable"] .reference-home .home-heading h1{color:#16231f!important;text-shadow:none}
 body[data-wall="sable"] .reference-home .home-heading :is(.home-date,.home-status){background:rgba(10,14,20,.62)!important;color:#f2f5f7!important}
 body[data-wall="sable"] .reference-home .home-heading .home-status.is-todo{color:#f0c35c!important}
+/* Lists of links (Demandes, Outils): no underlined links with emoji, the app's own icons instead. */
+:is(.context-panel,#modalLayer .modal) .tool-list a.task-row{text-decoration:none!important;color:#f2f5f7!important}
+:is(.context-panel,#modalLayer .modal) .tool-list a.task-row strong{text-decoration:none!important;font-weight:800}
+:is(.context-panel,#modalLayer .modal) .tool-list .tool-icon{flex:0 0 36px!important;width:36px;height:36px;display:grid;place-items:center;border-radius:11px;border:1.5px solid #5bb0ff;background:linear-gradient(145deg,#3a3d44,#14171c);color:#5bb0ff}
+:is(.context-panel,#modalLayer .modal) .tool-list .tool-icon svg{width:20px;height:20px}
+:is(.context-panel,#modalLayer .modal) .tool-list a.task-row>span:nth-child(2){flex:1 1 auto;min-width:0}
+/* Rows with their own buttons (e.g. "Débit effectué" / "Annuler la prévision"): the text on top, the buttons below,
+   never squeezed or cut. */
+:is(.context-panel,#modalLayer .modal) .task-row:has(>.btn){flex-wrap:wrap!important}
+:is(.context-panel,#modalLayer .modal) .task-row:has(>.btn)>span:first-child{flex:1 1 100%!important}
+:is(.context-panel,#modalLayer .modal) .task-row:has(>.btn)>.btn{flex:1 1 auto;white-space:normal;min-height:40px}
