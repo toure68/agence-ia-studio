@@ -679,3 +679,12 @@ body :is(.context-panel,#modalLayer .modal) .chat-attach-menu.chat-attach-menu,b
 :is(.context-panel,#modalLayer .modal) .chat-attach-options label:hover{background:#ffffff10}
 :is(.context-panel,#modalLayer .modal) .chat-file{background:#ffffff0d!important;border:1px solid #ffffff1f;color:#f2f5f7}
 :is(.context-panel,#modalLayer .modal) .chat-file button{width:36px;height:36px;border-radius:50%!important;border:1px solid #ffffff2b!important;background:#ffffff0a!important;color:#f2f5f7!important;display:grid;place-items:center;padding:0!important;font-size:18px}
+/* Visual review fixes (captures 20/10/2026). Treasury header: the alert pill never overlaps the title; "Toutes" steps
+   aside when an alert is shown, long names end with "…". */
+#homeTreasury .bank-dial .dial-head h2{overflow:hidden}
+#homeTreasury .bank-dial .bank-home-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#homeTreasury .bank-dial[data-bank-selected="all"]:has(.bank-global-alert) .bank-home-name{display:none}
+/* Bright wallpaper (Sable clair): the greeting above the cards turns dark so it stays readable. */
+body[data-wall="sable"] .reference-home .home-heading h1{color:#16231f!important;text-shadow:none}
+body[data-wall="sable"] .reference-home .home-heading :is(.home-date,.home-status){background:rgba(10,14,20,.62)!important;color:#f2f5f7!important}
+body[data-wall="sable"] .reference-home .home-heading .home-status.is-todo{color:#f0c35c!important}

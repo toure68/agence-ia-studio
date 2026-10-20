@@ -18,6 +18,8 @@ jobs:
   ui:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    permissions:
+      contents: write
     env:
       PLAYWRIGHT_BROWSER_CHANNEL: chrome
       APP_ENV: development
@@ -94,6 +96,21 @@ jobs:
             echo "::error title=demo_treasury::$msg"
             exit 1
           fi
+      - name: Capture every screen (visual review)
+        if: always()
+        continue-on-error: true
+        run: node tests/screens.cjs
+      - name: Publish captures to a captures/ branch
+        if: always() && github.event_name == 'push'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -d /tmp/screens ] || exit 0
+          cd /tmp/screens
+          git init -q && git checkout -q -b captures
+          git add . && git -c user.name=ci-captures -c user.email=ci-captures@users.noreply.github.com commit -qm "Captures ${GITHUB_SHA::7}"
+          git push -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/captures/${GITHUB_SHA::7}-${GITHUB_RUN_ATTEMPT}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
