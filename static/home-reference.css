@@ -699,3 +699,5 @@ body[data-wall="sable"] .reference-home .home-heading .home-status.is-todo{color
 :is(.context-panel,#modalLayer .modal) .task-row:has(>.btn){flex-wrap:wrap!important}
 :is(.context-panel,#modalLayer .modal) .task-row:has(>.btn)>span:first-child{flex:1 1 100%!important}
 :is(.context-panel,#modalLayer .modal) .task-row:has(>.btn)>.btn{flex:1 1 auto;white-space:normal;min-height:40px}
+/* The "+" menu opens upwards, above the button, so its last choice is never cut by the bottom of the window. */
+:is(.context-panel,#modalLayer .modal) .chat-attach-options{top:auto!important;bottom:calc(100% + 8px)!important}
