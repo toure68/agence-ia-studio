@@ -31,7 +31,7 @@ async function zeroDashboard(){
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
 
-function toolLinks(items){return `<div class="tool-list">${items.map(([route,title,icon,id])=>`<a class="task-row" href="#/${route}${id?'/'+id:''}" data-go="${route}"${id?` data-company-id="${id}"`:''}><span><strong>${icon} ${title}</strong></span><span aria-hidden="true">›</span></a>`).join('')}</div>`;}
+function toolLinks(items){return `<div class="tool-list">${items.map(([route,title,icon,id])=>`<a class="task-row" href="#/${route}${id?'/'+id:''}" data-go="${route}"${id?` data-company-id="${id}"`:''}><span class="tool-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon(route):icon}</span><span><strong>${title}</strong></span><span aria-hidden="true">›</span></a>`).join('')}</div>`;}
 function renderRequests(){
  $('#content').innerHTML='<div class="heading"><h1>Demandes</h1></div>'+toolLinks([['leads','Devis','📄'],['incoming','Demandes reçues','📥'],['emails','E-mails','✉️'],['clients','Clients','👤'],['activities','Travaux & activités','✅']]);
 }
