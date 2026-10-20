@@ -8,9 +8,12 @@
 // Nothing to do: one single replacement card (the routine priority) keeps the middle filled.
 // Mode off (or the tests that set localStorage aia-reader=off): the classic action cards, unchanged.
 const homeReader=(()=>{
- const KEY='aia-reader',P=72,MAX=5,MIN_H=300;
+ const KEY='aia-reader',MAX=5,MIN_H=300;
+ // Card pitch (height + gap): 64 + 8 normally, 52 + 6 on the iPhone-style home (home-pages.js).
+ const ios=()=>document.documentElement.classList.contains('home-ios');
+ const pitch=()=>ios()?58:72;
  // Accueil façon iPhone (home-pages.js): as many small cards as fit on the one screen, at most 5.
- const cap=()=>Math.max(1,Math.min(MAX,Number(document.body.dataset.readerSlots)||MAX));
+ const cap=()=>ios()?4:MAX; // iPhone-style home: exactly 4 small cards with the treasury, 2 while reading
  const enabled=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  const doneKey=()=>'aia-reader-done-'+(company?.id||0)+'-'+new Date().toISOString().slice(0,10);
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
@@ -54,7 +57,7 @@ const homeReader=(()=>{
  function sampleDone(c,text){
   if(view.busy)return;view.busy=true;markDone(c.key);notify(text+' (essai)');
   const card=view.host?.querySelector('.home-reader');
-  if(card){card.style.height=Math.max(view.treasuryH||0,MIN_H)+'px';card.classList.remove('is-editing');const acts=card.querySelector('.reader-actions');if(acts)acts.innerHTML=`<p class="reader-done">✓ ${clean(text)}</p>`;}
+  if(card){card.style.height=readerHeight()+'px';card.classList.remove('is-editing');const acts=card.querySelector('.reader-actions');if(acts)acts.innerHTML=`<p class="reader-done">✓ ${clean(text)}</p>`;}
   view.editing=null;view.keepKey=null;setTimeout(()=>{view.busy=false;renderPriorities().catch(()=>{});},650);
  }
  async function openAction(c){
@@ -129,7 +132,7 @@ const homeReader=(()=>{
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury');view.treasuryH=t?t.offsetHeight:view.treasuryH;}
   const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
   const editing=view.editing===c.key;
-  card.hidden=false;card.style.height=editing?'auto':Math.max(view.treasuryH||0,MIN_H)+'px';
+  card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
   if(typeof homeTop!=='undefined')card.dataset.date=homeTop.dateLabel();
@@ -150,18 +153,22 @@ const homeReader=(()=>{
  }
  // The reader may be taller than the treasury (to show 3–4 lines of text, or while editing): the list gets
  // shorter by the same amount, so the function grid below never moves.
+ // iPhone-style home: the reader takes the place of the treasury and of two small cards, so 2 stay visible and
+ // nothing below moves; elsewhere it is at least 300px and the list gives up the difference.
+ function readerHeight(){return ios()?(view.treasuryH||0)+2*pitch():Math.max(view.treasuryH||0,MIN_H);}
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
+  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:Math.min(view.cards.length-(reading?view.focus+1:0),reading?2:4);list.style.height=Math.max(0,n*pitch()-6)+'px';return;}
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
-  list.style.height=Math.max(Math.min(base,P-8),base-extra)+'px';
+  list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
  function hint(){
   const el=view.host?.querySelector('.reader-hint');if(!el)return;
   const n=view.cards.length,below=n-(view.focus+1)-cap();
   el.textContent=view.focus>=n-1?'Dernier message':(below>0?`${below} autre${below>1?'s':''} en dessous · `:'')+'↑ Glissez pour lire';
  }
- function goTo(i){view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*P,behavior:'smooth'});}
+ function goTo(i){view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});}
 
  function render(host,cards,actual,cid){
   view.host=host;view.cid=cid;
@@ -171,7 +178,7 @@ const homeReader=(()=>{
   if(!real.length){home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
   const prevKey=view.keepKey,prevFocus=view.focus;
   view.cards=real;
-  const n=real.length,h=Math.min(n,cap())*P-8;
+  const n=real.length,h=Math.min(n,cap())*pitch()-8;
   host.classList.add('reader-host');
   host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><span>✓ Fin de la liste</span><button type="button" class="reader-btn is-second" data-reader-top>Revenir à la trésorerie</button></div></div></div>`;
   const list=host.querySelector('.reader-list');
@@ -181,11 +188,11 @@ const homeReader=(()=>{
   let focus=-1;
   if(prevFocus>=0){const k=prevKey?real.findIndex(c=>c.key===prevKey):-1;focus=k>=0?k:Math.min(prevFocus,n-1);}
   view.focus=focus;
-  list.scrollTop=(focus+1)*P;
+  list.scrollTop=(focus+1)*pitch();
   showReader();
   let raf=0;
   list.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
-   const f=Math.min(n-1,Math.round(list.scrollTop/P)-1);
+   const f=Math.min(n-1,Math.round(list.scrollTop/pitch())-1);
    if(f!==view.focus){view.focus=f;showReader();}
   });},{passive:true});
   return true;
