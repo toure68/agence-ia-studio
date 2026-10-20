@@ -96,6 +96,14 @@ jobs:
             echo "::error title=phone_habits::$msg"
             exit 1
           fi
+      - name: Run node tests/resume.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/resume.cjs 2>&1 | tee /tmp/resume.log; then
+            msg=$(tail -c 3000 /tmp/resume.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=resume::$msg"
+            exit 1
+          fi
       - name: Run node tests/demo_treasury.cjs
         run: |
           set -o pipefail
