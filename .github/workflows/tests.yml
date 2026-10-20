@@ -1,5 +1,14 @@
 name: Application tests
-on: [push, pull_request]
+# Save minutes (user decision 2026-10-21): tests run once per pull request (not twice: branch push + PR),
+# again on main after a merge, and an older run of the same branch is cancelled when a new commit arrives.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
