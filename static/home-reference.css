@@ -701,3 +701,6 @@ body[data-wall="sable"] .reference-home .home-heading .home-status.is-todo{color
 :is(.context-panel,#modalLayer .modal) .task-row:has(>.btn)>.btn{flex:1 1 auto;white-space:normal;min-height:40px}
 /* The "+" menu opens upwards, above the button, so its last choice is never cut by the bottom of the window. */
 :is(.context-panel,#modalLayer .modal) .chat-attach-options{top:auto!important;bottom:calc(100% + 8px)!important}
+
+/* Action mode (opened from an action card): the strip only lists functions with actions, each with its count. */
+.reference-home .focus-app-count,.dock-app-bar .focus-app-count{position:absolute;top:22px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#f59e0b;color:#1b1206;font:800 11px/18px Manrope,system-ui,sans-serif;font-style:normal;text-align:center;box-shadow:0 0 0 2px #0b0f14;pointer-events:none}
