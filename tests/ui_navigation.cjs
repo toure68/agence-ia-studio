@@ -5,7 +5,7 @@ const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{}),...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
- await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
+ await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');if(!localStorage.getItem('aia-pages'))localStorage.setItem('aia-pages','off');}catch(e){}}); // classic action cards and grid (mode lecteur: tests/reader.cjs, accueil iPhone: tests/pages.cjs)
  // The module library is reached from Outils; the home 'Tous les modules' link only shows on an empty grid.
  const openModuleLibrary=async()=>{await page.evaluate(()=>openTab('module-library'));await page.locator('#saveModules').waitFor();};
  await page.addInitScript(()=>{

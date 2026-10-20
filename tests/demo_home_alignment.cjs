@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
  const browser=await chromium.launch({executablePath:process.env.HOME_TEST_CHROME,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  for(const width of [320,390,768]){
   const page=await browser.newPage({viewport:{width,height:844}});
-  await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
+  await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');if(!localStorage.getItem('aia-pages'))localStorage.setItem('aia-pages','off');}catch(e){}}); // classic action cards and grid (mode lecteur: tests/reader.cjs, accueil iPhone: tests/pages.cjs)
   await page.goto('http://127.0.0.1:8125/demo');await page.locator('.module-grid').waitFor();
   for(const selector of ['.assistant-dock','.assistant-dock-hint','.module-copy']){
    assert.equal(await page.locator(selector).first().evaluate(e=>getComputedStyle(e).textAlign),'center',selector);
