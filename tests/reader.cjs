@@ -56,7 +56,8 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert.equal(await finish.innerText(),'Terminé');
   await finish.click();
   await page.waitForFunction(t=>document.querySelector('.home-reader:not([hidden]) .reader-title strong')?.textContent!==t,titleBefore);
-  assert.equal(await page.locator('.reader-item').count(),n-1,'finished action left the queue');
+  assert.equal(await page.locator('.reader-item:not(.is-done)').count(),n-1,'finished action left the pending queue');
+  assert.equal(await page.locator('.reader-item.is-done').count(),1,'treated card kept behind, greyed');
   assert.match(await page.locator('.reader-count').innerText(),/1 traité/);
 
   // Back to the top: the treasury returns.
