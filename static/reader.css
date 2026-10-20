@@ -17,7 +17,10 @@ body[data-wall] .reference-home .home-reader{background:linear-gradient(135deg,#
 .reader-state.state-danger,.reader-item.state-danger .reader-state{color:var(--home-red)}
 .reader-state.state-warning,.reader-item.state-warning .reader-state{color:var(--home-gold)}
 .reader-pos{font-size:12px;color:var(--home-muted);white-space:nowrap}
-.reader-tools{margin-left:auto;display:flex;gap:0;margin-right:-8px}
+.reader-tools{margin-left:auto;display:flex;gap:0;margin-right:-8px;flex:none}
+.reader-head .reader-state{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.reader-icon{width:36px!important}
+.reader-head{gap:6px}
 .reader-icon{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:12px;background:transparent;color:var(--home-muted);cursor:pointer;padding:0}
 .reader-icon:hover,.reader-icon[aria-pressed="true"]{color:var(--home-text);background:#ffffff12}
 
@@ -37,9 +40,9 @@ body[data-wall] .reference-home .home-reader{background:linear-gradient(135deg,#
 .reader-rail i{position:absolute;left:7px;width:8px;border-radius:4px;background:var(--home-green);top:0;height:40%}
 .reader-body-wrap.is-long .reader-rail{display:block}
 
-.reader-actions{display:flex;flex-wrap:wrap;gap:8px;flex:none}
-.reader-btn{flex:1 1 auto;min-height:44px;padding:0 12px;border-radius:12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #ffffff26;background:#ffffff0d;color:var(--home-text)}
-.reader-btn.is-main{flex:1.4 1 auto;border:0;background:var(--home-green);color:#06210F}
+.reader-actions{display:flex;flex-wrap:nowrap;gap:8px;flex:none}
+.reader-btn{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:44px;padding:0 10px;border-radius:12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #ffffff26;background:#ffffff0d;color:var(--home-text)}
+.reader-btn.is-main{flex:1.35 1 0;border:0;background:var(--home-green);color:#06210F}
 .reader-btn.is-quiet{flex:0 1 auto;background:transparent;border-color:transparent;color:var(--home-muted)}
 .reader-btn:disabled{opacity:.55}
 .reader-done{margin:0;min-height:44px;display:flex;align-items:center;justify-content:center;width:100%;border-radius:12px;background:#4ADE801f;color:var(--home-green);font-weight:800;font-size:14px}
@@ -65,3 +68,22 @@ body[data-wall] .reference-home .reader-item{background:linear-gradient(135deg,#
 .reader-end .reader-btn{flex:none}
 
 @media (prefers-reduced-motion:reduce){.home-reader.is-in{animation:none}.reader-item{transition:none}}
+
+/* Messages d'essai and the extras they exercise (facts, editing, original message, red buttons). */
+.reader-tag{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;background:#A78BFA2e;color:#C4B5FD;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;vertical-align:2px}
+.reader-head .reader-tag{margin:0}
+.reader-head .reader-pos{flex:none}
+.reader-facts{display:flex;flex-wrap:nowrap;gap:5px;flex:none;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}
+.reader-facts::-webkit-scrollbar{display:none}
+.reader-fact{flex:none;white-space:nowrap;font-size:11.5px;color:#D5DCE3;background:#ffffff10;border-radius:7px;padding:3px 7px}
+.reader-fact span{color:var(--home-muted)}
+.reader-fact.is-must{background:#E2B04A26;color:var(--home-gold);font-weight:800}
+.reader-btn.is-danger{border-color:#F2616B55;background:#F2616B14;color:#FF9AA1}
+.reader-origin{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--home-muted);margin-bottom:3px}
+.home-reader.is-editing .reader-body{overflow:visible}
+.reader-edit{display:flex;flex-direction:column;gap:9px;padding:2px 0 4px}
+.reader-edit label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--home-muted)}
+.reader-edit input,.reader-edit textarea{box-sizing:border-box;width:100%;min-height:44px;border-radius:10px;border:1px solid #ffffff2b;background:#0B0F14;color:var(--home-text);font:inherit;font-size:16px;padding:9px 12px;resize:none}
+.reader-edit input:focus,.reader-edit textarea:focus{outline:none;border-color:var(--home-green);box-shadow:0 0 0 1px var(--home-green)}
+.reader-fact.is-source{background:#5BB0FF1f;color:#9CCBFF}
+.reader-title .reader-tag{vertical-align:3px}

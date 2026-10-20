@@ -41,8 +41,8 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const first=await page.locator('.reader-item strong').first().innerText();
   assert.ok((await page.locator('.home-reader').innerText()).includes(first),'reader shows the first card');
   const readerH=await page.locator('.home-reader').evaluate(el=>el.offsetHeight);
-  assert.ok(Math.abs(readerH-Math.max(treasuryH,196))<2,`reader keeps the treasury height (${readerH} / ${treasuryH})`);
-  assert.ok(Math.abs(await gridTop()-before)<=Math.max(0,196-treasuryH)+2,'the function grid does not move while reading');
+  assert.ok(Math.abs(readerH-Math.max(treasuryH,300))<2,`reader: treasury height, at least 300px for 3–4 lines (${readerH} / ${treasuryH})`);
+  assert.ok(Math.abs(await gridTop()-before)<2,'the function grid does not move while reading (the list gets shorter instead)');
   assert.ok(await page.locator('.home-reader [data-reader-run]').first().isVisible(),'action buttons ready in the reader');
   await page.screenshot({path:out+'/91-lecteur-ouvert.png'});
 
@@ -71,6 +71,21 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert.equal(await page.locator('#accountReader').getAttribute('aria-checked'),'false');
   await page.evaluate(()=>document.querySelector('#accountReader').click());
   await page.locator('.reader-item').first().waitFor();
+  // Messages d'essai: 16 simulated messages on top, marked « Essai », a button counts them as done, nothing saved.
+  await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===16);
+  await page.locator('.reader-list').evaluate(el=>el.scrollTo({top:72}));
+  await page.waitForFunction(()=>document.querySelector('.home-reader:not([hidden]) .reader-tag'));
+  assert.ok((await page.locator('.home-reader').innerText()).includes('Bâtiplus SARL'));
+  assert.ok(Math.abs(await gridTop()-before)<2,'grid still in place with the test messages');
+  await page.screenshot({path:out+'/92-lecteur-essai.png'});
+  await page.locator('.home-reader .reader-btn',{hasText:'Modifier'}).click();
+  await page.locator('.home-reader.is-editing [data-draft="amount"]').fill('1 350 €');
+  await page.screenshot({path:out+'/93-lecteur-modifier.png'});
+  await page.locator('.home-reader .reader-btn',{hasText:'Enregistrer et envoyer'}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===15);
+  await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===0);
   assert.deepEqual(errors,[]);
   console.log('reader ok');
  }catch(e){await page.screenshot({path:out+'/99-lecteur-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}
