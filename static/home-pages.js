@@ -22,7 +22,9 @@ const homePages=(()=>{
   if(pick.dataset.setColumns)cols=Number(pick.dataset.setColumns);else rows=Math.min(3,Math.max(1,rows+Number(pick.dataset.rowsStep)));
   try{localStorage.setItem(GRID_KEY,JSON.stringify({cols,rows}));}catch{}
   setTimeout(()=>{const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===cols)));
-   const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace){page=0;box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);}},0);
+   const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace){page=0;box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);}
+   // The middle adapts to the new grid height: go back to the treasury view and count the cards again.
+   document.querySelector('#content .reader-list')?.scrollTo({top:0});setTimeout(()=>{fit();stack();},60);},0);
  },true);
  const GRID_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  const on=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -112,7 +114,7 @@ const homePages=(()=>{
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
   // Cards are 52px + 6px gap here (reader.js): 4 when they fit whole (with room for the stack above the grid).
   free-=20;
-  const slots=Math.max(2,Math.min(4,Math.floor((free+6)/58)));
+  const slots=Math.max(1,Math.min(4,Math.floor((free+6)/58)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // The waiting cards (beyond the ones shown) peek out under the function pages like an iPhone notification
@@ -144,18 +146,22 @@ const homePages=(()=>{
    if(lastRest>=0&&rest!==lastRest){el.classList.remove('is-moving');void el.offsetWidth;el.classList.add('is-moving');}
   }else el?.remove();
   lastRest=rest;
-  // Filler in the empty room.
-  const after=lr&&shown?Math.max(...items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).map(e=>e.getBoundingClientRect().bottom)):(block?.querySelector('.reader-bar')?.getBoundingClientRect().bottom||block?.getBoundingClientRect().top||pr.top);
-  const top=after+8,bottom=pr.top-(rest?24:10),room=bottom-top;
+  // Filler in the empty room: between the treasury / reader and the cards (the cards sit right above the grid).
+  const head=home.querySelector('.home-reader:not([hidden])')||home.querySelector('#homeTreasury');
+  const queue=home.querySelector('.reader-queue');
+  const top=(head?head.getBoundingClientRect().bottom:hr.top)+10,bottom=(queue&&queue.offsetHeight?queue.getBoundingClientRect().top:pr.top-(rest?24:10))-6,room=bottom-top;
   let f=home.querySelector('.home-filler');
   if(room>=64){
    if(!f){f=document.createElement('section');f.className='home-filler';f.setAttribute('aria-label','À préparer');home.append(f);
     f.addEventListener('click',e=>{const b=e.target.closest('[data-filler]');if(!b)return;const k=b.dataset.filler;
      if(k==='back'){home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});return;}
      const tile=home.querySelector(`.home-pages [data-go="${k}"]`);if(tile)tile.click();else if(typeof openTab==='function')openTab(k);});}
+   // While reading, the whole room is the way back to the treasury (one tap anywhere in it).
+   if(reading){f.classList.add('is-back-zone');f.classList.remove('is-tall');f.innerHTML='<button type="button" class="filler-back-zone" data-filler="back"><span>↑ Revenir à la trésorerie</span></button>';f.style.top=(top-hr.top)+'px';f.style.height=room+'px';return;}
+   f.classList.remove('is-back-zone');
    const tall=room>=128;
    f.classList.toggle('is-tall',tall);
-   f.innerHTML=`<button type="button" class="filler-row" data-filler="calendar"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon('calendar'):''}</span><span class="filler-copy"><strong>Préparer demain</strong>${tall?'<small>Rendez-vous, chantiers et rappels de demain</small>':''}</span><span aria-hidden="true">›</span></button>${tall?`<button type="button" class="filler-row" data-filler="veille"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon('veille'):''}</span><span class="filler-copy"><strong>Veille concurrentielle</strong><small>Marchés, prix et nouveautés de votre métier</small></span><span aria-hidden="true">›</span></button>`:''}${reading?'<button type="button" class="filler-back" data-filler="back">↑ Revenir à la trésorerie</button>':''}`;
+   f.innerHTML=`<button type="button" class="filler-row" data-filler="calendar"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon('calendar'):''}</span><span class="filler-copy"><strong>Préparer demain</strong>${tall?'<small>Rendez-vous, chantiers et rappels de demain</small>':''}</span><span aria-hidden="true">›</span></button>${tall?`<button type="button" class="filler-row" data-filler="veille"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon('veille'):''}</span><span class="filler-copy"><strong>Veille concurrentielle</strong><small>Marchés, prix et nouveautés de votre métier</small></span><span aria-hidden="true">›</span></button>`:''}`;
    f.style.top=(top-hr.top)+'px';f.style.height=room+'px';
   }else f?.remove();
  }
