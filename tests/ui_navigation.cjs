@@ -74,11 +74,15 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#assistantMessage').isVisible(),false);
    // Home top (user request 2026-10-20): no greeting nor chips; the Assistant IA bar is at the very top, fixed
    // while the home scrolls, with the account button next to it; the date is a tab on the treasury card.
+   await page.evaluate(()=>scrollTo(0,0));
    const pill=await page.locator('#assistantDock').evaluate(el=>{const r=el.getBoundingClientRect(),t=document.querySelector('#homeTreasury').getBoundingClientRect(),bar=el.closest('.home-topbar');return {height:r.height,bottom:r.bottom,treasuryTop:t.top,left:r.left,right:r.right,width:innerWidth,sticky:bar&&getComputedStyle(bar).position};});
    assert(pill.height>=44&&pill.height<=90&&pill.bottom<=pill.treasuryTop&&pill.left>=0&&pill.right<=pill.width,'Assistant at the top, above the treasury: '+JSON.stringify(pill));assert.equal(pill.sticky,'sticky');
    assert.equal(await page.locator('.home-heading,#homeDay').count(),0,'No greeting nor date/status chips');
    assert.match(await page.locator('#homeTreasury').getAttribute('data-date'),/^[A-ZÉ][a-zé]+ \d{1,2} [a-zéû]+$/);
    assert.equal(await page.locator('.main>.top').isVisible(),false,'No top header on the home');
+   // Fixed: after scrolling down, the assistant is still at the top of the screen.
+   await page.evaluate(()=>scrollTo(0,400));const stuck=await page.locator('#assistantDock').evaluate(el=>el.getBoundingClientRect().top);await page.evaluate(()=>scrollTo(0,0));
+   assert(stuck>=0&&stuck<30,'Assistant stays at the top while scrolling: '+stuck);
    assert.equal(await page.locator('#assistantMessage').getAttribute('placeholder'),'Posez une question ou ajoutez un document…');
 
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
