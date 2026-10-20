@@ -8,19 +8,24 @@
 // Nothing to do: one single replacement card (the routine priority) keeps the middle filled.
 // Mode off (or the tests that set localStorage aia-reader=off): the classic action cards, unchanged.
 const homeReader=(()=>{
- const KEY='aia-reader',P=72,MAX=5;
+ const KEY='aia-reader',P=72,MAX=5,MIN_H=300;
  const enabled=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  const doneKey=()=>'aia-reader-done-'+(company?.id||0)+'-'+new Date().toISOString().slice(0,10);
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
  const markDone=key=>{const s=doneSet();s.add(key);try{sessionStorage.setItem(doneKey(),JSON.stringify([...s]));}catch{}};
- let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false};
+ let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false,full:false,editing:null,draft:{}};
+ // Messages d'essai (reader-samples.js): off by default, switch in the account menu, buttons simulated.
+ const SAMPLES='aia-reader-samples';
+ const samplesOn=()=>{try{return localStorage.getItem(SAMPLES)==='on';}catch{return false;}};
+ const samples=()=>{if(!samplesOn()||!Array.isArray(window.readerSamples))return [];const done=doneSet();return window.readerSamples.filter(c=>!done.has(c.key)).map(c=>({...c,sample:true}));};
 
  // Short verbs on the buttons: the reader above already says what the action is about.
  const verbs={quote:'Vérifier',client:'Vérifier',document:'Vérifier',email:'Relire',social:'Valider',task:'Ouvrir',activity:'Traiter','activity-new':'Créer',lead:'Ouvrir',prospect:'Suivre',equipment:'Contrôler',material:'Contrôler',risk:'Contrôler'};
- const moduleOf=c=>(typeof priorityModules!=='undefined'&&priorityModules[c.action?.type])||'requests';
+ const moduleOf=c=>c.module||(typeof priorityModules!=='undefined'&&priorityModules[c.action?.type])||'requests';
  const money=c=>{const m=String((c.home_detail||'')+' '+c.title).match(/\d[\d   ]*,\d{2}\s?€/);return m?m[0].trim():'';};
- const sign=c=>c.action?.type==='quote'?{s:'+',word:'à recevoir',cls:'is-in'}:null;
+ const sign=c=>c.sample?(c.sign==='+'?{s:'+',word:'à recevoir',cls:'is-in'}:c.sign==='−'?{s:'−',word:'à payer',cls:'is-out'}:null):c.action?.type==='quote'?{s:'+',word:'à recevoir',cls:'is-in'}:null;
  function copy(c){
+  if(c.sample)return {title:c.title,detail:c.body||'',amount:c.amount||''};
   const base=typeof homePriorityCopy==='function'?homePriorityCopy(c):{title:c.title,description:c.description||''};
   const friendly=typeof priorityFriendly==='function'?priorityFriendly:x=>x;
   const amount=money(c);
@@ -30,13 +35,28 @@ const homeReader=(()=>{
  }
  function presentation(c){return typeof priorityPresentation==='function'?priorityPresentation(c):{state:'neutral',label:'À faire'};}
  function buttons(c){
+  if(c.sample)return sampleButtons(c);
   const inline=typeof inlineActions!=='undefined'&&inlineActions.has(c)?inlineActions.buttons(c):[];
   const list=inline.map((b,i)=>({label:b.label,kind:i?'second':'main',run:()=>finish(c,b)}));
   list.push({label:inline.length?'Détail':(verbs[c.action?.type]||'Ouvrir'),kind:inline.length?'second':'main',run:()=>openAction(c)});
-  if(!c.fallback&&!c.example)list.push({label:'Masquer',kind:'quiet',run:()=>dismiss(c)});
   return list;
  }
+ function sampleButtons(c){
+  if(view.editing===c.key)return [{label:'Annuler',kind:'second',run:()=>{view.editing=null;showReader();}},{label:'Enregistrer et envoyer',kind:'main',run:()=>sampleDone(c,'Modifié et envoyé'+(view.draft.amount?' · '+view.draft.amount:'')+(view.draft.date?' · '+view.draft.date:''))}];
+  return (c.actions||[]).map((a,i)=>({label:a.l,kind:a.t==='p'?'main':a.t==='d'?'danger':'second',run:()=>{
+   if(a.t==='e'){view.editing=c.key;view.full=false;view.draft={amount:c.edit?.amount||c.amount||'',date:c.edit?.date||'',note:''};showReader();return;}
+   if(a.t==='r'){const url='mailto:'+(c.mail||'')+'?subject='+encodeURIComponent('Re : '+c.state_label+' — '+c.title);try{window.open(url,'_blank');}catch{}notify('Ouverture de votre messagerie… (essai : rien n’est envoyé)');return;}
+   sampleDone(c,a.d||a.l);
+  }}));
+ }
+ function sampleDone(c,text){
+  if(view.busy)return;view.busy=true;markDone(c.key);notify(text+' (essai)');
+  const card=view.host?.querySelector('.home-reader');
+  if(card){card.style.height=Math.max(view.treasuryH||0,MIN_H)+'px';card.classList.remove('is-editing');const acts=card.querySelector('.reader-actions');if(acts)acts.innerHTML=`<p class="reader-done">✓ ${clean(text)}</p>`;}
+  view.editing=null;view.keepKey=null;setTimeout(()=>{view.busy=false;renderPriorities().catch(()=>{});},650);
+ }
  async function openAction(c){
+  if(c.sample){view.full=!view.full;view.editing=null;showReader();return;}
   const module=moduleOf(c);
   if(typeof moduleFocusFromPriority==='function'&&!c.fallback&&!c.example&&await moduleFocusFromPriority(module,()=>openPriorityAction(c)))return;
   return openPriorityAction(c);
@@ -62,17 +82,27 @@ const homeReader=(()=>{
  }
  function small(c,i){
   const p=presentation(c),cp=copy(c),key=moduleOf(c);
-  return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+clean(cp.amount):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
+  return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${c.source?' · '+clean(c.source):''}${cp.amount?' · '+clean(cp.amount):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
  }
  function readerMarkup(c){
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
   const pos=view.focus+1,total=view.cards.length;
-  return `<div class="reader-head"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-state state-${p.state}">${clean(p.label)}</span><span class="reader-pos">${pos} / ${total}</span><span class="reader-tools"><button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button><button type="button" class="reader-icon" data-reader-open aria-label="Ouvrir le détail" title="Ouvrir le détail"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="reader-icon" data-reader-back aria-label="Revenir à la trésorerie" title="Trésorerie"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>
-  <div class="reader-title"><strong>${clean(cp.title)}</strong>${cp.amount?`<span class="reader-amount ${sg?sg.cls:''}">${sg?sg.s:''}${clean(cp.amount)}${sg?`<small>${sg.word}</small>`:''}</span>`:''}</div>
-  <div class="reader-body-wrap"><div class="reader-body" tabindex="0">${cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>'}</div><div class="reader-rail" aria-hidden="true"><i></i></div></div>
+  return `<div class="reader-head"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-state state-${p.state}">${clean(p.label)}</span><span class="reader-pos">${pos}/${total}</span><span class="reader-tools"><button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button><button type="button" class="reader-icon" data-reader-open aria-label="Ouvrir le détail" title="Ouvrir le détail"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="reader-icon" data-reader-hide aria-label="Masquer ce message" title="Masquer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button type="button" class="reader-icon" data-reader-back aria-label="Revenir à la trésorerie" title="Trésorerie"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>
+  <div class="reader-title"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong>${cp.amount?`<span class="reader-amount ${sg?sg.cls:''}">${sg?sg.s:''}${clean(cp.amount)}${sg?`<small>${sg.word}</small>`:''}</span>`:''}</div>
+  ${facts(c)}<div class="reader-body-wrap"><div class="reader-body" tabindex="0">${bodyMarkup(c,cp)}</div><div class="reader-rail" aria-hidden="true"><i></i></div></div>
   <div class="reader-actions">${btns.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind}" data-reader-run="${i}">${clean(b.label)}</button>`).join('')}</div>`;
  }
 
+ function facts(c){
+  const src=c.source?`<span class="reader-fact is-source">${clean(c.source)}${c.time?' · '+clean(c.time):''}</span>`:'';
+  const f=src+(c.facts||[]).map(([k,v])=>`<span class="reader-fact"><span>${clean(k)}</span> <b>${clean(v)}</b></span>`).join('');
+  return c.must||f?`<div class="reader-facts">${c.must?'<span class="reader-fact is-must">À lire en entier</span>':''}${f}</div>`:'';
+ }
+ function bodyMarkup(c,cp){
+  if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
+  if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
+  return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';
+ }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
   const over=body.scrollHeight-body.clientHeight>2;wrap.classList.toggle('is-long',over);
@@ -91,22 +121,35 @@ const homeReader=(()=>{
  function showReader(){
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
-  if(view.focus<0){home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));hint();return;}
+  if(view.focus<0){home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury');view.treasuryH=t?t.offsetHeight:view.treasuryH;}
-  const c=view.cards[view.focus];view.keepKey=c.key;
-  card.hidden=false;card.style.height=Math.max(view.treasuryH||0,196)+'px';
-  card.className='home-reader state-'+presentation(c).state;
+  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
+  const editing=view.editing===c.key;
+  card.hidden=false;card.style.height=editing?'auto':Math.max(view.treasuryH||0,MIN_H)+'px';
+  card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
   card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
   const btns=buttons(c);
   card.querySelectorAll('[data-reader-run]').forEach(b=>b.onclick=()=>btns[Number(b.dataset.readerRun)].run());
   card.querySelector('[data-reader-open]').onclick=()=>openAction(c);
+  card.querySelector('[data-reader-hide]').onclick=()=>c.sample?sampleDone(c,'Masqué'):dismiss(c);
   card.querySelector('[data-reader-back]').onclick=()=>host.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
   const speak=card.querySelector('[data-reader-speak]'),cp=copy(c);
-  speak.onclick=()=>{if(typeof readAloud==='function')readAloud([cp.title,presentation(c).label,cp.amount,cp.detail].filter(Boolean).join('. '),speak);};
+  speak.onclick=()=>{if(typeof readAloud==='function')readAloud([presentation(c).label,cp.title,(sign(c)?.s==='−'?'à payer ':sign(c)?'à recevoir ':'')+cp.amount,cp.detail].filter(Boolean).join('. '),speak);};
+  card.querySelectorAll('[data-draft]').forEach(f=>f.oninput=()=>{view.draft[f.dataset.draft]=f.value;});
+  card.querySelector('[data-draft]')?.focus({preventScroll:true});
   wireRail(card);
   host.querySelectorAll('.reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
+  fitList();
   hint();
+ }
+ // The reader may be taller than the treasury (to show 3–4 lines of text, or while editing): the list gets
+ // shorter by the same amount, so the function grid below never moves.
+ function fitList(){
+  const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
+  const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
+  const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
+  list.style.height=Math.max(Math.min(base,P-8),base-extra)+'px';
  }
  function hint(){
   const el=view.host?.querySelector('.reader-hint');if(!el)return;
@@ -117,7 +160,7 @@ const homeReader=(()=>{
 
  function render(host,cards,actual,cid){
   view.host=host;view.cid=cid;
-  const real=actual.filter(c=>!c.example);
+  const real=[...samples(),...actual.filter(c=>!c.example)];
   const home=document.querySelector('#content .reference-home');
   // Nothing left: one single replacement card keeps the middle filled (the routine/first card), no reader.
   if(!real.length){home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
@@ -143,13 +186,22 @@ const homeReader=(()=>{
   return true;
  }
  function setEnabled(on){try{localStorage.setItem(KEY,on?'on':'off');}catch{}view.focus=-1;view.keepKey=null;syncMenu();if(typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
+ // Switching the test messages on puts them all back (the ones used today are shown again).
+ function setSamples(on){
+  try{localStorage.setItem(SAMPLES,on?'on':'off');if(on){const s=[...doneSet()].filter(k=>!String(k).startsWith('essai-'));sessionStorage.setItem(doneKey(),JSON.stringify(s));}}catch{}
+  view.focus=-1;view.keepKey=null;syncMenu();notify(on?'16 messages d’essai ajoutés au lecteur (rien n’est envoyé).':'Messages d’essai retirés.');
+  if(typeof renderPriorities==='function')renderPriorities().catch(()=>{});
+ }
  function syncMenu(){
   const panel=document.querySelector('.account-panel');if(!panel)return;
   let b=panel.querySelector('#accountReader');
   if(!b){b=document.createElement('button');b.id='accountReader';b.type='button';b.className='btn small';b.setAttribute('role','switch');b.onclick=()=>setEnabled(!enabled());panel.querySelector('#accountWallpaper')?.after(b)||panel.append(b);}
   b.setAttribute('aria-checked',String(enabled()));b.textContent='Mode lecteur : '+(enabled()?'activé':'désactivé');
+  let t=panel.querySelector('#accountReaderSamples');
+  if(!t){t=document.createElement('button');t.id='accountReaderSamples';t.type='button';t.className='btn small';t.setAttribute('role','switch');t.onclick=()=>setSamples(!samplesOn());b.after(t);}
+  t.hidden=!enabled();t.setAttribute('aria-checked',String(samplesOn()));t.textContent='Messages d’essai : '+(samplesOn()?'affichés':'masqués');
  }
  document.addEventListener('DOMContentLoaded',syncMenu);if(document.readyState!=='loading')syncMenu();
- return {enabled,render,setEnabled};
+ return {enabled,render,setEnabled,setSamples};
 })();
 window.homeReader=homeReader;
