@@ -5,6 +5,7 @@ const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH}:{}),...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];await page.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
+ await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});
@@ -105,6 +106,7 @@ const {chromium}=require('playwright');
   await page.locator('#homeTreasury [data-dial-fold]').click();await page.locator('#homeTreasury .bank-pills').waitFor(); // unfolded for the next checks
   // Motion on: rings fill and amounts tick, then settle on the exact value.
   const motion=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'no-preference'});await motion.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
+  await motion.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
   await motion.context().addCookies(await page.context().cookies());
   await motion.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});await motion.locator('#homeTreasury .bank-dial').waitFor();
   assert.equal(await motion.locator('#homeTreasury .dial-arc-in').evaluate(e=>getComputedStyle(e).animationName),'dial-fill');

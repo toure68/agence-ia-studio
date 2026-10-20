@@ -67,7 +67,12 @@ async function renderPriorities(initial={}) {
   refreshHomeSummary(cockpit,cards);
   priorityCards = cards;
   refreshHomeMessages(cards,cockpit);
-  const displayCards=groupPriorityCards(cards);
+  const reading=typeof homeReader!=='undefined'&&homeReader.enabled();
+  // Mode lecteur (reader.js): treasury → reader, at most 5 small cards. With nothing left to read it keeps one
+  // single replacement card (classic markup below); mode off keeps the classic cards unchanged.
+  if(reading&&homeReader.render(host,cards,actualCards,cid))return;
+  const displayCards=groupPriorityCards(reading?cards.slice(0,1):cards);
+  host.classList.remove('reader-host');document.querySelector('#content .reference-home')?.classList.remove('reader-active');
   host.innerHTML = priorityMarkup(displayCards);
   const all=host.querySelector("#homeAllActions");if(all)all.onclick=()=>openPriorityGroup({module:"all",members:cards},cid);
   host.querySelectorAll('[data-priority-open]').forEach(btn => btn.onclick = async () => {

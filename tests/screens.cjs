@@ -7,6 +7,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'reduce'});
+ await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
  const done=[];
  const shot=async(name,full=false)=>{try{await page.waitForTimeout(450);await page.screenshot({path:`${out}/${name}.png`,fullPage:full});done.push(name);}catch(e){console.error('capture',name,e.message);}};
  const step=async(name,fn)=>{try{await fn();}catch(e){console.error('step',name,e.message);}};

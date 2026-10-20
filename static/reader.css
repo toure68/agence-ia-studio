@@ -1,0 +1,67 @@
+/* Lecteur de notifications (reader.js, user request 2026-10-20). Same glass family as the treasury card. */
+.reference-home.reader-active #homeTreasury{display:none}
+#priorityBlock.reader-host{margin:0 0 20px}
+
+.home-reader{box-sizing:border-box;display:flex;flex-direction:column;gap:8px;margin:0 0 20px;text-align:left;padding:12px 14px 12px 14px;border:1px solid var(--home-border);border-radius:24px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08,0 10px 30px #00000038;color:var(--home-text);overflow:hidden;position:relative}
+body[data-wall] .reference-home .home-reader{background:linear-gradient(135deg,#ffffff1c,#ffffff08),rgba(8,12,18,var(--glass-tint,.3));-webkit-backdrop-filter:blur(22px) saturate(165%);backdrop-filter:blur(22px) saturate(165%);border-color:#ffffff26;box-shadow:inset 0 1px 0 #ffffff2e,0 10px 30px #0000002e}
+.home-reader[hidden]{display:none}
+.home-reader.state-danger{border-color:#F2616B66}
+.home-reader.state-warning{border-color:#E2B04A59}
+.home-reader.is-in{animation:readerIn .26s ease-out}
+@keyframes readerIn{from{transform:translateY(10px) scale(.985);opacity:.4}to{transform:none;opacity:1}}
+
+.reader-head{display:flex;align-items:center;gap:8px;min-height:32px;flex:none}
+.reader-head .module-icon{width:28px;height:28px;flex:0 0 28px;border-radius:9px;border-width:1.2px}
+.reader-head .module-icon svg{width:16px;height:16px}
+.reader-state{font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--home-blue);white-space:nowrap}
+.reader-state.state-danger,.reader-item.state-danger .reader-state{color:var(--home-red)}
+.reader-state.state-warning,.reader-item.state-warning .reader-state{color:var(--home-gold)}
+.reader-pos{font-size:12px;color:var(--home-muted);white-space:nowrap}
+.reader-tools{margin-left:auto;display:flex;gap:0;margin-right:-8px}
+.reader-icon{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:12px;background:transparent;color:var(--home-muted);cursor:pointer;padding:0}
+.reader-icon:hover,.reader-icon[aria-pressed="true"]{color:var(--home-text);background:#ffffff12}
+
+.reader-title{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex:none}
+.reader-title strong{font-size:17px;font-weight:800;line-height:1.25;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reader-amount{display:flex;flex-direction:column;align-items:flex-end;font-size:19px;font-weight:800;line-height:1.15;white-space:nowrap;color:var(--home-text)}
+.reader-amount.is-in{color:var(--home-green)}
+.reader-amount.is-out{color:#F59E6B}
+.reader-amount small{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--home-muted)}
+
+.reader-body-wrap{position:relative;flex:1 1 auto;min-height:21px;display:flex;border-top:1px solid #ffffff14;padding-top:7px}
+.reader-body{flex:1;min-width:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;font-size:14px;line-height:1.5;color:#D5DCE3}
+.reader-body::-webkit-scrollbar{display:none}
+.reader-muted{color:var(--home-muted)}
+.reader-rail{display:none;position:relative;width:22px;flex:0 0 22px;margin-right:-8px;cursor:grab;touch-action:none}
+.reader-rail::before{content:"";position:absolute;left:9px;top:2px;bottom:2px;width:4px;border-radius:2px;background:#ffffff1a}
+.reader-rail i{position:absolute;left:7px;width:8px;border-radius:4px;background:var(--home-green);top:0;height:40%}
+.reader-body-wrap.is-long .reader-rail{display:block}
+
+.reader-actions{display:flex;flex-wrap:wrap;gap:8px;flex:none}
+.reader-btn{flex:1 1 auto;min-height:44px;padding:0 12px;border-radius:12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #ffffff26;background:#ffffff0d;color:var(--home-text)}
+.reader-btn.is-main{flex:1.4 1 auto;border:0;background:var(--home-green);color:#06210F}
+.reader-btn.is-quiet{flex:0 1 auto;background:transparent;border-color:transparent;color:var(--home-muted)}
+.reader-btn:disabled{opacity:.55}
+.reader-done{margin:0;min-height:44px;display:flex;align-items:center;justify-content:center;width:100%;border-radius:12px;background:#4ADE801f;color:var(--home-green);font-weight:800;font-size:14px}
+
+.reader-bar{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px 8px;font-size:12px;color:var(--home-muted)}
+.reader-count b{color:var(--home-text);font-size:14px}
+.reader-ok{color:var(--home-green);font-weight:700}
+.reader-hint{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+.reader-list{overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;display:flex;flex-direction:column;gap:8px;border-radius:20px}
+.reader-list.has-more{-webkit-mask-image:linear-gradient(#000 calc(100% - 18px),#0000);mask-image:linear-gradient(#000 calc(100% - 18px),#0000)}
+.reader-list::-webkit-scrollbar{display:none}
+.reader-item{scroll-snap-align:start;scroll-snap-stop:always;flex:0 0 64px;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:0 14px;border:1px solid var(--home-border);border-radius:20px;background:var(--home-surface);color:var(--home-text);text-align:left;font:inherit;cursor:pointer;transition:opacity .2s}
+body[data-wall] .reference-home .reader-item{background:linear-gradient(135deg,#ffffff17,#ffffff06),rgba(8,12,18,var(--glass-tint,.3));-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.reader-item.is-read{opacity:.35}
+.reader-item .module-icon{width:36px;height:36px;flex:0 0 36px;border-radius:11px}
+.reader-item .module-icon svg{width:19px;height:19px}
+.reader-item-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.reader-item-copy strong{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reader-item-copy small{font-size:12px;color:var(--home-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reader-item .reader-state{font-size:11px}
+.reader-end{scroll-snap-align:start;flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding-top:12px;font-size:13px;color:var(--home-muted)}
+.reader-end .reader-btn{flex:none}
+
+@media (prefers-reduced-motion:reduce){.home-reader.is-in{animation:none}.reader-item{transition:none}}
