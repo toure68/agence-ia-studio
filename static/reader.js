@@ -80,9 +80,11 @@ const homeReader=(()=>{
   const done=doneSet().size,left=view.cards.length;
   return `<span class="reader-count" aria-live="polite"><b>${left}</b> à traiter${done?` · <span class="reader-ok">${done} traité${done>1?'s':''}</span>`:''}</span>`;
  }
+ // Money in the small cards follows the same colour code as the reader: + green when it comes in, − red when it goes out.
+ function moneyChip(c,amount){const sg=sign(c);return sg?`<b class="reader-money ${sg.cls}">${sg.s}${clean(amount)}</b>`:clean(amount);}
  function small(c,i){
   const p=presentation(c),cp=copy(c),key=moduleOf(c);
-  return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${c.source?' · '+clean(c.source):''}${cp.amount?' · '+clean(cp.amount):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
+  return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+moneyChip(c,cp.amount):''}${c.source?' · '+clean(c.source):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
  }
  function readerMarkup(c){
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
