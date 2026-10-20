@@ -7,14 +7,17 @@
 // Windows keep their own assistant in their header (#dockAssistant), so the assistant is always reachable.
 const homeTop=(()=>{
  function dateLabel(){const d=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'}).format(new Date());return d.charAt(0).toUpperCase()+d.slice(1);}
- const menu=()=>document.querySelector('.account-menu');
+ // Kept by reference: when the home is replaced (logout, another page) the menu leaves the DOM with it and must
+ // be put back into the top header, otherwise the account panel (#userEmail, #logout…) would be lost.
+ let menuEl=null;
+ const menu=()=>menuEl||(menuEl=document.querySelector('.account-menu'));
  const headerRow=()=>document.querySelector('.top .row');
  // The account menu sits in the home bar while the home is shown, back in the top header elsewhere.
  function placeMenu(){
   const m=menu();if(!m)return;
   const slot=document.querySelector('#content .home-account-slot');
   if(slot){if(m.parentElement!==slot)slot.append(m);}
-  else if(headerRow()&&m.parentElement!==headerRow()){m.removeAttribute('open');headerRow().append(m);}
+  else if(headerRow()&&(m.parentElement!==headerRow()||!m.isConnected)){m.removeAttribute('open');headerRow().append(m);}
  }
  function placeCompany(){
   const select=document.querySelector('#companySelect'),panel=document.querySelector('.account-panel');if(!select||!panel)return;
@@ -41,6 +44,7 @@ const homeTop=(()=>{
  }
  function sync(){placeMenu();placeCompany();gridItem();stampDate();}
  function start(){
+  menu();
   const content=document.querySelector('#content');if(!content)return;
   new MutationObserver(()=>sync()).observe(content,{childList:true,subtree:false});
   const select=document.querySelector('#companySelect');
