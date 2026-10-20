@@ -93,3 +93,10 @@ body[data-wall] .reference-home .reader-item{background:linear-gradient(135deg,#
 .reader-edit input:focus,.reader-edit textarea:focus{outline:none;border-color:var(--home-green);box-shadow:0 0 0 1px var(--home-green)}
 .reader-fact.is-source{background:#5BB0FF1f;color:#9CCBFF}
 .reader-title .reader-tag{vertical-align:3px}
+
+/* Cards already treated this session: greyed, buttons inactive. */
+.reader-item.is-done{opacity:.5;filter:grayscale(1)}
+.reader-done-tag{color:var(--home-green);font-weight:800}
+.reader-btn.is-done{flex:1 1 auto;border:1px solid #ffffff1f;background:#ffffff0a;color:var(--home-muted);cursor:default}
+.reader-btn:disabled.is-done{opacity:1}
+.home-reader.is-done .reader-title,.home-reader.is-done .reader-facts,.home-reader.is-done .reader-body-wrap{opacity:.55;filter:grayscale(.8)}
