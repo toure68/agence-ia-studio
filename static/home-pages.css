@@ -72,20 +72,3 @@ html.home-ios .filler-copy strong{font-size:14px;font-weight:700}
 html.home-ios .filler-copy small{font-size:11.5px;color:var(--home-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html.home-ios .filler-back{flex:none;align-self:center;min-height:36px;padding:0 14px;border:1px solid var(--home-border);border-radius:999px;background:#ffffff0d;color:var(--home-text);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
 html.home-ios .home-pages,html.home-ios .home-page-dots{position:relative;z-index:1}
-
-/* Middle: treasury/reader on top, the cards right above the grid (so they seem to come from under it); the space in
-   between is a touch zone that turns the reader back into the treasury. */
-html.home-ios #priorityBlock.reader-host{display:flex;flex-direction:column}
-html.home-ios #priorityBlock .reader-gap{flex:1 1 auto;min-height:0;display:block;width:100%;padding:0;border:0;background:transparent;cursor:default}
-html.home-ios .reference-home.reader-active #priorityBlock .reader-gap{cursor:pointer}
-html.home-ios #priorityBlock .reader-queue{flex:none}
-html.home-ios #priorityBlock.reader-host{margin-bottom:2px}
-/* Card entering the reader: from below when sliding up, from above when sliding back. */
-html.home-ios .home-reader.is-back{animation:readerBack .26s ease-out}
-@keyframes readerBack{from{transform:translateY(-12px) scale(.985);opacity:.4}to{transform:none;opacity:1}}
-/* Treasury fold button: bottom centre of the card. */
-html.home-ios #homeTreasury .home-treasury{position:relative;padding-bottom:22px}
-html.home-ios #homeTreasury .home-treasury-top,html.home-ios #homeTreasury .dial-head{position:static!important}
-html.home-ios #homeTreasury .dial-fold-toggle{position:absolute!important;left:0;right:0;margin:0 auto!important;bottom:-14px;transform:none!important;z-index:3;width:44px;height:28px;border-radius:14px;background:#0E131A;border:1px solid var(--home-border)}
-html.home-ios .filler-back-zone{flex:1;width:100%;display:flex;align-items:center;justify-content:center;border:1px dashed #ffffff1f;border-radius:16px;background:transparent;color:var(--home-muted);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
-html.home-ios #priorityBlock .reader-queue{margin-bottom:16px;position:relative;z-index:2}

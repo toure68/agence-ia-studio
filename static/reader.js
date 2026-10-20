@@ -147,7 +147,7 @@ const homeReader=(()=>{
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
   if(typeof homeTop!=='undefined')card.dataset.date=homeTop.dateLabel();
-  card.classList.remove('is-in','is-back');void card.offsetWidth;card.classList.add(view.focus<(view.prevFocus??-1)?'is-back':'is-in');view.prevFocus=view.focus;
+  card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
   const btns=buttons(c);
   card.querySelectorAll('[data-reader-run]').forEach(b=>b.onclick=()=>btns[Number(b.dataset.readerRun)].run());
   card.querySelector('[data-reader-open]').onclick=()=>openAction(c);
@@ -170,7 +170,7 @@ const homeReader=(()=>{
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
-  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:Math.max(reading?1:0,Math.min(view.cards.length-(reading?view.focus+1:0),reading?Math.max(1,cap()-2):cap()));list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=Math.max(pitch(),cap()*pitch()-6)+'px';return;} // the end block matches the box, so sliding back from the last card works at once
+  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:Math.max(reading?1:0,Math.min(view.cards.length-(reading?view.focus+1:0),reading?Math.max(1,cap()-2):cap()));list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
@@ -192,10 +192,9 @@ const homeReader=(()=>{
   view.cards=real;
   const n=real.length,h=Math.min(n,cap())*pitch()-8;
   host.classList.add('reader-host');
-  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><button type="button" class="reader-gap" tabindex="-1" aria-label="Revenir à la trésorerie"></button><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><span>✓ Fin de la liste</span><button type="button" class="reader-btn is-second" data-reader-top>Revenir à la trésorerie</button></div></div></div>`;
+  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><span>✓ Fin de la liste</span><button type="button" class="reader-btn is-second" data-reader-top>Revenir à la trésorerie</button></div></div></div>`;
   const list=host.querySelector('.reader-list');
   host.querySelector('[data-reader-top]').onclick=()=>list.scrollTo({top:0,behavior:'smooth'});
-  host.querySelector('.reader-gap').onclick=()=>{if(view.focus>=0)list.scrollTo({top:0,behavior:'smooth'});};
   host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
   // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
   let focus=-1;
