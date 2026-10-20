@@ -1,7 +1,7 @@
 name: Contrôle du site en ligne
 on:
   push:
-    branches: [main, ci/controle-site-en-ligne]
+    branches: [main]
   schedule:
     - cron: '17 */4 * * *'
   workflow_dispatch:
