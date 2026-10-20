@@ -1,0 +1,45 @@
+name: Contrôle du site en ligne
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 */4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_BROWSER_CHANNEL: chrome
+      LIVE_EMAIL: ${{ secrets.LIVE_EMAIL }}
+      LIVE_PASSWORD: ${{ secrets.LIVE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright
+      - name: Wait for the Railway deployment after a release
+        if: github.event_name == 'push'
+        run: sleep 300
+      - name: Check the live site (read-only)
+        run: |
+          set -o pipefail
+          if ! node tests/live_check.cjs 2>&1 | tee /tmp/live-check.log; then
+            msg=$(tail -c 3000 /tmp/live-check.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=live_check::$msg"
+            exit 1
+          fi
+      - name: Publish live captures
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -d /tmp/live ] || exit 0
+          cd /tmp/live
+          git init -q && git checkout -q -b live
+          git add . && git -c user.name=ci-live -c user.email=ci-live@users.noreply.github.com commit -qm "Live ${GITHUB_SHA::7}"
+          git push -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/captures/live-$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ATTEMPT}"
