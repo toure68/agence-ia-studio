@@ -110,11 +110,34 @@ const homePages=(()=>{
   let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
-  const slots=Math.max(1,Math.min(5,Math.floor((free+12)/72)));
+  // Cards are 52px + 6px gap here (reader.js): 4 when they fit whole, else 3.
+  const slots=Math.max(2,Math.min(4,Math.floor((free+6)/58)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
- let watcher=null;
- function sync(){if(!on())return;settingsRow();wirePages();requestAnimationFrame(fit);setTimeout(fit,350);
+ // The waiting cards (beyond the ones shown) peek out under the function pages like an iPhone notification
+ // stack: two thin translucent edges and the count, laid over the space below the pages (the grid never moves).
+ function stack(){
+  const home=document.querySelector('#content .reference-home');if(!home||!on())return;
+  const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list');
+  let el=home.querySelector('.home-stack');
+  const total=home.querySelectorAll('.reader-item').length;
+  const shown=list?[...home.querySelectorAll('.reader-item')].filter(e=>{const r=e.getBoundingClientRect(),l=list.getBoundingClientRect();return r.bottom>l.top+2&&r.top<l.bottom-2;}).length:0;
+  const reading=home.classList.contains('reader-active');
+  const read=reading?[...home.querySelectorAll('.reader-item.is-read')].length:0;
+  const rest=Math.max(0,total-read-shown);
+  if(!pages||!rest){el?.remove();return;}
+  if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
+   el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:58,behavior:'smooth'});};}
+  el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
+  el.innerHTML=`<i></i><i></i><span>+${rest}</span>`;
+  const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
+  el.style.top=(pr.bottom-hr.top)+'px';
+ }
+ let watcher=null,stackWatch=null;
+ function sync(){if(!on())return;settingsRow();wirePages();requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
+  const block=document.querySelector('#content #priorityBlock');
+  if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch=new MutationObserver(()=>requestAnimationFrame(stack));stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
+   block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});}
   // Re-fit when a block changes height (treasury folded/unfolded, grid sized, settings shown…).
   const home=document.querySelector('#content .reference-home');if(!home||typeof ResizeObserver!=='function')return;
   watcher?.disconnect();watcher=new ResizeObserver(()=>requestAnimationFrame(fit));
