@@ -204,6 +204,9 @@ const {chromium}=require('playwright');
     await waitWindow(module);
     if(await page.locator('#contextPanel').count())assert(await page.evaluate(()=>document.body.classList.contains('dock-expanded')&&!!document.querySelector('#dockAppBar [data-focus-app]')),'Action window maximized, app strip at the bottom');
     else{const w=await geo();assert(Math.abs(w.win.x-w.frame.x)<=2&&Math.abs(w.win.w-w.frame.w)<=2,'Action list docked on the function frame '+JSON.stringify(w));}
+    // Action mode (user request 2026-10-20): the strip lists only the functions with actions to do (+ the current one).
+    const strip=await page.evaluate(()=>{const counts=homeLayout.state?.action_counts||{};return [...document.querySelectorAll('#dockAppBar [data-focus-app], #moduleFocus .focus-apps [data-focus-app]')].map(b=>({k:b.dataset.focusApp,cur:b.classList.contains('is-current'),n:counts[b.dataset.focusApp]||0}));});
+    assert(strip.length&&strip.every(a=>a.cur||a.n>0),'Strip from an action shows only functions with actions '+JSON.stringify(strip));
     await toGrid();
    }
   }

@@ -11,6 +11,23 @@ function moduleFocusModules(){
  const w=homeLayout.workspace,s=homeLayout.state||{};if(!w)return [];
  return homeGridModules(w,s).modules;
 }
+// App strip. Opened from an action card ("action mode", user request 2026-10-20): the strip only shows the
+// functions that still have actions to do (with their count), so every action is handled from one window.
+function moduleFocusStripKeys(key,modules){
+ if(!moduleDock.actions)return modules;
+ const counts=homeLayout.state?.action_counts||{},all=homeLayout.workspace?.modules||modules;
+ return all.filter(m=>m.key===key||(counts[m.key]||0)>0);
+}
+function moduleFocusStrip(key,modules){
+ const counts=homeLayout.state?.action_counts||{};
+ return moduleFocusStripKeys(key,modules).map(m=>{const n=moduleDock.actions?counts[m.key]||0:0;return `<button type="button" class="focus-app tone-${moduleTone(m.key)}${m.key===key?' is-current':''}" data-focus-app="${m.key}" aria-label="${clean(m.label)}${n?` · ${n} à traiter`:''}" aria-pressed="${m.key===key}" title="${clean(m.label)}"><span class="focus-app-name" aria-hidden="true">${clean(({prospects:'Prospects','company-edit':'Identité',scanner:'Documents'})[m.key]||m.label)}</span><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span>${n?`<i class="focus-app-count" aria-hidden="true">${n>9?'9+':n}</i>`:''}</button>`;}).join('');
+}
+// In action mode, touching a function of the strip opens its actions (one: that action; several: their list).
+function moduleFocusActionOpener(key){
+ if(!moduleDock.actions||typeof openPriorityAction!=='function')return null;
+ const members=moduleFocusActions(key);if(!members.length)return null;
+ return members.length===1?()=>openPriorityAction(members[0]):()=>openPriorityGroup({module:key,members},company.id);
+}
 function moduleFocusMoney(minor,currency){try{return quoteMoney(minor,currency||'EUR');}catch{return String(minor/100);}}
 function moduleFocusDate(value){
  if(!/^\d{4}-\d{2}-\d{2}/.test(value||''))return value||'';
@@ -49,7 +66,7 @@ function moduleFocusMarkup(key){
  const status=count?`${count} à traiter`:p.label==='Normal'?'À jour':p.label;
  const statusTone=count||['danger','warning'].includes(p.state)?(p.state==='danger'?'is-danger':'is-warning'):'is-ok';
  const create=moduleFocusNew[key]?`<a class="focus-btn is-primary" data-focus-go="${moduleFocusNew[key]}" href="#/${moduleFocusNew[key]}">＋ ${clean(moduleFocusNewLabel[key])}</a>`:'';
- const strip=modules.map(m=>`<button type="button" class="focus-app tone-${moduleTone(m.key)}${m.key===key?' is-current':''}" data-focus-app="${m.key}" aria-label="${clean(m.label)}" aria-pressed="${m.key===key}" title="${clean(m.label)}"><span class="focus-app-name" aria-hidden="true">${clean(({prospects:'Prospects','company-edit':'Identité',scanner:'Documents'})[m.key]||m.label)}</span><span class="module-icon" aria-hidden="true">${moduleIcon(m.key)}</span></button>`).join('');
+ const strip=moduleFocusStrip(key,modules);
  return `<div class="focus-head"><button type="button" class="focus-back focus-apps-button" data-focus-close aria-label="Toutes les fonctions" title="Toutes les fonctions"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></g></svg></button><span class="module-icon tone-${moduleTone(key)}" aria-hidden="true">${moduleIcon(key)}</span><h2 class="focus-title-main">${clean(module.label)}</h2><span class="focus-status ${statusTone}"><i aria-hidden="true"></i>${clean(status)}</span></div>
 <div class="focus-kpis"><div><span>${clean(widget.label)}</span><b>${clean(widget.value)}</b></div><div><span>Actions</span><b>${count}</b></div><div><span>État</span><b class="focus-state">${clean(p.label==='Normal'?'Normal':p.label)}</b></div></div>
 <div class="focus-body" data-focus-rows>${moduleFocusRows(key)}</div>
@@ -107,6 +124,7 @@ document.addEventListener('click',e=>{
  // Own attribute (not data-go) so the frame's buttons never clash with the full function's own links.
  if(go){moduleFocusDock();const route=go.dataset.focusGo;if(['task-new','activity-new'].includes(route))return openCommand(route==='task-new'?'task':'activity');return openTab(route,{companyId:go.dataset.companyId?Number(go.dataset.companyId):null});}
  const key=(tile||app).dataset.go||(tile||app).dataset.focusApp;
+ moduleDock.actions=false; // a function opened from the grid: the strip shows every function
  if(!moduleFocusWindow(key))openTab(key);
 },true);
 // A function opens directly as its full window, docked on the frame (same place, same size), with the app strip
@@ -130,7 +148,7 @@ window.moduleFocusWindow=moduleFocusWindow;
 // (history), then open the other function's window. Closing in between does not fold the frame.
 function moduleFocusSwitch(key){
  moduleDock.switching=true;closeContext();
- navigationQueue.then(()=>navigationQueue).catch(()=>{}).then(()=>{moduleDock.switching=false;if(!moduleFocusWindow(key))openTab(key);});
+ navigationQueue.then(()=>navigationQueue).catch(()=>{}).then(()=>{moduleDock.switching=false;if(!moduleFocusWindow(key,moduleFocusActionOpener(key)))openTab(key);});
 }
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||!moduleFocus.key||document.querySelector('#modalLayer:not(.hide)')||document.querySelector('#contextPanel'))return;
@@ -138,7 +156,7 @@ document.addEventListener('keydown',e=>{
 });
 // Second window (full function, form): opens exactly on the frame — same place, same size —
 // with a back arrow and a "Déployer" button for when the whole screen is needed.
-const moduleDock={armed:0,seen:false,direct:false,switching:false,preferExpanded:true};
+const moduleDock={armed:0,seen:false,direct:false,switching:false,preferExpanded:true,actions:false};
 function moduleDockSetExpanded(on,remember){
  document.body.classList.toggle('dock-expanded',on);if(remember)moduleDock.preferExpanded=on;
  const shell=document.querySelector('#shell');if(shell&&document.querySelector('#contextLayer'))shell.inert=on;
@@ -191,7 +209,7 @@ function moduleDockSync(){
   }
   // The strip follows the window on top (form sheet opened or closed).
   if(document.body.classList.contains('dock-expanded'))moduleDockBar(true);
- }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct&&!moduleDock.switching){moduleDock.direct=false;moduleFocusClose();}}
+ }else if(moduleDock.seen||Date.now()-moduleDock.armed>5000){document.body.classList.remove('dock-to-focus','dock-expanded','dock-keyboard');moduleDock.seen=false;moduleDockBar(false);if(moduleDock.direct&&!moduleDock.switching){moduleDock.direct=false;moduleDock.actions=false;moduleFocusClose();}}
 }
 // Full screen (⤢): the home is covered, so the same app strip is shown fixed under the window.
 // Touching an app closes the window and switches the function dial, exactly like the strip on the dial.
@@ -203,7 +221,7 @@ function moduleDockBar(on){
  const host=document.querySelector('#modalLayer:not(.hide) .modal')||document.querySelector('#contextPanel');
  if(!source||!host){bar?.remove();return;}
  if(!bar){
-  bar=document.createElement('nav');bar.id='dockAppBar';bar.className='reference-home dock-app-bar';bar.setAttribute('aria-label','Toutes les fonctions');
+  bar=document.createElement('nav');bar.id='dockAppBar';bar.className='reference-home dock-app-bar'+(moduleDock.actions?' is-actions':'');bar.setAttribute('aria-label',moduleDock.actions?'Fonctions avec des actions à traiter':'Toutes les fonctions');
   bar.innerHTML=source.innerHTML;
   bar.addEventListener('click',e=>{
    const app=e.target.closest('[data-focus-app]');if(!app)return;
@@ -223,7 +241,9 @@ function moduleDockBar(on){
 async function moduleFocusFromPriority(module,open){
  const known=(homeLayout.workspace?.modules||[]).some(m=>m.key===module);
  if(!known)return false;
- return moduleFocusWindow(module,open);
+ moduleDock.actions=true;
+ const ok=moduleFocusWindow(module,open);if(!ok)moduleDock.actions=false;
+ return ok;
 }
 window.moduleFocusFromPriority=moduleFocusFromPriority;
 window.moduleFocusDock=moduleFocusDock;
