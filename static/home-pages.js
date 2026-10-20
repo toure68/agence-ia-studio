@@ -3,14 +3,14 @@
 // layout; the older UI tests use it):
 // - the home never scrolls vertically: everything fits one screen (only pulling down refreshes);
 // - top: the réglages shown directly as small icons (no menu to open);
-// - middle: treasury + exactly 4 small cards, or the reader + exactly 2 (reader.js), never cut in half;
-// - functions: pages of 4 × 3 squares swiped sideways like iPhone home screens, with dots; the functions that
+// - middle: treasury / reader + the small cards (as many as fit, at most 5);
+// - functions: pages of 4 × 2 squares swiped sideways like iPhone home screens, with dots; the functions that
 //   have an action to do are always on the first page (they take the place of quiet ones); iOS-style red
 //   number badges; no « Réserve de fonctions » button;
 // - bottom: the Assistant IA bar.
 // Opening a function keeps the existing window and its function strip fixed at the bottom (swipe sideways only).
 const homePages=(()=>{
- const KEY='aia-pages',PER=12,COLS=4; // 4 columns × 3 rows per page (user decision 2026-10-20)
+ const KEY='aia-pages',PER=8,COLS=4;
  const on=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  document.documentElement.classList.toggle('home-ios',on());
  let page=0;
@@ -81,11 +81,18 @@ const homePages=(()=>{
  }
 
  // One screen: the cards list gets the room left once everything else is laid out.
- // One screen: the home is exactly the visible height; the function pages take what is left (CSS flex).
  function fit(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
+  // Counted with the treasury shown; while reading, the reader's extra height comes out of the list (reader.js).
+  if(home.classList.contains('reader-active'))return;
   const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top);
   home.style.setProperty('--home-ios-height',h+'px');
+  const block=home.querySelector('#priorityBlock'),list=block?.querySelector('.reader-list');
+  let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
+  const bar=block?.querySelector('.reader-bar');
+  free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
+  const slots=Math.max(1,Math.min(5,Math.floor((free+12)/72)));
+  if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  let watcher=null;
  function sync(){if(!on())return;settingsRow();wirePages();requestAnimationFrame(fit);setTimeout(fit,350);
