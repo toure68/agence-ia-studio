@@ -74,6 +74,11 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // Messages d'essai: 16 simulated messages on top, marked « Essai », a button counts them as done, nothing saved.
   await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
   await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===16);
+  // Money colour code in the small cards: + green when it comes in, − red when it goes out.
+  const money=await page.evaluate(()=>{const get=t=>{const it=[...document.querySelectorAll('.reader-item')].find(e=>e.innerText.includes(t))?.querySelector('.reader-money');return it?{text:it.textContent,cls:it.className,color:getComputedStyle(it).color}:null;};return {inn:get('Bâtiplus SARL'),out:get('Matériaux Durand')};});
+  assert.ok(money.inn&&money.inn.text.startsWith('+')&&money.inn.cls.includes('is-in'),'incoming amount in green: '+JSON.stringify(money));
+  assert.ok(money.out&&money.out.text.startsWith('−')&&money.out.cls.includes('is-out'),'outgoing amount in red: '+JSON.stringify(money));
+  assert.notEqual(money.inn.color,money.out.color);
   await page.locator('.reader-list').evaluate(el=>el.scrollTo({top:72}));
   await page.waitForFunction(()=>document.querySelector('.home-reader:not([hidden]) .reader-tag'));
   assert.ok((await page.locator('.home-reader').innerText()).includes('Bâtiplus SARL'));

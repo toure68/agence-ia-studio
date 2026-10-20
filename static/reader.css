@@ -28,7 +28,10 @@ body[data-wall] .reference-home .home-reader{background:linear-gradient(135deg,#
 .reader-title strong{font-size:17px;font-weight:800;line-height:1.25;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .reader-amount{display:flex;flex-direction:column;align-items:flex-end;font-size:19px;font-weight:800;line-height:1.15;white-space:nowrap;color:var(--home-text)}
 .reader-amount.is-in{color:var(--home-green)}
-.reader-amount.is-out{color:#F59E6B}
+.reader-amount.is-out{color:var(--home-red)}
+.reader-money{font-weight:800}
+.reader-money.is-in{color:var(--home-green)}
+.reader-money.is-out{color:var(--home-red)}
 .reader-amount small{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--home-muted)}
 
 .reader-body-wrap{position:relative;flex:1 1 auto;min-height:21px;display:flex;border-top:1px solid #ffffff14;padding-top:7px}
