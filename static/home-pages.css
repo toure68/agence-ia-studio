@@ -15,20 +15,22 @@ html.home-ios .home-setting span{white-space:nowrap}
 html.home-ios .home-account-slot{display:none}
 
 /* Bottom: the Assistant IA bar, under the functions. */
-html.home-ios .reference-home .home-topbar{order:99;position:static;margin:10px -20px 0;padding:6px 20px calc(10px + env(safe-area-inset-bottom,0px));background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+html.home-ios .reference-home .home-topbar{order:99;position:static;margin:6px -20px 0;padding:4px 20px calc(6px + env(safe-area-inset-bottom,0px));background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
 
 /* Middle keeps what is left; the functions sit at the bottom and never move. */
-html.home-ios #priorityBlock{flex:1 1 auto;min-height:0;margin-bottom:6px}
-html.home-ios .reference-home .home-pages{margin-top:auto}
+html.home-ios #priorityBlock{flex:none;margin-bottom:8px}
+html.home-ios .reference-home .home-pages{flex:1 1 auto;min-height:0}
 html.home-ios #moduleFocus{margin-top:auto}
 
-/* Function pages: 4 × 2 squares, swiped sideways like iPhone home screens. */
+/* Function pages: 4 × 3 squares filling the room left, swiped sideways like iPhone home screens. */
 html.home-ios .home-pages.module-grid{display:flex!important;grid-template-columns:none!important;gap:0!important;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -20px;padding:6px 0 0;overscroll-behavior-x:contain}
 html.home-ios .home-pages::-webkit-scrollbar{display:none}
-html.home-ios .home-page.module-grid{flex:0 0 100%;box-sizing:border-box;padding:0 20px;scroll-snap-align:start;scroll-snap-stop:always;align-content:start;margin:0}
-html.home-ios .home-page-dots{display:flex;justify-content:center;gap:8px;padding:8px 0 0}
-html.home-ios .home-page-dot{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#ffffff40;cursor:pointer;position:relative}
-html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-10px}
+html.home-ios .home-page.module-grid{flex:0 0 100%;box-sizing:border-box;height:100%;padding:0 20px;scroll-snap-align:start;scroll-snap-stop:always;grid-template-rows:repeat(3,minmax(0,1fr));align-content:stretch;row-gap:8px;margin:0}
+html.home-ios .home-page .module-card,html.home-ios .home-page .module-tile{height:100%!important;min-height:0!important;max-height:none!important}
+html.home-ios .home-page .module-tile{overflow:hidden}
+html.home-ios .home-page-dots{display:flex;justify-content:center;gap:6px;padding:5px 0 0;height:5px;box-sizing:content-box}
+html.home-ios .home-page-dot{width:5px;height:5px;padding:0;border:0;border-radius:50%;background:#ffffff40;cursor:pointer;position:relative}
+html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-8px}
 html.home-ios .home-page-dot[aria-selected="true"]{background:#fff}
 
 /* iOS-style red number badge on the icon (number of actions to do). */
@@ -37,3 +39,32 @@ html.home-ios .home-page .module-count{position:absolute;top:-7px;right:-7px;lef
 
 /* No grid chooser nor reserve in this layout. */
 html.home-ios #accountGrid{display:none}
+
+/* Small cards on this home: 52px + 6px gap, exactly 4 (or 2 while reading), never cut (no fade). */
+html.home-ios .reader-list{gap:6px}
+html.home-ios .reader-list.has-more{-webkit-mask-image:none;mask-image:none}
+html.home-ios .reader-item{flex-basis:52px;height:52px;border-radius:16px;gap:10px;padding:0 12px}
+html.home-ios .reader-item .module-icon{width:32px;height:32px;flex-basis:32px;border-radius:10px}
+html.home-ios .reader-item .module-icon svg{width:17px;height:17px}
+html.home-ios .reader-item-copy strong{font-size:13.5px}
+html.home-ios .reader-item-copy small{font-size:11.5px}
+html.home-ios .reader-bar{padding-bottom:5px}
+html.home-ios .home-reader{margin-bottom:8px}
+/* Smaller top icons to leave room in the middle. */
+html.home-ios .home-setting{flex-basis:54px;min-height:0;gap:2px;padding:2px 0}
+html.home-ios .home-setting svg{width:20px;height:20px;padding:6px}
+html.home-ios .home-settings{margin-bottom:12px}
+html.home-ios .reference-home .assistant-dock{min-height:44px}
+/* Function squares adapt to the room left: icon + name, then the icon alone on short screens. */
+html.home-ios .home-page .module-tile{container-type:size;padding:4px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+html.home-ios .home-page .module-face{display:inline-flex;width:auto;justify-content:center;margin:0;position:relative}
+html.home-ios .home-page .module-count{top:-6px;right:-10px;min-width:17px;height:17px;line-height:17px;font-size:10.5px;padding:0 5px;border-radius:9px}
+html.home-ios .home-page .module-icon{width:28px!important;height:28px!important;flex:0 0 28px!important;border-radius:9px}
+html.home-ios .home-page .module-icon svg{width:16px;height:16px}
+html.home-ios .home-page .module-copy strong{font-size:10.5px;line-height:1.15}
+html.home-ios .home-page .module-insight,html.home-ios .home-page .widget,html.home-ios .home-page .module-widget{display:none}
+@container (max-height:44px){html.home-ios .home-page .module-copy{display:none}}
+html.home-ios .home-page .module-face>.module-count{position:absolute!important;inset:-7px -11px auto auto!important;width:auto!important;min-width:17px!important;height:17px!important;line-height:17px!important;padding:0 5px!important;margin:0!important;font-size:10.5px!important;border-radius:9px!important;transform:none!important}
+html.home-ios .home-page .module-face{height:auto!important;min-height:0!important;padding:0!important;flex:none!important}
+html.home-ios .home-page .module-face>.module-icon{margin:0!important;position:static!important}
+html.home-ios .home-page .module-copy{margin:0!important;padding:0!important;position:static!important;flex:none}
