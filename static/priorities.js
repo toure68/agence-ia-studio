@@ -129,6 +129,7 @@ async function renderPriorityGroupPanel(){
  const view=priorityGroupView&&priorityGroupView.cid===company?.id?priorityGroupView:{module:'all',keys:null};
  const members=view.keys?view.keys.map(k=>priorityCards.find(c=>c.key===k)).filter(Boolean):priorityCards.filter(c=>!c.fallback&&!c.example);
  $('#content').innerHTML=`<h1>${clean(names[view.module]||'Actions à faire')}</h1><p class="sub">${members.length} action${members.length>1?'s':''} à traiter</p><div class="task-list priority-group-list">${members.map((card,i)=>`<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}${card.description?' · '+clean(priorityFriendly(card.description)):''}</small></span><span aria-hidden="true">›</span></button>`).join('')||'<p class="sub">Rien à traiter pour le moment.</p>'}</div>`;
+ $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>{if(typeof rowSwipe!=='undefined')rowSwipe.attach(btn,members[Number(btn.dataset.priorityItemOpen)]);});
  $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=()=>{const card=members[Number(btn.dataset.priorityItemOpen)];if(typeof inlineActions!=='undefined'&&inlineActions.toggle(btn,card))return;openPriorityAction(card);});
 }
 

@@ -27,7 +27,7 @@
   if(type==='email')Object.entries(RULES[1].set).forEach(([k,v])=>{if(!el.hasAttribute(k))el.setAttribute(k,v);});
   if(type==='tel'&&!el.hasAttribute('autocomplete'))el.setAttribute('autocomplete','tel');
   if(type==='number'&&!el.hasAttribute('inputmode'))el.setAttribute('inputmode',/\.|any/.test(el.getAttribute('step')||'')?'decimal':'numeric');
-  if(el.tagName==='TEXTAREA'){if(!el.hasAttribute('autocapitalize'))el.setAttribute('autocapitalize','sentences');return;}
+  if(el.tagName==='TEXTAREA'){if(!el.hasAttribute('autocapitalize'))el.setAttribute('autocapitalize','sentences');if(/address|adresse/i.test((el.name||'')+' '+(el.id||''))&&!el.hasAttribute('autocomplete'))el.setAttribute('autocomplete','street-address');return;}
   if(type!=='text'&&type!=='tel'&&type!=='email'&&type!=='url')return;
   // One rule per field: the first matching one (phone before e-mail before the others).
   const rule=RULES.find(r=>r.re.test(el.name||'')||r.re.test(el.id||''))||RULES.find(r=>r.re.test(key));
