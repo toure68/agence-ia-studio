@@ -33,7 +33,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
  for(const key of ['leads','scanner','clients','equipment'])assert.equal(await page.locator(`.module-grid [data-go="${key}"] .module-count`).innerText(),'1');
  assert.equal(await page.locator('.module-grid [data-go="calendar"] .module-count').count(),0);
  assert.equal(await page.locator('.home-modules-heading a').innerText(),'');
- assert.equal(await page.locator('#companySelect option:checked').innerText(),'Éclat Propreté');
+ assert.equal(await page.locator('#companySelect option:checked').textContent(),'Éclat Propreté');
  assert(await page.locator('.priority-card').evaluateAll(cards=>cards.every(c=>{const card=c.getBoundingClientRect(),voice=c.querySelector('.voice-button').getBoundingClientRect(),cta=c.querySelector('.priority-cta').getBoundingClientRect();return voice.bottom<=cta.top&&voice.top-card.top<20&&card.right-voice.right<60&&Math.abs((cta.left-card.left)-(card.right-cta.right))<3;})),'Speaker sits top right; green button centered');
  const heights=await page.locator('.priority-card').evaluateAll(cards=>cards.map(c=>c.getBoundingClientRect().height));
  assert(heights.slice(0,2).reduce((a,b)=>a+b,0)+heights[2]/2+24<744,'at least 2.5 action cards fit in the usable viewport');

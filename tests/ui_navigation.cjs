@@ -72,12 +72,13 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#assistantChat').count(),1);
    assert.equal(await page.locator('#assistantParking').evaluate(el=>el.hidden),true);
    assert.equal(await page.locator('#assistantMessage').isVisible(),false);
-   // Assistant bar sits just above the function grid, aligned with the grid chooser on the same row.
-   const pill=await page.locator('#assistantDock').evaluate(el=>{const r=el.getBoundingClientRect(),priorities=document.querySelector('#priorityBlock').getBoundingClientRect(),grid=document.querySelector('#content .module-grid').getBoundingClientRect(),toggle=document.querySelector('[data-columns-toggle]').getBoundingClientRect();return {height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right,priorityBottom:priorities.bottom,gridTop:grid.top,toggleMid:(toggle.top+toggle.bottom)/2,mid:(r.top+r.bottom)/2,toggleLeft:toggle.left,position:getComputedStyle(el).position,width:innerWidth};});
-   assert(pill.height>=44&&pill.height<=90&&pill.top>=pill.priorityBottom&&pill.bottom<=pill.gridTop&&pill.left>=0&&pill.right<=pill.toggleLeft&&Math.abs(pill.mid-pill.toggleMid)<3,'Assistant sits above the grid, aligned with the grid button: '+JSON.stringify(pill));assert.equal(pill.position,'relative');
-   // Greeting centered; date and status as distinct chips, status green when up to date or orange with actions.
-   const head=await page.evaluate(()=>({align:getComputedStyle(document.querySelector('.home-heading')).textAlign,date:!!document.querySelector('#homeDay .home-date'),status:document.querySelector('#homeDay .home-status')?.className||'',text:document.querySelector('#homeDay .home-status')?.textContent||''}));
-   assert.equal(head.align,'center');assert(head.date);assert(/is-(ok|todo)/.test(head.status));assert(head.status.includes('is-ok')?head.text==='0 action à traiter':/\d+ actions? à traiter/.test(head.text),'Status chip text matches its color: '+JSON.stringify(head));
+   // Home top (user request 2026-10-20): no greeting nor chips; the Assistant IA bar is at the very top, fixed
+   // while the home scrolls, with the account button next to it; the date is a tab on the treasury card.
+   const pill=await page.locator('#assistantDock').evaluate(el=>{const r=el.getBoundingClientRect(),t=document.querySelector('#homeTreasury').getBoundingClientRect(),bar=el.closest('.home-topbar');return {height:r.height,bottom:r.bottom,treasuryTop:t.top,left:r.left,right:r.right,width:innerWidth,sticky:bar&&getComputedStyle(bar).position};});
+   assert(pill.height>=44&&pill.height<=90&&pill.bottom<=pill.treasuryTop&&pill.left>=0&&pill.right<=pill.width,'Assistant at the top, above the treasury: '+JSON.stringify(pill));assert.equal(pill.sticky,'sticky');
+   assert.equal(await page.locator('.home-heading,#homeDay').count(),0,'No greeting nor date/status chips');
+   assert.match(await page.locator('#homeTreasury').getAttribute('data-date'),/^[A-ZÉ][a-zé]+ \d{1,2} [a-zéû]+$/);
+   assert.equal(await page.locator('.main>.top').isVisible(),false,'No top header on the home');
    assert.equal(await page.locator('#assistantMessage').getAttribute('placeholder'),'Posez une question ou ajoutez un document…');
 
    assert.equal(await page.locator('#voiceFab,.dictation-button,#startCommandMic').count(),0);
@@ -218,7 +219,6 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#mobileNav').count(),0);
    assert.equal(await page.locator('.home-quick-actions').count(),0);
    await page.waitForFunction(()=>document.querySelectorAll('.routine-card').length===1);
-   assert((await page.locator('.home-heading').innerText()).startsWith('Bonjour'));
    await priorityLayout(1);
    await page.locator('.priority-card>.voice-button').click();
    assert((await page.evaluate(()=>window.__spoken.join(' '))).includes('Organiser'));

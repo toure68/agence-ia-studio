@@ -23,11 +23,11 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
 async function zeroDashboard(){
  const cid=company.id;
  const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
- $('#content').innerHTML=`<div class="reference-home"><header class="home-heading"><h1>Bonjour ${clean((me.name||me.display_name||(me.email.toLowerCase()==='mohamedtoure2000@gmail.com'?'Mohamed':me.email.split('@')[0])).split(' ')[0])}</h1><p id="homeDay" class="home-day"></p></header><section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><div class="home-modules-heading"><h2>Vos modules</h2>${assistantDockMarkup()}<a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
+ $('#content').innerHTML=`<div class="reference-home"><div class="home-topbar">${assistantDockMarkup()}<span class="home-account-slot"></span></div><section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
  $('#homeTreasury').addEventListener('click',e=>{const command=e.target.closest('[data-home-cash]');if(command){e.preventDefault();openCommand('movement',command.dataset.homeCash);return;}if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
- const greeting=$('.home-heading h1');greeting.textContent=greeting.textContent.replace(/Bonjour (\p{L})/u,(_,letter)=>'Bonjour '+letter.toLocaleUpperCase('fr'));
  const gridButton=$('.home-modules-heading [data-go="module-library"]');gridButton.setAttribute('aria-label','Choisir le nombre de colonnes');gridButton.title='Choisir le nombre de colonnes';gridButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  mountColumnChooser(gridButton,workspace,state);
+ if(typeof homeTop!=='undefined')homeTop.sync();
  await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
 }
 

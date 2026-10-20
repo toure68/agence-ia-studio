@@ -5,7 +5,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
   const page=await browser.newPage({viewport:{width,height:844}});
   await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
   await page.goto('http://127.0.0.1:8125/demo');await page.locator('.module-grid').waitFor();
-  for(const selector of ['.home-heading','.home-day','.assistant-dock','.assistant-dock-hint','.module-copy']){
+  for(const selector of ['.assistant-dock','.assistant-dock-hint','.module-copy']){
    assert.equal(await page.locator(selector).first().evaluate(e=>getComputedStyle(e).textAlign),'center',selector);
   }
   for(const selector of ['.home-section-title','.priority-tile','.priority-description'])assert.equal(await page.locator(selector).first().evaluate(e=>getComputedStyle(e).textAlign),'left',selector);

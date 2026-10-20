@@ -128,6 +128,7 @@ const homeReader=(()=>{
   card.hidden=false;card.style.height=editing?'auto':Math.max(view.treasuryH||0,MIN_H)+'px';
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
+  if(typeof homeTop!=='undefined')card.dataset.date=homeTop.dateLabel();
   card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
   const btns=buttons(c);
   card.querySelectorAll('[data-reader-run]').forEach(b=>b.onclick=()=>btns[Number(b.dataset.readerRun)].run());
