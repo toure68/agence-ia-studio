@@ -110,28 +110,54 @@ const homePages=(()=>{
   let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
-  // Cards are 52px + 6px gap here (reader.js): 4 when they fit whole, else 3.
+  // Cards are 52px + 6px gap here (reader.js): 4 when they fit whole (with room for the stack above the grid).
+  free-=20;
   const slots=Math.max(2,Math.min(4,Math.floor((free+6)/58)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // The waiting cards (beyond the ones shown) peek out under the function pages like an iPhone notification
  // stack: two thin translucent edges and the count, laid over the space below the pages (the grid never moves).
+ // Waiting cards peek out ABOVE the function pages (the side closest to the cards), like an iPhone notification
+ // stack sliding under the grid; it moves a little each time a card comes up. Laid over: the grid never moves.
+ // The room between the cards and the grid is never empty: when no card fills it (end of the list, nothing to
+ // read), a « Préparer demain / Veille » card fills it, with the way back to the treasury.
+ let lastRest=-1;
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
-  const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list');
-  let el=home.querySelector('.home-stack');
-  const total=home.querySelectorAll('.reader-item').length;
-  const shown=list?[...home.querySelectorAll('.reader-item')].filter(e=>{const r=e.getBoundingClientRect(),l=list.getBoundingClientRect();return r.bottom>l.top+2&&r.top<l.bottom-2;}).length:0;
-  const reading=home.classList.contains('reader-active');
-  const read=reading?[...home.querySelectorAll('.reader-item.is-read')].length:0;
-  const rest=Math.max(0,total-read-shown);
-  if(!pages||!rest){el?.remove();return;}
-  if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
-   el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:58,behavior:'smooth'});};}
-  el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
-  el.innerHTML=`<i></i><i></i><span>+${rest}</span>`;
+  const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list'),block=home.querySelector('#priorityBlock');
+  if(!pages)return;
   const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
-  el.style.top=(pr.bottom-hr.top)+'px';
+  const items=[...home.querySelectorAll('.reader-item')];
+  const lr=list?.getBoundingClientRect();
+  const shown=lr?items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).length:0;
+  const reading=home.classList.contains('reader-active');
+  const read=reading?home.querySelectorAll('.reader-item.is-read').length:0;
+  const rest=Math.max(0,items.length-read-shown);
+  // Stack above the grid.
+  let el=home.querySelector('.home-stack');
+  if(rest){
+   if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
+    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:58,behavior:'smooth'});};}
+   el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
+   if(!el.firstChild)el.innerHTML='<i></i><i></i>';
+   el.style.top=(pr.top-hr.top-18)+'px';
+   if(lastRest>=0&&rest!==lastRest){el.classList.remove('is-moving');void el.offsetWidth;el.classList.add('is-moving');}
+  }else el?.remove();
+  lastRest=rest;
+  // Filler in the empty room.
+  const after=lr&&shown?Math.max(...items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).map(e=>e.getBoundingClientRect().bottom)):(block?.querySelector('.reader-bar')?.getBoundingClientRect().bottom||block?.getBoundingClientRect().top||pr.top);
+  const top=after+8,bottom=pr.top-(rest?24:10),room=bottom-top;
+  let f=home.querySelector('.home-filler');
+  if(room>=64){
+   if(!f){f=document.createElement('section');f.className='home-filler';f.setAttribute('aria-label','À préparer');home.append(f);
+    f.addEventListener('click',e=>{const b=e.target.closest('[data-filler]');if(!b)return;const k=b.dataset.filler;
+     if(k==='back'){home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});return;}
+     const tile=home.querySelector(`.home-pages [data-go="${k}"]`);if(tile)tile.click();else if(typeof openTab==='function')openTab(k);});}
+   const tall=room>=128;
+   f.classList.toggle('is-tall',tall);
+   f.innerHTML=`<button type="button" class="filler-row" data-filler="calendar"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon('calendar'):''}</span><span class="filler-copy"><strong>Préparer demain</strong>${tall?'<small>Rendez-vous, chantiers et rappels de demain</small>':''}</span><span aria-hidden="true">›</span></button>${tall?`<button type="button" class="filler-row" data-filler="veille"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon('veille'):''}</span><span class="filler-copy"><strong>Veille concurrentielle</strong><small>Marchés, prix et nouveautés de votre métier</small></span><span aria-hidden="true">›</span></button>`:''}${reading?'<button type="button" class="filler-back" data-filler="back">↑ Revenir à la trésorerie</button>':''}`;
+   f.style.top=(top-hr.top)+'px';f.style.height=room+'px';
+  }else f?.remove();
  }
  let watcher=null,stackWatch=null;
  function sync(){if(!on())return;settingsRow();wirePages();requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
