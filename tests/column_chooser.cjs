@@ -21,15 +21,17 @@ const {chromium}=require('playwright');
   for(const c of cards){assert(c.topGap<20&&c.rightGap<60&&c.above,'Speaker sits in the top-right corner: '+JSON.stringify(c));assert(c.centered<3,'Green button centered: '+JSON.stringify(c));assert(!c.overlapDismiss,'Speaker does not cover the close cross');assert(c.size[0]>=44&&c.size[1]>=44);}
   // "Tous les modules" text link is replaced by the Réserve button below the grid.
   assert.equal(await page.locator('.more-functions').isVisible(),false);
+  // The grid chooser is reached from the réglages (« Grille des fonctions », user request 2026-10-20).
   const toggle=page.locator('[data-columns-toggle]'),chooser=page.locator('#homeColumnChooser');
+  const openChooser=async()=>{await page.locator('.account-menu summary').click();await page.locator('#accountGrid').click();await chooser.waitFor({state:'visible'});};
   assert.equal(await toggle.getAttribute('aria-expanded'),'false');assert(await chooser.isHidden());
-  await toggle.click();
+  await openChooser();
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');assert(await chooser.isVisible());
   assert.equal(await page.locator('.column-choice').count(),3);
   for(const choice of await page.locator('.column-choice').all()){const box=await choice.boundingBox();assert(box.width>=44&&box.height>=44,'Choices are touch-sized');}
   assert.equal(await page.locator('#saveModules').count(),0,'No form opens');
   for(const columns of [3,4,2]){
-   if(await chooser.isHidden())await toggle.click();
+   if(await chooser.isHidden())await openChooser();
    const saved=page.waitForResponse(r=>r.url().endsWith('/workspace')&&r.request().method()==='PUT');
    await page.locator(`[data-set-columns="${columns}"]`).click();
    // Applied immediately, chooser stays open for the row stepper, still on home.
@@ -49,7 +51,7 @@ const {chromium}=require('playwright');
   // Free row count: the stepper changes how many rows of functions show, applied and saved at once.
   const cellsNow=()=>page.locator('#content .module-grid').evaluate(el=>({cells:el.children.length,urgent:el.querySelectorAll('.module-tile[data-state="danger"],.module-tile[data-state="warning"]').length}));
   const stepRows=async delta=>{const saved=page.waitForResponse(r=>r.url().endsWith('/workspace')&&r.request().method()==='PUT');await page.locator(`[data-rows-step="${delta}"]`).click();assert((await saved).ok());};
-  await toggle.click();assert.equal(await page.locator('#homeRowsValue').innerText(),'3','Default 3 rows in 2 columns');
+  await openChooser();assert.equal(await page.locator('#homeRowsValue').innerText(),'3','Default 3 rows in 2 columns');
   await stepRows(1);await stepRows(1);assert.equal(await page.locator('#homeRowsValue').innerText(),'5');
   // The grid shows exactly the checked functions (plus urgent ones), capped by rows × columns:
   // with fewer than 10 eligible functions it shows them all (the count depends on earlier tests' data).
@@ -57,12 +59,12 @@ const {chromium}=require('playwright');
   assert.equal(grid.cells,Math.max(Math.min(10,eligible),grid.urgent),'5 rows × 2 columns '+JSON.stringify({grid,eligible}));
   assert(await chooser.isVisible(),'Stepper keeps the chooser open');
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').waitFor();
-  await toggle.click();assert.equal(await page.locator('#homeRowsValue').innerText(),'5','Row choice is saved');
+  await openChooser();assert.equal(await page.locator('#homeRowsValue').innerText(),'5','Row choice is saved');
   for(let i=0;i<4;i++)await stepRows(-1);
   await page.locator('[data-rows-step="-1"]').click();await page.locator('[data-rows-step="-1"]').click();
   assert.equal(await page.locator('#homeRowsValue').innerText(),'1','Never below one row');
   grid=await cellsNow();assert.equal(grid.cells,Math.max(2,grid.urgent),'One row, unless actions require more');
-  await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').waitFor();await toggle.click();
+  await page.reload({waitUntil:'networkidle'});await page.locator('#content .module-grid').waitFor();await openChooser();
   assert.equal(await page.locator('#homeRowsValue').innerText(),'1');
   await stepRows(1);await stepRows(1);await page.keyboard.press('Escape');assert(await chooser.isHidden());
   // The Réserve button unfolds a container in place: every function as a home-style card with a check.
@@ -93,7 +95,7 @@ const {chromium}=require('playwright');
   await page.locator('#closeContext').click();await page.locator('#content .module-grid').first().waitFor();
   assert.equal(await page.locator('#content .home-sector').count(),0);
   // Escape closes the chooser without changing anything.
-  await toggle.click();await page.keyboard.press('Escape');assert(await chooser.isHidden());
+  await openChooser();await page.keyboard.press('Escape');assert(await chooser.isHidden());
   assert.deepEqual(errors,[]);
   console.log('Column chooser: inline 2/3/4, applied instantly, saved, no form.');
  }catch(error){

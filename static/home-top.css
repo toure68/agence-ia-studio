@@ -1,0 +1,33 @@
+/* Home top, cleaned (home-top.js, user request 2026-10-20). */
+/* No top header on the home: the Assistant IA bar + account button replace it and stay fixed at the top. */
+/* The home may sit in #content or, under an open window, in #cockpitContent: both count. */
+body:has(.home-topbar) .main>.top{display:none}
+.reference-home .home-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;margin:0 -20px 18px;padding:calc(8px + env(safe-area-inset-top,0px)) 20px 10px;background:#07090Dee;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+body[data-wall] .reference-home .home-topbar{background:rgba(8,12,18,.78);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
+.reference-home .home-topbar .assistant-dock{flex:1 1 auto;margin:0;min-width:0}
+.home-account-slot{flex:none;display:flex}
+.home-account-slot .account-menu summary{width:48px;height:48px}
+.home-account-slot .account-panel{top:56px}
+
+/* The grid chooser is set from the réglages (« Grille des fonctions »); its button stays for that, out of sight. */
+.reference-home .home-modules-heading{margin:0}
+.reference-home .home-modules-heading [data-columns-toggle]{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0;border:0}
+.reference-home .home-modules-heading.is-choosing{margin:4px 0 12px}
+
+/* Company choice lives in the réglages, shown only with several companies. */
+.account-company{display:grid;gap:4px;font-size:12px;font-weight:700;color:#aebbd0}
+.account-company[hidden]{display:none}
+.account-company #companySelect{width:100%}
+
+/* The date: a small tab on the top edge of the treasury card, and of the reader at the same place. */
+#homeTreasury{position:relative}
+#homeTreasury[data-date]::before,.home-reader[data-date]::before{content:attr(data-date);position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:3;padding:2px 10px;border-radius:999px;border:1px solid var(--home-border);background:#0E131A;color:var(--home-text);font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none}
+.home-reader{overflow:visible}
+
+/* Tighter middle: reader ↔ small cards, and cards ↔ function grid. */
+.home-reader{margin-bottom:8px}
+#priorityBlock.reader-host{margin-bottom:10px}
+.reader-bar{padding-bottom:6px}
+.reference-home #homeTreasury .home-treasury{margin-bottom:8px}
+.reference-home .home-modules-heading:not(.is-choosing){height:0;min-height:0;padding:0;overflow:visible}
+body.dock-to-focus .reference-home .home-topbar .assistant-dock{visibility:hidden}
