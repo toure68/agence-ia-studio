@@ -171,7 +171,9 @@ function moduleFocusDock(){
  // The window also takes the row just above the frame (Assistant IA): the assistant is then in the window header.
  const head=document.querySelector('.reference-home .home-modules-heading'),hr=head&&head.getClientRects().length?head.getBoundingClientRect():null;
  const r=frame.getBoundingClientRect(),top=Math.max(8,hr&&hr.bottom<=r.top+1&&r.top-hr.bottom<40?hr.top:r.top),bottom=Math.min(innerHeight-8,stripTop??r.bottom);
- if(bottom-top<260)return false; // not enough visible room: the window opens full screen
+ // Not enough visible room on the frame: the window opens full screen — unless windows open maximized anyway
+ // (default; the iPhone-style home has a small 4×2 function page), then the frame only anchors the window.
+ if(bottom-top<260&&!(moduleDock.preferExpanded&&document.documentElement.classList.contains('home-ios')))return false;
  const s=document.documentElement.style;
  s.setProperty('--dock-top',top+'px');s.setProperty('--dock-left',r.left+'px');s.setProperty('--dock-width',r.width+'px');s.setProperty('--dock-height',(bottom-top)+'px');
  document.body.classList.add('dock-to-focus');document.body.classList.remove('dock-expanded');

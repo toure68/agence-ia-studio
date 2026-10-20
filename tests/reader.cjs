@@ -8,7 +8,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
- await page.addInitScript(()=>{try{localStorage.setItem('aia-reader','on');localStorage.removeItem('aia-treasury-open');}catch(e){}});
+ await page.addInitScript(()=>{try{localStorage.setItem('aia-reader','on');if(!localStorage.getItem('aia-pages'))localStorage.setItem('aia-pages','off');localStorage.removeItem('aia-treasury-open');}catch(e){}});
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto('http://127.0.0.1:8123/',{waitUntil:'networkidle'});
