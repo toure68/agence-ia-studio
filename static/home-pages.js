@@ -10,7 +10,21 @@
 // - bottom: the Assistant IA bar.
 // Opening a function keeps the existing window and its function strip fixed at the bottom (swipe sideways only).
 const homePages=(()=>{
- const KEY='aia-pages',PER=8,COLS=4;
+ const KEY='aia-pages';
+ // Columns and rows come from the grid réglage (« Grille » icon at the end of the functions): 4 × 2 by default.
+ // Kept on this phone (aia-pages-grid) so the home keeps 4 × 2 until the user picks something else here.
+ const GRID_KEY='aia-pages-grid';
+ const layout=()=>{let v=null;try{v=JSON.parse(localStorage.getItem(GRID_KEY)||'null');}catch{}const cols=[2,3,4].includes(v?.cols)?v.cols:4,rows=Number.isInteger(v?.rows)?Math.min(3,Math.max(1,v.rows)):2;return {cols,rows};};
+ // A choice in the grid panel (columns square or rows −/+) is kept for this home and applied at once.
+ document.addEventListener('click',e=>{
+  const pick=e.target.closest('#homeColumnChooser [data-set-columns],#homeColumnChooser [data-rows-step]');if(!pick||!on())return;
+  const cur=layout();let {cols,rows}=cur;
+  if(pick.dataset.setColumns)cols=Number(pick.dataset.setColumns);else rows=Math.min(3,Math.max(1,rows+Number(pick.dataset.rowsStep)));
+  try{localStorage.setItem(GRID_KEY,JSON.stringify({cols,rows}));}catch{}
+  setTimeout(()=>{const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===cols)));
+   const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace){page=0;box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);}},0);
+ },true);
+ const GRID_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  const on=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  document.documentElement.classList.toggle('home-ios',on());
  let page=0;
@@ -23,17 +37,22 @@ const homePages=(()=>{
   return [...new Set([...action,...visible,...all])];
  }
  function pagesMarkup(base,workspace,state){
+  const {cols:COLS,rows:ROWS}=layout(),PER=COLS*ROWS;
   const ws={...workspace,columns:COLS,rows:10,dynamic:false,visible:orderedKeys(workspace,state)};
   const html=base(ws,state);homeLayout.workspace=workspace; // the real layout stays the saved one
   const box=document.createElement('div');box.innerHTML=html;
-  const cards=[...box.querySelector('.module-grid').children],pages=[];
+  const cards=[...box.querySelector('.module-grid').children].map(c=>c.outerHTML),pages=[];
+  // Last square: the grid réglage (columns and rows), right after the functions.
+  cards.push(`<article class="module-card home-grid-card" data-module="grille"><button type="button" class="module-tile home-grid-tile" data-grid-tile aria-label="Régler la grille : colonnes et rangées" title="Colonnes et rangées">${COLS===4?`<span class="module-face"><span class="module-icon" aria-hidden="true">${GRID_ICON}</span></span><span class="module-copy"><strong>Grille</strong></span>`:`<span class="module-icon" aria-hidden="true">${GRID_ICON}</span><span class="widget-copy"><span class="module-copy"><strong>Grille</strong></span></span>`}</button></article>`);
   for(let i=0;i<cards.length;i+=PER)pages.push(cards.slice(i,i+PER));
   const at=Math.min(page,Math.max(0,pages.length-1));
-  return `<div class="module-grid home-pages" data-columns="${COLS}" aria-label="Fonctions, balayez pour la page suivante">${pages.map((p,i)=>`<nav class="module-grid home-page" data-columns="${COLS}" data-page="${i}" aria-label="Fonctions, page ${i+1} sur ${pages.length}">${p.map(c=>c.outerHTML).join('')}</nav>`).join('')}</div><div class="home-page-dots" role="tablist" aria-label="Pages de fonctions">${pages.map((_,i)=>`<button type="button" role="tab" class="home-page-dot" data-page-dot="${i}" aria-label="Page ${i+1}" aria-selected="${i===at}"></button>`).join('')}</div>`;
+  return `<div class="module-grid home-pages" data-columns="${COLS}" data-layout="${COLS}x${ROWS}" aria-label="Fonctions, balayez pour la page suivante">${pages.map((p,i)=>`<nav class="module-grid home-page" data-columns="${COLS}" data-page="${i}" aria-label="Fonctions, page ${i+1} sur ${pages.length}">${p.join('')}</nav>`).join('')}</div><div class="home-page-dots" role="tablist" aria-label="Pages de fonctions">${pages.map((_,i)=>`<button type="button" role="tab" class="home-page-dot" data-page-dot="${i}" aria-label="Page ${i+1}" aria-selected="${i===at}"></button>`).join('')}</div>`;
  }
  function wirePages(){
   const box=document.querySelector('.home-pages');if(!box||box.dataset.wired)return;box.dataset.wired='1';
   const dots=[...document.querySelectorAll('.home-page-dot')];
+  box.addEventListener('click',e=>{if(!e.target.closest('[data-grid-tile]'))return;e.preventDefault();e.stopPropagation();
+   const t=document.querySelector('#content [data-columns-toggle]');if(t)setTimeout(()=>{if(t.getAttribute('aria-expanded')!=='true')t.click();const {cols,rows}=layout();const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===cols)));},0);},true);
   requestAnimationFrame(()=>{box.scrollLeft=page*box.clientWidth;});
   let raf=0;box.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
    page=Math.round(box.scrollLeft/Math.max(1,box.clientWidth));dots.forEach((d,i)=>d.setAttribute('aria-selected',String(i===page)));});},{passive:true});
@@ -110,8 +129,8 @@ const homePages=(()=>{
    const box=document.querySelector('#content .home-pages');if(!box)return baseUpdate(workspace,state);
    page=Math.round(box.scrollLeft/Math.max(1,box.clientWidth));
    const next=document.createElement('div');next.innerHTML=homeModulesMarkup(workspace,state);
-   const sig=el=>[...el.querySelectorAll('[data-module]')].map(n=>n.dataset.module+':'+(n.querySelector('.module-count')?.textContent||'')).join('|');
-   const newBox=next.querySelector('.home-pages');if(sig(box)===sig(newBox))return;
+   const sig=el=>el.dataset.layout+'#'+[...el.querySelectorAll('[data-module]')].map(n=>n.dataset.module+':'+(n.querySelector('.module-count')?.textContent||'')).join('|');
+   const newBox=next.querySelector('.home-pages');if(!box.dataset.force&&sig(box)===sig(newBox))return;
    box.nextElementSibling?.classList.contains('home-page-dots')&&box.nextElementSibling.remove();
    box.replaceWith(...next.childNodes);sync();
   };

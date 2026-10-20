@@ -60,6 +60,16 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    await page.locator('[data-reader-back]').click();await page.locator('#homeTreasury .home-treasury').waitFor({state:'visible'});
   }
 
+  // « Grille » square at the end of the functions: opens the columns/rows panel; a choice applies at once.
+  await page.locator('.home-pages').evaluate(el=>el.scrollTo({left:el.scrollWidth}));
+  await page.locator('[data-grid-tile]').click();
+  await page.locator('#homeColumnChooser:not([hidden])').waitFor();
+  await page.locator('#homeColumnChooser [data-set-columns="3"]').click();
+  await page.waitForFunction(()=>document.querySelector('.home-pages')?.dataset.layout==='3x2');
+  await page.locator('#homeColumnChooser [data-set-columns="4"]').click();
+  await page.waitForFunction(()=>document.querySelector('.home-pages')?.dataset.layout==='4x2');
+  await page.keyboard.press('Escape');
+  await page.locator('.home-pages').evaluate(el=>el.scrollTo({left:0}));
   // A function opens as its window with the function strip at the bottom.
   await page.locator('.home-page[data-page="0"] .module-tile').first().click();
   await page.locator('#contextPanel').waitFor();

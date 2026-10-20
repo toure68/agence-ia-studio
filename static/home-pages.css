@@ -35,5 +35,9 @@ html.home-ios .home-page-dot[aria-selected="true"]{background:#fff}
 html.home-ios .home-page .module-face{position:relative}
 html.home-ios .home-page .module-count{position:absolute;top:-7px;right:-7px;left:auto;bottom:auto;min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;background:#FF3B30;color:#fff;font-size:12px;font-weight:800;line-height:20px;text-align:center;box-shadow:0 0 0 2px #07090D;z-index:2}
 
-/* No grid chooser nor reserve in this layout. */
+/* No reserve in this layout; the grid réglage is the « Grille » square at the end of the functions. */
 html.home-ios #accountGrid{display:none}
+html.home-ios .home-grid-tile{width:100%;border:0;font:inherit;cursor:pointer;background:transparent;color:var(--home-text)}
+html.home-ios .home-grid-tile .module-icon{--tile-accent:var(--home-muted);color:var(--home-text)}
+/* The chooser opens as a small panel above the functions (nothing on the home moves). */
+html.home-ios .reference-home .home-modules-heading .column-chooser:not([hidden]){position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:14px;border:1px solid #ffffff26;border-radius:20px;background:rgba(14,19,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 14px 40px #0008}
