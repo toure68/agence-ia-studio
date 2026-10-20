@@ -15,7 +15,7 @@ const homeTop=(()=>{
  // The account menu sits in the home bar while the home is shown, back in the top header elsewhere.
  function placeMenu(){
   const m=menu();if(!m)return;
-  const slot=document.querySelector('#content .home-account-slot');
+  const slot=document.querySelector('.home-account-slot');
   if(slot){if(m.parentElement!==slot)slot.append(m);}
   else if(headerRow()&&(m.parentElement!==headerRow()||!m.isConnected)){m.removeAttribute('open');headerRow().append(m);}
  }
@@ -30,17 +30,17 @@ const homeTop=(()=>{
   const panel=document.querySelector('.account-panel');if(!panel)return;
   let b=panel.querySelector('#accountGrid');
   if(!b){b=document.createElement('button');b.id='accountGrid';b.type='button';b.className='btn small';b.textContent='Grille des fonctions';
-   b.onclick=()=>{menu()?.removeAttribute('open');const t=document.querySelector('#content [data-columns-toggle]');
+   b.onclick=()=>{menu()?.removeAttribute('open');const t=document.querySelector('.home-topbar')&&document.querySelector('[data-columns-toggle]');
     if(!t){notify('Ouvrez l’accueil pour régler la grille.');return;}
     // After this click has finished bubbling (the chooser closes on outside clicks).
     setTimeout(()=>{if(t.getAttribute('aria-expanded')!=='true')t.click();document.querySelector('#homeColumnChooser')?.scrollIntoView({block:'center',behavior:'smooth'});},0);};
    panel.querySelector('#accountWallpaper')?.after(b)||panel.append(b);}
-  b.hidden=!document.querySelector('#content .reference-home');
+  b.hidden=!document.querySelector('.home-topbar');
  }
  function stampDate(){
   const label=dateLabel();
   document.querySelector('#homeTreasury')?.setAttribute('data-date',label);
-  document.querySelectorAll('#content .home-reader').forEach(r=>r.setAttribute('data-date',label));
+  document.querySelectorAll('.home-reader').forEach(r=>r.setAttribute('data-date',label));
  }
  function sync(){placeMenu();placeCompany();gridItem();stampDate();}
  function start(){

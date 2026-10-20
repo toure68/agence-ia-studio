@@ -1,6 +1,7 @@
 /* Home top, cleaned (home-top.js, user request 2026-10-20). */
 /* No top header on the home: the Assistant IA bar + account button replace it and stay fixed at the top. */
-.main:has(#content>.reference-home)>.top{display:none}
+/* The home may sit in #content or, under an open window, in #cockpitContent: both count. */
+body:has(.home-topbar) .main>.top{display:none}
 .reference-home .home-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;margin:0 -20px 18px;padding:calc(8px + env(safe-area-inset-top,0px)) 20px 10px;background:#07090Dee;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 body[data-wall] .reference-home .home-topbar{background:rgba(8,12,18,.78);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
 .reference-home .home-topbar .assistant-dock{flex:1 1 auto;margin:0;min-width:0}
@@ -30,6 +31,3 @@ body[data-wall] .reference-home .home-topbar{background:rgba(8,12,18,.78);-webki
 .reference-home #homeTreasury .home-treasury{margin-bottom:8px}
 .reference-home .home-modules-heading:not(.is-choosing){height:0;min-height:0;padding:0;overflow:visible}
 body.dock-to-focus .reference-home .home-topbar .assistant-dock{visibility:hidden}
-/* The home is shorter now: while a function frame is open, leave room below so the page can scroll it fully into
-   view (its app strip must stay on screen). */
-.reference-home:has(#moduleFocus){padding-bottom:60vh}
