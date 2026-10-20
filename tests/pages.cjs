@@ -83,6 +83,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.priority-card').first().waitFor();
   await page.locator('.home-setting',{hasText:'Lecteur'}).click();
   await page.locator('.reader-item,.priority-card').first().waitFor();
+  // « Préparer demain » / « Veille » never mix with the notification cards (21/10).
+  await page.waitForTimeout(600);
+  const mixed=await page.evaluate(()=>document.querySelectorAll('#content .reader-item').length>0&&!!document.querySelector('#content .home-filler [data-filler="calendar"],#content .home-filler [data-filler="veille"]'));
+  assert.equal(mixed,false,'Préparer demain / Veille hidden while notifications are shown');
   assert.deepEqual(errors,[]);
   console.log('pages ok');
  }catch(e){await page.screenshot({path:out+'/99-iphone-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}

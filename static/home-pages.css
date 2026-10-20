@@ -70,5 +70,11 @@ html.home-ios .filler-row .module-icon svg{width:17px;height:17px}
 html.home-ios .filler-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 html.home-ios .filler-copy strong{font-size:14px;font-weight:700}
 html.home-ios .filler-copy small{font-size:11.5px;color:var(--home-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.home-ios .home-filler.is-cards{gap:10px}
+html.home-ios .home-filler.is-cards .filler-card{min-height:64px;max-height:96px;padding:0 16px;gap:14px;border-radius:20px}
+html.home-ios .home-filler.is-cards .module-icon{width:40px;height:40px;flex:0 0 40px;border-radius:12px}
+html.home-ios .home-filler.is-cards .module-icon svg{width:21px;height:21px}
+html.home-ios .home-filler.is-cards .filler-copy strong{font-size:15.5px}
+html.home-ios .home-filler.is-cards .filler-copy small{font-size:12.5px}
 html.home-ios .filler-back{flex:none;align-self:center;min-height:36px;padding:0 14px;border:1px solid var(--home-border);border-radius:999px;background:#ffffff0d;color:var(--home-text);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
 html.home-ios .home-pages,html.home-ios .home-page-dots{position:relative;z-index:1}
