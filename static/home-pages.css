@@ -56,14 +56,14 @@ html.home-ios .home-setting svg{width:20px;height:20px;padding:6px}
 html.home-ios .home-settings{margin-bottom:12px}
 html.home-ios .reference-home .assistant-dock{min-height:44px}
 /* Function squares adapt to the room left: icon + name, then the icon alone on short screens. */
-html.home-ios .home-page .module-tile{container-type:size;padding:4px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+html.home-ios .home-page .module-tile{container-type:size;padding:4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;text-align:center!important}
 html.home-ios .home-page .module-face{display:inline-flex;width:auto;justify-content:center;margin:0;position:relative}
 html.home-ios .home-page .module-count{top:-6px;right:-10px;min-width:17px;height:17px;line-height:17px;font-size:10.5px;padding:0 5px;border-radius:9px}
 html.home-ios .home-page .module-icon{width:28px!important;height:28px!important;flex:0 0 28px!important;border-radius:9px}
 html.home-ios .home-page .module-icon svg{width:16px;height:16px}
 html.home-ios .home-page .module-copy strong{font-size:10.5px;line-height:1.15}
 html.home-ios .home-page .module-insight,html.home-ios .home-page .widget,html.home-ios .home-page .module-widget{display:none}
-@container (max-height:44px){html.home-ios .home-page .module-copy{display:none}}
+@container (max-height:39px){html.home-ios .home-page .module-copy{display:none}}
 html.home-ios .home-page .module-face>.module-count{position:absolute!important;inset:-7px -11px auto auto!important;width:auto!important;min-width:17px!important;height:17px!important;line-height:17px!important;padding:0 5px!important;margin:0!important;font-size:10.5px!important;border-radius:9px!important;transform:none!important}
 html.home-ios .home-page .module-face{height:auto!important;min-height:0!important;padding:0!important;flex:none!important}
 html.home-ios .home-page .module-face>.module-icon{margin:0!important;position:static!important}
