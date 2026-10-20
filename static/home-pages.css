@@ -30,7 +30,7 @@ html.home-ios .home-page .module-card,html.home-ios .home-page .module-tile{heig
 html.home-ios .home-page .module-tile{overflow:hidden}
 html.home-ios .home-page-dots{display:flex;justify-content:center;gap:6px;padding:5px 0 0;height:5px;box-sizing:content-box}
 html.home-ios .home-page-dot{width:5px;height:5px;padding:0;border:0;border-radius:50%;background:#ffffff40;cursor:pointer;position:relative}
-html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-8px}
+html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-8px -3px}
 html.home-ios .home-page-dot[aria-selected="true"]{background:#fff}
 
 /* iOS-style red number badge on the icon (number of actions to do). */
