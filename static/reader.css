@@ -48,6 +48,9 @@ body[data-wall] .reference-home .home-reader{background:linear-gradient(135deg,#
 .reader-done{margin:0;min-height:44px;display:flex;align-items:center;justify-content:center;width:100%;border-radius:12px;background:#4ADE801f;color:var(--home-green);font-weight:800;font-size:14px}
 
 .reader-bar{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px 8px;font-size:12px;color:var(--home-muted)}
+.reader-bar{flex-wrap:nowrap;min-height:26px;box-sizing:border-box}
+.reader-count{flex:none;white-space:nowrap}
+.reader-hint{flex:1 1 auto}
 .reader-count b{color:var(--home-text);font-size:14px}
 .reader-ok{color:var(--home-green);font-weight:700}
 .reader-hint{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
