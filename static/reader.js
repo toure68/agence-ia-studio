@@ -40,8 +40,15 @@ const homeReader=(()=>{
   if(amount)detail=detail.replace(amount,'').replace(/^\s*·\s*|\s*·\s*$/g,'').replace(/\s·\s·\s/g,' · ');
   return {title:base.title.replace(/,\s*\d[\d   ]*,\d{2}\s?€\s*:?/,'').trim(),detail:detail.trim(),amount};
  }
+ // Cards done this session stay in the list, before the pending ones (they can be slid back into the reader),
+ // marked « ✓ Traité » with their buttons greyed out, so they are never taken for a new message.
+ const doneCards=[];
+ function keepDone(c,label){if(!c||doneCards.some(d=>d.c.key===c.key))return;const {_done,...plain}=c;doneCards.push({c:plain,label});}
+ // After an action the next pending card comes up.
+ function nextKey(c){const i=view.cards.findIndex(x=>x.key===c.key);return view.cards.slice(i+1).find(x=>!x._done)?.key||null;}
  function presentation(c){return typeof priorityPresentation==='function'?priorityPresentation(c):{state:'neutral',label:'À faire'};}
  function buttons(c){
+  if(c._done)return [{label:'✓ '+c._done,kind:'done',run:()=>{}}];
   if(c.sample)return sampleButtons(c);
   const inline=typeof inlineActions!=='undefined'&&inlineActions.has(c)?inlineActions.buttons(c):[];
   const list=inline.map((b,i)=>({label:b.label,kind:i?'second':'main',run:()=>finish(c,b)}));
@@ -57,10 +64,10 @@ const homeReader=(()=>{
   }}));
  }
  function sampleDone(c,text){
-  if(view.busy)return;view.busy=true;markDone(c.key);notify(text+' (essai)');
+  if(view.busy)return;view.busy=true;markDone(c.key);notify(text+' (essai)');keepDone(c,text);const nk=nextKey(c);
   const card=view.host?.querySelector('.home-reader');
   if(card){card.style.height=readerHeight()+'px';card.classList.remove('is-editing');const acts=card.querySelector('.reader-actions');if(acts)acts.innerHTML=`<p class="reader-done">✓ ${clean(text)}</p>`;}
-  view.editing=null;view.keepKey=null;setTimeout(()=>{view.busy=false;renderPriorities().catch(()=>{});},650);
+  view.editing=null;view.keepKey=nk;setTimeout(()=>{view.busy=false;renderPriorities().catch(()=>{});},650);
  }
  async function openAction(c){
   if(c.sample){view.full=!view.full;view.editing=null;showReader();return;}
@@ -72,25 +79,26 @@ const homeReader=(()=>{
   if(view.busy)return;view.busy=true;
   const card=view.host?.querySelector('.home-reader');card?.querySelectorAll('button').forEach(x=>x.disabled=true);
   try{
-   await b.run();markDone(c.key);notify(b.done);
+   await b.run();markDone(c.key);notify(b.done);keepDone(c,b.done);const nk=nextKey(c);
    if(card){const acts=card.querySelector('.reader-actions');if(acts)acts.innerHTML=`<p class="reader-done">✓ ${clean(b.done)}</p>`;}
-   view.keepKey=null;setTimeout(()=>{view.busy=false;renderPriorities().catch(()=>{});},650);
+   view.keepKey=nk;setTimeout(()=>{view.busy=false;renderPriorities().catch(()=>{});},650);
   }catch(err){view.busy=false;notify(err.message);card?.querySelectorAll('button').forEach(x=>x.disabled=false);}
  }
  async function dismiss(c){
   if(view.busy)return;view.busy=true;
-  try{await api(`/api/companies/${view.cid}/priorities/dismiss`,{method:'POST',body:JSON.stringify({key:c.key})});markDone(c.key);notify('Masquée. Elle ne reviendra plus.');view.keepKey=null;await renderPriorities();}
+  try{await api(`/api/companies/${view.cid}/priorities/dismiss`,{method:'POST',body:JSON.stringify({key:c.key})});markDone(c.key);notify('Masquée. Elle ne reviendra plus.');keepDone(c,'Masquée');view.keepKey=nextKey(c);await renderPriorities();}
   catch(err){notify(err.message);}finally{view.busy=false;}
  }
 
  function counter(){
-  const done=doneSet().size,left=view.cards.length;
+  const left=view.cards.filter(c=>!c._done).length,done=Math.max(doneSet().size,doneCards.length);
   return `<span class="reader-count" aria-live="polite"><b>${left}</b> à traiter${done?` · <span class="reader-ok">${done} traité${done>1?'s':''}</span>`:''}</span>`;
  }
  // Money in the small cards follows the same colour code as the reader: + green when it comes in, − red when it goes out.
  function moneyChip(c,amount){const sg=sign(c);return sg?`<b class="reader-money ${sg.cls}">${sg.s}${clean(amount)}</b>`:clean(amount);}
  function small(c,i){
   const p=presentation(c),cp=copy(c),key=moduleOf(c);
+  if(c._done)return `<button type="button" class="reader-item is-done" data-reader-item="${i}" aria-label="${clean(cp.title)} · traité"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${clean(cp.title)}</strong><small><span class="reader-done-tag">✓ Traité</span> · ${clean(c._done)}</small></span></button>`;
   return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+moneyChip(c,cp.amount):''}${c.source?' · '+clean(c.source):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
  }
  function readerMarkup(c){
@@ -99,7 +107,7 @@ const homeReader=(()=>{
   return `<div class="reader-head"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-state state-${p.state}">${clean(p.label)}</span><span class="reader-pos">${pos}/${total}</span><span class="reader-tools"><button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button><button type="button" class="reader-icon" data-reader-open aria-label="Ouvrir le détail" title="Ouvrir le détail"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="reader-icon" data-reader-hide aria-label="Masquer ce message" title="Masquer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button type="button" class="reader-icon" data-reader-back aria-label="Revenir à la trésorerie" title="Trésorerie"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>
   <div class="reader-title"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong>${cp.amount?`<span class="reader-amount ${sg?sg.cls:''}">${sg?sg.s:''}${clean(cp.amount)}${sg?`<small>${sg.word}</small>`:''}</span>`:''}</div>
   ${facts(c)}<div class="reader-body-wrap"><div class="reader-body" tabindex="0">${bodyMarkup(c,cp)}</div><div class="reader-rail" aria-hidden="true"><i></i></div></div>
-  <div class="reader-actions">${btns.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind}" data-reader-run="${i}">${clean(b.label)}</button>`).join('')}</div>`;
+  <div class="reader-actions">${btns.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind}" data-reader-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''}>${clean(b.label)}</button>`).join('')}</div>`;
  }
 
  function facts(c){
@@ -130,12 +138,13 @@ const homeReader=(()=>{
  function showReader(){
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
+  if(view.focus<0&&doneCards.length&&!view.busy){doneCards.length=0;view.keepKey=null;setTimeout(()=>renderPriorities().catch(()=>{}),0);}
   if(view.focus<0){home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury');view.treasuryH=t?t.offsetHeight:view.treasuryH;}
   const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
   const editing=view.editing===c.key;
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
-  card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'');
+  card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
   if(typeof homeTop!=='undefined')card.dataset.date=homeTop.dateLabel();
   card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
@@ -161,7 +170,7 @@ const homeReader=(()=>{
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
-  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:Math.min(view.cards.length-(reading?view.focus+1:0),reading?Math.max(1,cap()-2):cap());list.style.height=Math.max(0,n*pitch()-6)+'px';return;}
+  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:Math.max(reading?1:0,Math.min(view.cards.length-(reading?view.focus+1:0),reading?Math.max(1,cap()-2):cap()));list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
@@ -174,7 +183,8 @@ const homeReader=(()=>{
 
  function render(host,cards,actual,cid){
   view.host=host;view.cid=cid;
-  const real=[...samples(),...actual.filter(c=>!c.example)];
+  const pending=[...samples(),...actual.filter(c=>!c.example)].filter(c=>!doneCards.some(d=>d.c.key===c.key));
+  const real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
   const home=document.querySelector('#content .reference-home');
   // Nothing left: one single replacement card keeps the middle filled (the routine/first card), no reader.
   if(!real.length){home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
