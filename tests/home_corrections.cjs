@@ -2,6 +2,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.HOME_TEST_CHROME,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await page.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
  await page.goto('http://127.0.0.1:8125');await page.locator('#loginEmail').fill('Mohamed@preview.test');await page.locator('#loginPassword').fill('local-ui-smoke-test-only');await page.locator('#loginForm button').click();await page.locator('.module-grid').waitFor();
  await page.evaluate(async()=>{
   await api('/api/companies/1/clients',{method:'POST',body:JSON.stringify({name:'omar touré'})});

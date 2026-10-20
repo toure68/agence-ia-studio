@@ -13,7 +13,7 @@ jobs:
       - run: pip install -r requirements.txt pytest
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng poppler-utils ffmpeg
       - run: python -m pytest -q
-      - run: node --check static/inline-actions.js && node --check static/list-status.js && node --check static/edge-back.js && node --check static/wallpaper.js && node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js && node --check static/zero.js && node --check static/banks.js && node --check static/workspace.js && node --check static/module-focus.js && node --check static/dark-surfaces.js && node --check static/form-guide.js && node --check static/in-app-files.js && node --check static/signature.js && node --check static/assistant.js && node --check static/ai-budget.js && node --check static/context.js
+      - run: node --check static/inline-actions.js && node --check static/reader.js && node --check static/list-status.js && node --check static/edge-back.js && node --check static/wallpaper.js && node --check static/admin.js && node --check static/site.js && node --check static/priorities.js && node --check static/business.js && node --check static/office.js && node --check static/voice.js && node --check static/zero.js && node --check static/banks.js && node --check static/workspace.js && node --check static/module-focus.js && node --check static/dark-surfaces.js && node --check static/form-guide.js && node --check static/in-app-files.js && node --check static/signature.js && node --check static/assistant.js && node --check static/ai-budget.js && node --check static/context.js
 
   ui:
     runs-on: ubuntu-24.04
@@ -102,6 +102,14 @@ jobs:
           if ! node tests/demo_treasury.cjs 2>&1 | tee /tmp/demo-treasury.log; then
             msg=$(tail -c 3000 /tmp/demo-treasury.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=demo_treasury::$msg"
+            exit 1
+          fi
+      - name: Run node tests/reader.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/reader.cjs 2>&1 | tee /tmp/reader.log; then
+            msg=$(tail -c 3000 /tmp/reader.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=reader::$msg"
             exit 1
           fi
       - name: Capture every screen (visual review)

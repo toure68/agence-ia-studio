@@ -8,6 +8,7 @@ const amount=text=>Math.round(Number(text.replace(/[^\d,−-]/g,'').replace('−
  try{
   for(const width of [320,390,768]){
    const page=await browser.newPage({viewport:{width,height:844},hasTouch:true,isMobile:true,reducedMotion:'reduce'}),errors=[],writes=[];await page.addInitScript(()=>{try{if(!sessionStorage.getItem('fold-test'))localStorage.setItem('aia-treasury-open','1')}catch(e){}});
+   await page.addInitScript(()=>{try{if(!localStorage.getItem('aia-reader'))localStorage.setItem('aia-reader','off');}catch(e){}}); // classic action cards (mode lecteur: tests/reader.cjs)
    page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(!['GET','HEAD'].includes(r.method()))writes.push(r.url());});
    await page.goto(base+'/demo');await page.locator('#homeTreasury .bank-dial').waitFor();
    const read=async()=>({balance:amount(await page.locator('#homeTreasury .bank-total').innerText()),flows:await page.locator('#homeTreasury .dial-flows').innerText()});

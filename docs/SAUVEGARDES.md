@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTEUR** | `sauvegarde/avant-lecteur` (2122bb9) | Le 20/10/2026 vers 10 h 30, avec les gestes téléphone (balayage, tirer pour actualiser, boutons Appeler/Écrire), avant le Mode lecteur : cartes d'action classiques sous la trésorerie. |
 | **RETOUR AVANT CARTES ALLÉGÉES** | `sauvegarde/avant-cartes-allegees` (36e379e) | Le 19/10/2026 vers 20 h 30 : fenêtres en plein écran et trésorerie repliable, mais cartes d'action encore grandes (titres sur plusieurs lignes, dates 2026-10-19) et liste « Voir les N actions » en petite fenêtre. |
 | **RETOUR AVANT FENÊTRE DIRECTE** | `sauvegarde/avant-fenetre-directe` (6509e78) | Le 19/10/2026 vers 16 h 50, avec le verre, la grande flèche retour et les champs sombres, mais avant l'ouverture directe des fenêtres : toucher une fonction ouvrait d'abord son résumé (compteurs, 3 lignes, « Voir tout »), l'Assistant IA restait au-dessus. |
 | **RETOUR AVANT VERRE** | `sauvegarde/avant-verre` (68eadbe) | Le 19/10/2026, juste avant le design verre dépoli et les fonds d'écran : fond sombre uni, cartes et fenêtres opaques, fenêtres pleine largeur, rangée d'applications en plein écran. |
