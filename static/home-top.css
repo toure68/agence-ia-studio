@@ -30,3 +30,6 @@ body[data-wall] .reference-home .home-topbar{background:rgba(8,12,18,.78);-webki
 .reference-home #homeTreasury .home-treasury{margin-bottom:8px}
 .reference-home .home-modules-heading:not(.is-choosing){height:0;min-height:0;padding:0;overflow:visible}
 body.dock-to-focus .reference-home .home-topbar .assistant-dock{visibility:hidden}
+/* The home is shorter now: while a function frame is open, leave room below so the page can scroll it fully into
+   view (its app strip must stay on screen). */
+.reference-home:has(#moduleFocus){padding-bottom:60vh}
