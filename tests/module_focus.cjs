@@ -240,6 +240,14 @@ const {chromium}=require('playwright');
     });
     checked.push(key);
     if(m.deep.length)report.push(`${key}: nested box ${m.deep.join(', ')}`);
+    // Phone habits (native-fields.js): phone/e-mail/amount fields call the phone's own keyboard and autofill.
+    const nat=await page.evaluate(()=>[...document.querySelectorAll('#contextPanel input, #contextPanel textarea, #modalLayer:not(.hide) input')].filter(e=>!/^(hidden|checkbox|radio|file|submit|button|range|color|date|password)$/.test(e.type)).filter(e=>{const k=(e.name||'')+' '+(e.id||'');
+     if(/phone|^tel/i.test(k)&&!(e.type==='tel'||e.inputMode==='tel'))return true;
+     if(/e-?mail/i.test(k)&&e.type!=='search'&&!(e.type==='email'||e.inputMode==='email'))return true;
+     if(/amount|price|unit_price|opening_balance/i.test(k)&&!(e.inputMode==='decimal'||e.inputMode==='numeric'))return true;
+     if(e.type==='search'&&e.getAttribute('enterkeyhint')!=='search')return true;
+     return false;}).map(e=>e.name||e.id));
+    if(nat.length)report.push(`${key}: field without the phone keyboard ${nat.join(', ')}`);
     if(!m.docked)report.push(key+': window not on the function frame');
     else if(!m.strip)report.push(key+': app strip hidden under the window');
     if(await page.locator('#dockExpand').count()){
