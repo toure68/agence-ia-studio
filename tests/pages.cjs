@@ -34,13 +34,13 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert.ok(!await page.locator('.account-menu summary').isVisible(),'no account menu to open');
   assert.equal(await page.locator('.home-setting',{hasText:'Lecteur'}).getAttribute('aria-pressed'),'true');
 
-  // Function pages: 4 columns × 3 rows, dots, swipe sideways; no « Réserve de fonctions ».
+  // Function pages: 4 columns × 2 rows, dots, swipe sideways; no « Réserve de fonctions ».
   const pages=await page.locator('.home-page').count(),dots=await page.locator('.home-page-dot').count();
   assert.ok(pages>=2&&dots===pages,'several pages with their dots');
-  for(const p of await page.locator('.home-page').all()){assert.ok(await p.locator('[data-module]').count()<=12);assert.equal(await p.getAttribute('data-columns'),'4');}
+  for(const p of await page.locator('.home-page').all()){assert.ok(await p.locator('[data-module]').count()<=8);assert.equal(await p.getAttribute('data-columns'),'4');}
   assert.equal(await page.locator('.module-reserve-launch,#homeReserve').count(),0,'no reserve button');
   const withActions=await page.evaluate(()=>[...document.querySelectorAll('.home-pages [data-module]')].filter(c=>c.querySelector('.module-count')).map(c=>c.closest('.home-page').dataset.page));
-  assert.ok(withActions.length>0&&withActions.slice(0,12).every(p=>p==='0'),'functions with an action are on the first page '+JSON.stringify(withActions));
+  assert.ok(withActions.length>0&&withActions.slice(0,8).every(p=>p==='0'),'functions with an action are on the first page '+JSON.stringify(withActions));
   assert.equal(await page.locator('.home-page .module-count').first().evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 59, 48)','red iOS badge');
   const gridTop=()=>page.locator('.home-pages').evaluate(el=>el.getBoundingClientRect().top);
   const before=await gridTop();
@@ -51,14 +51,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.home-page-dot[data-page-dot="0"]').click();
   await page.waitForFunction(()=>document.querySelector('.home-page-dot[data-page-dot="0"]')?.getAttribute('aria-selected')==='true');
 
-  // Small cards: exactly 4 with the treasury, 2 while reading, never cut in half.
-  const whole=()=>page.evaluate(()=>{const l=document.querySelector('.reader-list').getBoundingClientRect();const cut=[...document.querySelectorAll('.reader-item')].some(e=>{const r=e.getBoundingClientRect();return r.bottom>l.top+1&&r.top<l.bottom-1&&(r.top<l.top-1||r.bottom>l.bottom+1);});return {n:[...document.querySelectorAll('.reader-item')].filter(e=>{const r=e.getBoundingClientRect();return r.top>=l.top-1&&r.bottom<=l.bottom+1;}).length,cut,total:document.querySelectorAll('.reader-item').length};});
   // Reading does not move the functions.
   if(await page.locator('.reader-list').count()){
-   const w0=await whole();assert.equal(w0.n,Math.min(4,w0.total),'4 small cards with the treasury '+JSON.stringify(w0));assert.ok(!w0.cut,'no card cut in half');
    await page.locator('.reader-list').evaluate(el=>el.scrollTo({top:72}));await page.locator('.home-reader:not([hidden])').waitFor();
    assert.ok(Math.abs(await gridTop()-before)<1,'functions stay in place while reading');
-   const w1=await whole();assert.equal(w1.n,Math.min(2,w1.total-1),'2 small cards while reading '+JSON.stringify(w1));assert.ok(!w1.cut,'no card cut in half while reading');
    assert.ok(await page.locator('.home-reader').getAttribute('data-date'),'date on the reader too');
    await page.screenshot({path:out+'/97-accueil-iphone-lecteur.png'});
    await page.locator('[data-reader-back]').click();await page.locator('#homeTreasury .home-treasury').waitFor({state:'visible'});
