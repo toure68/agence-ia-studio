@@ -38,6 +38,7 @@
    const chip=document.createElement('span');chip.className='row-chip'+(p.state==='danger'?' is-danger':'');chip.textContent=p.label||'À traiter';
    k.row.insertBefore(chip,k.row.lastElementChild);
    // Finished in place: touching the row unfolds its details and buttons instead of opening another window.
+   if(typeof rowSwipe!=='undefined'&&typeof inlineActions!=='undefined')rowSwipe.attach(k.row,card);
    if(typeof inlineActions!=='undefined'&&inlineActions.has(card))k.row.addEventListener('click',e=>{if(k.row.classList.contains('inline-finished'))return;e.preventDefault();e.stopImmediatePropagation();inlineActions.toggle(k.row,card);},true);
   }
  }

@@ -65,6 +65,6 @@ const inlineActions=(()=>{
   host.scrollIntoView?.({block:'nearest',behavior:'smooth'});
   return true;
  }
- return {has,toggle,buttons};
+ return {has,toggle,buttons,run};
 })();
 window.inlineActions=inlineActions;

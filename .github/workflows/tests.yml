@@ -88,6 +88,14 @@ jobs:
             echo "::error title=module_focus::$msg"
             exit 1
           fi
+      - name: Run node tests/phone_habits.cjs
+        run: |
+          set -o pipefail
+          if ! node tests/phone_habits.cjs 2>&1 | tee /tmp/phone-habits.log; then
+            msg=$(tail -c 3000 /tmp/phone-habits.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=phone_habits::$msg"
+            exit 1
+          fi
       - name: Run node tests/demo_treasury.cjs
         run: |
           set -o pipefail
