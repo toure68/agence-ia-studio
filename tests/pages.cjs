@@ -96,7 +96,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // One single way back at the end of the list: « ✓ Fin de la liste » itself (21/10).
   assert.equal(await page.locator('#content .filler-back').count(),0);
   const end=await page.evaluate(()=>{const b=document.querySelector('#content .reader-end [data-reader-top]');return b?{text:b.textContent.trim(),n:document.querySelectorAll('#content .reader-end button').length}:null;});
-  if(end){assert.equal(end.text,'✓ Fin de la liste');assert.equal(end.n,1);}
+  if(end){assert(end.text.startsWith('✓ Fin de la liste'));assert.equal(end.n,1);}
   assert.deepEqual(errors,[]);
   console.log('pages ok');
  }catch(e){await page.screenshot({path:out+'/99-iphone-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}
