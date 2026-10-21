@@ -113,6 +113,32 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    if(roomBelow>16){await page.mouse.click(pt.x,pt.y);await page.waitForTimeout(900);assert(await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTop<4),'Empty room under the end button goes back home');}
    await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(600);}
   if(end){assert(end.text.startsWith('✓ Fin de la liste'));assert.equal(end.n,1);}
+  // 21/10 step 1 — reader actions in the first row of the function grid (trial messages, nothing sent).
+  await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','on');}catch(e){}});
+  await page.reload({waitUntil:'networkidle'});await page.locator('#content .reader-item').first().waitFor();await page.waitForTimeout(800);
+  const rowBefore=await page.evaluate(()=>[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>e.dataset.module));
+  const openAt=async i=>{await page.evaluate(i=>{const l=document.querySelector('#content .reader-list');l.scrollTo({top:(i+1)*(Number(document.body.dataset.readerPitch)||54)});},i);await page.waitForTimeout(900);};
+  const state=()=>page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),card=document.querySelector('#content .home-reader');
+   const inCard=[...card.querySelectorAll('[data-reader-run]')].filter(b=>!b.hidden&&b.offsetParent).length;
+   const first=[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>getComputedStyle(e).visibility);
+   const r=row?.getBoundingClientRect(),t=document.querySelector('#content .home-page').children[0].getBoundingClientRect();
+   return {labels:row?[...row.querySelectorAll('.action-tile')].map(b=>b.getAttribute('aria-label')):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[4]||document.body).visibility};});
+  await openAt(0);const a1=await state();console.log('actions 1',JSON.stringify(a1));
+  assert(a1.labels&&a1.labels.length>0&&a1.labels.length<=4,'Actions shown in the grid row');
+  assert(a1.over,'Action row sits exactly on the first row');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
+  assert.equal(a1.second,'visible','Other rows stay reachable');assert.equal(a1.inCard,0,'Actions left the reader card');
+  await openAt(1);const a2=await state();console.log('actions 2',JSON.stringify(a2));
+  assert(a2.title!==a1.title,'Next message');assert(a2.labels&&a2.labels.length>0,'Actions follow the message');
+  // Running an action (trial message: simulated, nothing sent) works from the grid row.
+  const before2=await page.evaluate(()=>document.querySelector('#content .reader-count')?.textContent);
+  const target=await page.evaluate(()=>{const b=[...document.querySelectorAll('#content .home-action-row .action-tile')].find(b=>!/modif|répond|appel|itinéraire|détail|ouvrir/i.test(b.getAttribute('aria-label')));return b?b.dataset.actionRun:null;});
+  if(target!==null){await page.locator(`#content .home-action-row [data-action-run="${target}"]`).click();await page.waitForTimeout(900);
+   const after2=await page.evaluate(()=>document.querySelector('#content .reader-count')?.textContent);console.log('run',before2,'→',after2);assert.notEqual(after2,before2,'Action ran from the grid');}
+  // Back to the home: the first row is exactly as before.
+  await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(900);
+  const back=await page.evaluate(()=>({row:!!document.querySelector('#content .home-action-row'),first:[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>[e.dataset.module,getComputedStyle(e).visibility])}));
+  console.log('back',JSON.stringify(back));assert.equal(back.row,false);assert.deepEqual(back.first.map(x=>x[0]),rowBefore,'Same functions, same order');assert(back.first.every(x=>x[1]==='visible'));
+  await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','off');}catch(e){}});
   assert.deepEqual(errors,[]);
   console.log('pages ok');
  }catch(e){await page.screenshot({path:out+'/99-iphone-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}

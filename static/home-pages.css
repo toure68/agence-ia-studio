@@ -90,3 +90,20 @@ html.home-ios .home-back-zone{position:absolute;left:0;right:0;z-index:1;padding
    stops just above the function pages and scrolls inside. Folded again, it is the small card. */
 html.home-ios #homeTreasury.is-open{height:calc(var(--treasury-folded) + 8px)}
 html.home-ios #homeTreasury.is-open .home-treasury{position:absolute;top:0;left:0;right:0;z-index:6;max-height:var(--treasury-overlay-max,none);overflow-y:auto;overscroll-behavior:contain;--glass-tint:.86;box-shadow:0 18px 44px #000b}
+
+/* 21/10 : reader actions in the first row of the function grid (step 1). The squares under the row are only hidden. */
+html.home-ios .home-pages.has-actions[data-columns="4"] .home-page>:nth-child(-n+4),
+html.home-ios .home-pages.has-actions[data-columns="3"] .home-page>:nth-child(-n+3),
+html.home-ios .home-pages.has-actions[data-columns="2"] .home-page>:nth-child(-n+2){visibility:hidden}
+html.home-ios .home-action-row{position:absolute;z-index:4;display:grid;align-items:stretch}
+html.home-ios .home-action-row .action-card{margin:0;min-width:0}
+html.home-ios .home-action-row .action-tile{width:100%;height:100%;font:inherit;cursor:pointer;animation:actionIn .22s ease-out}
+html.home-ios .home-action-row .action-tile:disabled{opacity:.55;cursor:default}
+html.home-ios .home-action-row .is-main .module-icon{color:#4ade80;border-color:#4ade80}
+html.home-ios .home-action-row .is-danger .module-icon{color:#fb7185;border-color:#fb7185}
+html.home-ios .home-action-row .is-second .module-icon{color:#60a5fa;border-color:#60a5fa}
+html.home-ios .home-action-row .module-copy strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+@keyframes actionIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){html.home-ios .home-action-row .action-tile{animation:none}}
+/* The reader card keeps its information and its reading commands; its action buttons are in the grid. */
+html.home-ios .home-reader.actions-out .reader-actions{display:none}

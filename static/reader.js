@@ -139,7 +139,7 @@ const homeReader=(()=>{
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
   if(view.focus<0&&doneCards.length&&!view.busy){doneCards.length=0;view.keepKey=null;setTimeout(()=>renderPriorities().catch(()=>{}),0);}
-  if(view.focus<0){home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
+  if(view.focus<0){if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
   const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
@@ -151,6 +151,10 @@ const homeReader=(()=>{
   card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
   const btns=buttons(c);
   card.querySelectorAll('[data-reader-run]').forEach(b=>b.onclick=()=>btns[Number(b.dataset.readerRun)].run());
+  // iPhone home (21/10): the actions move into the first row of the function grid; the card keeps the rest.
+  const placed=ios()&&typeof homeActions!=='undefined'?homeActions.show(btns):0;
+  card.querySelectorAll('[data-reader-run]').forEach(b=>{if(Number(b.dataset.readerRun)<placed)b.hidden=true;});
+  card.classList.toggle('actions-out',placed>0&&placed>=btns.length);
   card.querySelector('[data-reader-open]').onclick=()=>openAction(c);
   card.querySelector('[data-reader-hide]').onclick=()=>c.sample?sampleDone(c,'Masqué'):dismiss(c);
   card.querySelector('[data-reader-back]').onclick=()=>host.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
@@ -189,7 +193,7 @@ const homeReader=(()=>{
   const real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
   const home=document.querySelector('#content .reference-home');
   // Nothing left: one single replacement card keeps the middle filled (the routine/first card), no reader.
-  if(!real.length){home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
+  if(!real.length){if(typeof homeActions!=='undefined')homeActions.hide();home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
   const prevKey=view.keepKey,prevFocus=view.focus;
   view.cards=real;
   const n=real.length,h=Math.min(n,cap())*pitch()-8;

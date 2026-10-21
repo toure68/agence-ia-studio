@@ -218,7 +218,7 @@ const homePages=(()=>{
   }else f?.remove();
  }
  let watcher=null,stackWatch=null;
- function sync(){if(!on())return;settingsRow();wirePages();requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
+ function sync(){if(!on())return;settingsRow();wirePages();setTimeout(()=>window.homeActions?.place(),0);requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
   const block=document.querySelector('#content #priorityBlock');
   if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch=new MutationObserver(()=>requestAnimationFrame(stack));stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
    block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});
@@ -248,6 +248,70 @@ const homePages=(()=>{
  install();
  addEventListener('resize',()=>requestAnimationFrame(fit));
  document.addEventListener('DOMContentLoaded',()=>{const c=document.querySelector('#content');if(c)new MutationObserver(sync).observe(c,{childList:true});});
- return {on,sync,fit,orderedKeys};
+ return {on,sync,fit,orderedKeys,layout};
 })();
 window.homePages=homePages;
+
+// Reader actions in the function grid (user request 21/10, step 1): while a notification is open in the reader,
+// its action buttons take the place of the FIRST ROW of the function pages, as function squares (symbol + short
+// name). The squares underneath are only hidden, never removed: back to the home, the row is exactly as before.
+// At most one row (as many as the grid has columns); any extra action stays in the reader card (step 2 = pages).
+const homeActions=(()=>{
+ const P={
+  send:'<path d="M4 12l16-8-6 16-3-7-7-1z"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
+  no:'<circle cx="12" cy="13" r="8"/><path d="M9 10l6 6M15 10l-6 6"/>',
+  reply:'<path d="M10 8L4 13l6 5"/><path d="M4 13h10a6 6 0 0 1 6 6"/>',
+  later:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/>',
+  call:'<path d="M5 5h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 14l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 7a2 2 0 0 1 2-2z"/>',
+  ok:'<circle cx="12" cy="13" r="8"/><path d="M8.5 13l2.5 2.5 4.5-5"/>',
+  map:'<path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
+  open:'<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  undo:'<path d="M9 9L4 13l5 4"/><path d="M4 13h11a5 5 0 0 1 0 10h-3"/>',
+  pay:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+  dot:'<circle cx="12" cy="13" r="3"/>'
+ };
+ const pick=l=>{const s=String(l||'').toLowerCase();
+  if(/envoy|relanc|transmett/.test(s))return 'send';if(/modif|corrig|éditer/.test(s))return 'edit';
+  if(/ignor|refus|déclin|masqu|rejet/.test(s))return 'no';if(/répond/.test(s))return 'reply';
+  if(/plus tard|report|décal|attendr/.test(s))return 'later';if(/appel/.test(s))return 'call';
+  if(/itinéraire|plan/.test(s))return 'map';if(/annul/.test(s))return 'undo';if(/pay|régl/.test(s))return 'pay';
+  if(/accept|confirm|valid|fait|noté|traité|enregistr|ok\b|✓/.test(s))return 'ok';
+  if(/détail|ouvrir|voir/.test(s))return 'open';return 'dot';};
+ const svg=k=>`<svg viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${P[k]||P.dot}</svg>`;
+ const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const shortLabel=l=>{const s=String(l||'').replace(/^✓\s*/,'✓ ');return s.length>14?s.split(/\s+/).slice(0,2).join(' '):s;};
+ let current=null;
+ function place(){
+  const home=document.querySelector('#content .reference-home'),row=home?.querySelector('.home-action-row'),box=home?.querySelector('.home-pages');
+  if(!home||!row||!box)return;
+  box.classList.add('has-actions'); // kept after the pages are redrawn
+  const pg=box.querySelectorAll('.home-page')[Math.round(box.scrollLeft/Math.max(1,box.clientWidth))]||box.querySelector('.home-page');
+  const cols=Number(box.dataset.columns)||4,tiles=[...(pg?.children||[])].slice(0,cols);if(!tiles.length)return;
+  const hr=home.getBoundingClientRect(),a=tiles[0].getBoundingClientRect(),z=tiles[tiles.length-1].getBoundingClientRect();
+  const gap=tiles[1]?Math.max(0,tiles[1].getBoundingClientRect().left-a.right):8;
+  row.style.top=(a.top-hr.top)+'px';row.style.left=(a.left-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
+  row.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;row.style.gap=gap+'px';
+ }
+ // Shows the actions; returns how many of them were placed in the grid row (0 when there is no iPhone grid).
+ function show(btns){
+  const home=document.querySelector('#content .reference-home'),box=home?.querySelector('.home-pages');
+  if(!home||!box||!homePages.on())return 0;
+  const cols=Number(box.dataset.columns)||4,list=btns.slice(0,cols);current=btns;
+  let row=home.querySelector('.home-action-row');
+  if(!row){row=document.createElement('div');row.className='home-action-row';row.setAttribute('role','group');row.setAttribute('aria-label','Actions du message ouvert');home.append(row);
+   row.addEventListener('click',e=>{const b=e.target.closest('[data-action-run]');if(!b||b.disabled)return;const i=Number(b.dataset.actionRun);current?.[i]?.run();});}
+  row.innerHTML=list.map((b,i)=>{const kind=b.kind==='main'?'is-main':b.kind==='danger'?'is-danger':b.kind==='done'?'is-done':'is-second';
+   return `<article class="module-card action-card ${kind}"><button type="button" class="module-tile action-tile" data-action-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''} aria-label="${esc(b.label)}"><span class="module-face"><span class="module-icon" aria-hidden="true">${svg(pick(b.label))}</span></span><span class="module-copy"><strong>${esc(shortLabel(b.label))}</strong></span></button></article>`;}).join('');
+  box.classList.add('has-actions');home.classList.add('actions-in-grid');
+  place();requestAnimationFrame(place);
+  return list.length;
+ }
+ function hide(){
+  current=null;const home=document.querySelector('#content .reference-home');
+  home?.querySelector('.home-action-row')?.remove();home?.querySelector('.home-pages')?.classList.remove('has-actions');home?.classList.remove('actions-in-grid');
+ }
+ addEventListener('resize',()=>requestAnimationFrame(place));
+ return {show,hide,place};
+})();
+window.homeActions=homeActions;
