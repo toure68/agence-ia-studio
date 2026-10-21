@@ -120,7 +120,7 @@ const homePages=(()=>{
  // Waiting cards peek out ABOVE the function pages (the side closest to the cards), like an iPhone notification
  // stack sliding under the grid; it moves a little each time a card comes up. Laid over: the grid never moves.
  // The room between the cards and the grid is never empty: when no card fills it (end of the list, nothing to
- // read), the way back to the treasury; « Préparer demain / Veille » cards only when there is no notification at all.
+ // read), « Préparer demain / Veille » cards, only when there is no notification at all.
  let lastRest=-1;
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
@@ -151,15 +151,14 @@ const homePages=(()=>{
   if(room>=64){
    if(!f){f=document.createElement('section');f.className='home-filler';f.setAttribute('aria-label','À préparer');home.append(f);
     f.addEventListener('click',e=>{const b=e.target.closest('[data-filler]');if(!b)return;const k=b.dataset.filler;
-     if(k==='back'){home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});return;}
      const tile=home.querySelector(`.home-pages [data-go="${k}"]`);if(tile)tile.click();else if(typeof openTab==='function')openTab(k);});}
    // « Préparer demain » and « Veille concurrentielle » are never part of the notification group (user request
    // 21/10): they show as their own cards only when there is no notification card at all (pending or done).
-   // While notifications are there, the room only keeps the way back to the treasury.
+   // While notifications are there, the room stays empty: « ✓ Fin de la liste » (reader.js) is the way back.
    const solo=items.length===0,tall=room>=150;
    f.classList.toggle('is-tall',tall);f.classList.toggle('is-cards',solo);
    const row=(k,title,sub)=>`<button type="button" class="filler-row filler-card" data-filler="${k}"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon(k):''}</span><span class="filler-copy"><strong>${title}</strong><small>${sub}</small></span><span aria-hidden="true">›</span></button>`;
-   f.innerHTML=solo?row('calendar','Préparer demain','Rendez-vous, chantiers et rappels de demain')+(tall?row('veille','Veille concurrentielle','Marchés, prix et nouveautés de votre métier'):''):(reading?'<button type="button" class="filler-back" data-filler="back">↑ Revenir à la trésorerie</button>':'');
+   f.innerHTML=solo?row('calendar','Préparer demain','Rendez-vous, chantiers et rappels de demain')+(tall?row('veille','Veille concurrentielle','Marchés, prix et nouveautés de votre métier'):''):'';
    if(!f.innerHTML){f.remove();return;}
    f.style.top=(top-hr.top)+'px';f.style.height=room+'px';
   }else f?.remove();

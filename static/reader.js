@@ -192,7 +192,7 @@ const homeReader=(()=>{
   view.cards=real;
   const n=real.length,h=Math.min(n,cap())*pitch()-8;
   host.classList.add('reader-host');
-  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><span>✓ Fin de la liste</span><button type="button" class="reader-btn is-second" data-reader-top>Revenir à la trésorerie</button></div></div></div>`;
+  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à la trésorerie">✓ Fin de la liste</button></div></div></div>`;
   const list=host.querySelector('.reader-list');
   host.querySelector('[data-reader-top]').onclick=()=>list.scrollTo({top:0,behavior:'smooth'});
   host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));

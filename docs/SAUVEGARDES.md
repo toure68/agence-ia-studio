@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT FIN DE LISTE** | `sauvegarde/avant-fin-de-liste` (a4bb753) | Le 21/10/2026 vers 2 h : au bout des notifications, « ✓ Fin de la liste » et un bouton « ↑ Revenir à la trésorerie » séparé. |
 | **RETOUR AVANT VEILLE SÉPARÉE** | `sauvegarde/avant-veille-separee` (4b1a9df) | Le 21/10/2026 vers 1 h 45 : « Préparer demain » et « Veille concurrentielle » en petites lignes sous les notifications, dans la place libre. |
 | **RETOUR AVANT PAGES DE FONCTIONS** | `sauvegarde/avant-pages-fonctions` (0a40895) | Le 20/10/2026 vers 14 h 40 : Assistant IA fixe en haut avec le bouton du compte, date sur la trésorerie, montants colorés, grille des fonctions classique avec « Réserve de fonctions », accueil qui défile. |
 | **RETOUR AVANT ASSISTANT EN HAUT** | `sauvegarde/avant-assistant-en-haut` (f3b8a03) | Le 20/10/2026 vers 13 h 30, avec le Mode lecteur et les messages d'essai, mais avant le haut épuré : « Bonjour », pastilles date et actions, barre du haut avec l'entreprise, Assistant IA au-dessus de la grille avec le bouton de grille. |
