@@ -7,9 +7,7 @@ body:has(.reference-home)>.shell>.main>.top{background:var(--home-bg);border:0;m
 body:has(.reference-home) .main-body{padding:12px 20px max(110px,env(safe-area-inset-bottom));max-width:920px}
 .reference-home{font-family:Manrope,-apple-system,BlinkMacSystemFont,sans-serif;font-weight:500;--home-surface:linear-gradient(135deg,#ffffff14,#ffffff05);--home-border:#ffffff1a}
 .reference-home h1,.reference-home h2,.reference-home strong{letter-spacing:-.025em}
-.reference-home .home-heading{margin:0 0 20px}
-.reference-home .home-heading h1{font-size:30px;line-height:1.2;font-weight:800;margin:0 0 5px;color:var(--home-text)}
-.reference-home .home-day{font-size:14px;color:var(--home-muted);margin:0;line-height:1.5}
+
 .reference-home .assistant-dock{border:1px solid var(--home-border);border-radius:999px;background:var(--home-surface);min-height:56px;padding:12px 20px;gap:8px;margin:0 0 20px;color:var(--home-text);box-shadow:inset 0 1px 0 #ffffff08;flex-wrap:wrap;justify-content:flex-start;font-size:14px}
 .reference-home .assistant-dock::before,.reference-home .assistant-dock::after{display:none}
 .reference-home .assistant-dock strong{font-size:14px;font-weight:800}
@@ -24,13 +22,13 @@ body:has(.reference-home) .main-body{padding:12px 20px max(110px,env(safe-area-i
 .reference-home .module-icon{display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;max-height:none;aspect-ratio:1;border-radius:15px;border:1.5px solid var(--tile-accent,var(--home-blue));background:linear-gradient(145deg,#3A3D44,#14171C);color:var(--tile-accent,var(--home-blue));box-shadow:inset 0 1px 1px #ffffff14;filter:none}
 .reference-home .module-icon svg{width:25px;height:27px;filter:none;transform:none}
 .reference-home .module-icon::before,.reference-home .module-icon::after{display:none}
-.reference-home .home-treasury,.reference-home .home-sector{display:block;border:1px solid var(--home-border);border-radius:24px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08;padding:20px;color:var(--home-text);text-decoration:none;margin:0 0 20px}
+.reference-home .home-treasury{display:block;border:1px solid var(--home-border);border-radius:24px;background:var(--home-surface);box-shadow:inset 0 1px 0 #ffffff08;padding:20px;color:var(--home-text);text-decoration:none;margin:0 0 20px}
 .home-treasury-top{display:flex;align-items:center;gap:14px;min-width:0}
 .home-treasury-top>div{min-width:0}
 .reference-home .home-treasury h2{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--home-muted);margin:0;font-weight:800}
 .home-balances{display:grid;gap:4px;overflow-wrap:anywhere}
 .home-balances strong{font-size:34px;line-height:1.2;font-weight:800}
-.home-balances .home-no-balance{font-size:22px}
+
 .home-treasury small{font-size:12px;color:var(--home-muted)}
 .home-cash-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
 .home-cash-details>div{display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid #ffffff08;background:#07090d8a;border-radius:15px;min-width:0}
@@ -54,11 +52,7 @@ body:has(.reference-home) .main-body{padding:12px 20px max(110px,env(safe-area-i
 .reference-home .priority-card>.voice-button{position:absolute;right:14px;bottom:14px;float:none;margin:0;height:48px;width:44px;min-height:44px;min-width:44px;color:var(--home-muted);z-index:3}
 .reference-home .priority-cta{width:calc(100% - 54px)}
 .reference-home .home-all-actions{width:100%;margin:12px 0 0}
-.reference-home .home-sector{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.reference-home .home-sector>div{flex:1;min-width:130px}
-.reference-home .home-sector h2{font-size:14px;font-weight:800;color:var(--home-text);margin:0 0 3px}
-.reference-home .home-sector p{font-size:14px;line-height:1.4;margin:0}
-.reference-home .home-sector .btn{border-color:var(--home-blue);color:var(--home-blue)}
+
 .home-modules-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 14px}
 .reference-home .home-modules-heading h2{margin:0}
 .reference-home .btn,.reference-home .more-functions{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:14px;border:1px solid var(--home-border);background:transparent;color:var(--home-text);font-size:14px;font-weight:800;text-decoration:none}
@@ -108,7 +102,7 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 @media(min-width:751px){.reference-home .module-grid:is([data-columns="2"],[data-columns="3"],[data-columns="4"]) .module-tile{height:130px;max-height:130px}}
 
 .reference-home .home-demo-badge{display:inline-block;margin:5px 0 7px;padding:4px 8px;border:1px solid #e2b04a55;border-radius:9px;color:var(--home-gold);background:#e2b04a12;font-size:14px;font-weight:800;line-height:1.35}
-.reference-home .home-demo-note{font-size:14px;color:var(--home-muted);line-height:1.45;margin:14px 0 0}
+
 .reference-home .home-cash-mode{width:100%;margin:-6px 0 20px;min-height:44px}
 .reference-home .home-cash-details b{font-size:20px;line-height:1.3}
 @media(max-width:359px){.reference-home .home-cash-details>div{padding:12px 8px}.reference-home .home-cash-details b{font-size:18px}}
@@ -135,12 +129,12 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 .reference-home .home-treasury-top{gap:10px}
 .reference-home .home-treasury .module-icon{width:40px;height:40px;flex-basis:40px;border-radius:13px}
 .reference-home .home-balances strong{font-size:28px;line-height:1.15}
-.reference-home .home-balances .home-no-balance{font-size:20px}
+
 .reference-home .home-demo-badge{margin:3px 0 4px;padding:2px 6px;line-height:1.25}
 .reference-home .home-cash-details{gap:10px;margin-top:10px}
 .reference-home .home-cash-details>div{padding:10px;gap:3px;border-radius:12px}
 .reference-home .home-cash-details b{font-size:18px}
-.reference-home .home-demo-note{margin-top:8px;line-height:1.3}
+
 @media(max-width:359px){.reference-home .home-cash-details>div{padding:8px}.reference-home .home-cash-details b{font-size:17px}}
 
 .reference-home .home-modules-heading .btn{width:44px;padding:0}
@@ -155,8 +149,7 @@ body:has(.reference-home):not(.has-floating-layer)::after{background:linear-grad
 .reference-home .priority-card>.voice-button{right:16px;bottom:16px}
 .reference-home .priority-stack{gap:16px}
 .reference-home :is(.module-card,.priority-card)::after{animation:none}
-.reference-home .home-heading{margin-bottom:16px}
-.reference-home .home-sector{gap:12px;padding:16px}
+
 .reference-home .module-copy strong{letter-spacing:0}
 body:has(.reference-home) .top>div:has(>#topLabel:empty){display:none}
 body:has(.reference-home) .top>.row{margin-left:auto;flex-wrap:nowrap;min-width:0;max-width:100%}
@@ -194,17 +187,17 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .bank-pill[aria-pressed="true"]{outline:2px solid #16975b;outline-offset:2px}
 .reference-home .bank-pill:focus-visible,.reference-home .bank-home button:focus-visible{outline:2px solid #e0e6ec;outline-offset:3px}
 .reference-home .bank-pill-dot{position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:#d33847;border:2px solid #101318;box-sizing:content-box}
-.reference-home .bank-home-detail[hidden]{display:none}
+
 .reference-home .bank-home-alert{margin-top:10px;padding:10px;border:1px solid #e46e7270;border-radius:12px;background:#e46e7208;color:#ef8a8e}
 .reference-home .bank-home-alert p{margin:0 0 8px;font-size:13px;line-height:1.5}
 .reference-home .bank-fund{width:100%;min-height:44px;padding:9px 12px;border:0;border-radius:10px;background:var(--home-green);color:#082b16;font-size:13px;font-weight:800;text-align:center;cursor:pointer}
-.reference-home .bank-detail-heading{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:var(--home-muted);font-size:12px}
+
 .reference-home .bank-fold{display:flex;align-items:center;justify-content:center;width:44px;height:36px;border:0;background:none;color:var(--home-text);cursor:pointer}
 .reference-home .bank-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;border-top:1px solid #ffffff0b;font-size:13px}
 .reference-home .bank-row time{flex:0 0 38px;color:var(--home-muted);font-size:12px}
 .reference-home .bank-row>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reference-home .bank-row b{white-space:nowrap}
-.reference-home .bank-empty{margin:8px 0;color:var(--home-muted);font-size:13px}
+
 .reference-home .bank-view-all{display:block;min-height:40px;padding:10px 0;border:0;background:none;color:var(--home-green);font-size:13px;font-weight:700;cursor:pointer}
 .bank-ledger-controls{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
 .bank-ledger-list{display:grid;gap:10px;margin:0 0 18px}
@@ -239,7 +232,7 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .row-step{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:1px solid var(--home-border);border-radius:12px;background:var(--home-surface);color:var(--home-text);font-size:20px;line-height:1;cursor:pointer}
 .reference-home .row-step:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
 .reference-home .row-value{min-width:26px;text-align:center;color:var(--home-text);font-size:17px;font-weight:800}
-.reference-home .module-reserve-launch~.home-sector{margin:24px 0 20px}
+
 .bank-pill-logo{display:block;width:100%;height:100%;object-fit:cover;border-radius:12px}
 .bank-logo-preview{display:flex;justify-content:center;margin:8px 0 14px}
 .bank-logo-preview .bank-pill{width:88px;height:88px;min-width:88px;border-radius:22px;font-size:26px;background:#171d22;color:#fff}
@@ -261,8 +254,7 @@ body:has(.reference-home) .top .account-menu{flex:0 0 auto}
 .reference-home .reserve-tile:focus-visible{outline:2px solid #e0e6ec;outline-offset:2px}
 #contextTitle{color:#102b35}
 .library-card strong,.module-reserve-item strong{color:#102b35}
-.reference-home .home-heading{text-align:center}
-.reference-home .home-day{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}
+
 .reference-home .home-date{display:inline-flex;align-items:center;min-height:30px;padding:4px 12px;border:1px solid var(--home-border);border-radius:999px;background:var(--home-surface);color:var(--home-text);font-size:13px;font-weight:700}
 .reference-home .home-status{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:800}
 .reference-home .home-status::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
@@ -279,18 +271,17 @@ body[data-public-demo] .reference-home .home-modules-heading>[data-go],body[data
 #homeTreasury .home-treasury-top .module-icon{width:30px;height:30px;flex:0 0 30px;border-radius:9px}
 #homeTreasury .home-treasury-top .module-icon svg{width:18px;height:18px}
 #homeTreasury .home-treasury-top h2{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;color:var(--home-muted);font-size:13px;line-height:1.2;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-#homeTreasury .home-treasury-top h2 .bank-home-name,#homeTreasury .home-treasury-top h2 .demo-bank-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;letter-spacing:0;text-transform:none}
+#homeTreasury .home-treasury-top h2 .bank-home-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;letter-spacing:0;text-transform:none}
 #homeTreasury .home-treasury-top h2 .home-demo-badge{margin:0;padding:3px 8px;font-size:11px;letter-spacing:0;text-transform:none}
-#homeTreasury .treasury-balance-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:18px 0}
-#homeTreasury .treasury-period{flex:0 0 auto;color:var(--home-muted);font-size:13px;font-weight:600;text-transform:capitalize}
-#homeTreasury .bank-total,#homeTreasury .demo-total,#homeTreasury .home-balances strong{display:block;margin:0;font-size:clamp(30px,9.4vw,38px);line-height:1.05;font-weight:800;letter-spacing:-.025em;white-space:nowrap}
+
+#homeTreasury .bank-total,#homeTreasury .home-balances strong{display:block;margin:0;font-size:clamp(30px,9.4vw,38px);line-height:1.05;font-weight:800;letter-spacing:-.025em;white-space:nowrap}
 #homeTreasury .home-cash-balance{margin:18px 0}
 #homeTreasury .home-cash-details{gap:12px;margin:0}
 #homeTreasury .home-flow{min-height:78px;padding:14px 16px;gap:6px;border:1px solid #ffffff0a;border-radius:14px;background:#ffffff08}
 #homeTreasury .home-flow>span,#homeTreasury .home-flow-heading{color:var(--home-muted);font-size:13px;font-weight:600;letter-spacing:.01em}
 #homeTreasury .home-flow b{font-size:clamp(17px,5vw,20px);line-height:1.15;font-weight:800;letter-spacing:-.01em}
-#homeTreasury .bank-global-alerts:not(:empty),#homeTreasury .demo-global-alerts:not(:empty){margin-top:6px}
-#homeTreasury .bank-pills,#homeTreasury .demo-bank-pills{margin-top:14px}
+
+#homeTreasury .bank-pills{margin-top:14px}
 @media(max-width:359px){#homeTreasury .home-treasury{padding:16px}#homeTreasury .home-flow{padding:12px}}
 body[data-public-demo] .reference-home #homeTreasury .home-cash-details .home-flow{text-align:left;align-items:flex-start}
 .reference-home .module-grid[data-columns]{--home-grid-icon:52px;--home-grid-height:120px}
@@ -523,7 +514,6 @@ body.dock-to-focus.dock-keyboard #modalLayer .modal{overflow:auto}
 .dock-app-bar .focus-app.is-current .focus-app-name{color:#fff}
 body.dock-expanded .context-layer{align-items:flex-end}
 
-
 /* No white frame around the current app in the strips: keyboard focus shows as the green ring on the icon only. */
 .reference-home .focus-app:focus,.reference-home .focus-app:focus-visible,.dock-app-bar .focus-app:focus{outline:none!important}
 .reference-home .focus-app:focus-visible .module-icon{box-shadow:0 0 0 2px var(--home-green)}
@@ -685,9 +675,7 @@ body :is(.context-panel,#modalLayer .modal) .chat-attach-menu.chat-attach-menu,b
 #homeTreasury .bank-dial .bank-home-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #homeTreasury .bank-dial[data-bank-selected="all"]:has(.bank-global-alert) .bank-home-name{display:none}
 /* Bright wallpaper (Sable clair): the greeting above the cards turns dark so it stays readable. */
-body[data-wall="sable"] .reference-home .home-heading h1{color:#16231f!important;text-shadow:none}
-body[data-wall="sable"] .reference-home .home-heading :is(.home-date,.home-status){background:rgba(10,14,20,.62)!important;color:#f2f5f7!important}
-body[data-wall="sable"] .reference-home .home-heading .home-status.is-todo{color:#f0c35c!important}
+
 /* Lists of links (Demandes, Outils): no underlined links with emoji, the app's own icons instead. */
 :is(.context-panel,#modalLayer .modal) .tool-list a.task-row{text-decoration:none!important;color:#f2f5f7!important}
 :is(.context-panel,#modalLayer .modal) .tool-list a.task-row strong{text-decoration:none!important;font-weight:800}

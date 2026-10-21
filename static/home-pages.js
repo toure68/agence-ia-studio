@@ -115,8 +115,6 @@ const homePages=(()=>{
   const slots=Math.max(2,Math.min(4,Math.floor((free+6)/58)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
- // The waiting cards (beyond the ones shown) peek out under the function pages like an iPhone notification
- // stack: two thin translucent edges and the count, laid over the space below the pages (the grid never moves).
  // Waiting cards peek out ABOVE the function pages (the side closest to the cards), like an iPhone notification
  // stack sliding under the grid; it moves a little each time a card comes up. Laid over: the grid never moves.
  // The room between the cards and the grid is never empty: when no card fills it (end of the list, nothing to

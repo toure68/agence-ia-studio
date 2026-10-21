@@ -92,7 +92,6 @@ const priorityExamples=[
 ];
 function exampleStorageKey(){return 'aia-priority-examples:'+me.id+':'+company.id;}
 function completedExamples(){try{const value=JSON.parse(sessionStorage.getItem(exampleStorageKey())||'[]');return Array.isArray(value)?value:[];}catch(e){return [];}}
-function visibleExamples(){const completed=completedExamples();return priorityExamples.filter(c=>!completed.includes(c.action.id));}
 function completeExample(id){try{sessionStorage.setItem(exampleStorageKey(),JSON.stringify([...new Set([...completedExamples(),id])]))}catch(e){notify('La simulation ne peut pas être mémorisée dans ce navigateur.');}}
 async function renderPriorityExample(id){
  const c=priorityExamples.find(x=>x.action.id===id);if(!c)throw Error('Exemple introuvable.');
