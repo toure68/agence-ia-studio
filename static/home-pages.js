@@ -110,10 +110,14 @@ const homePages=(()=>{
   let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
-  // Cards are 48px + 6px gap here (reader.js): up to 5 when they fit whole; the 7px stack hangs in the margin under them.
+  // The cards fill the room exactly (21/10): as many as fit at 44px or more (at most 5), each one sized so the
+  // space left above the function pages is only the margin (the 7px stack hangs there). Height 44–60px + 6px gap.
   free-=2;
-  const slots=Math.max(2,Math.min(5,Math.floor((free+6)/54)));
-  if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
+  const room=free+6;
+  let slots=Math.max(2,Math.min(5,Math.floor(room/50)));
+  const cardH=Math.max(36,Math.min(60,Math.floor(room/slots)-6)),step=String(cardH+6);
+  const b=document.body;
+  if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
  // top, narrower below); it moves up a little each time a card comes up. Laid over: the grid never moves.
@@ -135,7 +139,7 @@ const homePages=(()=>{
   let el=home.querySelector('.home-stack');
   if(rest){
    if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
-    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:54,behavior:'smooth'});};}
+    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:Number(document.body.dataset.readerPitch)||54,behavior:'smooth'});};}
    el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
    if(!el.firstChild)el.innerHTML='<i></i><i></i>';
    // Hangs right under the last visible card, like the iPhone notification stack (21/10): widest edge on top,
