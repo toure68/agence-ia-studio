@@ -30,3 +30,5 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 Restaurer sans perdre l'historique : `git checkout <branche> -- static app.py` sur une nouvelle branche, puis PR.
 Les comptes gardent leur colonne `wallpaper` en base ; elle est simplement ignorée par l'ancienne version.
+
+Note 21/10/2026 10 h 15 : Railway n'a pas déployé la version v92 (aucun signal). Relance par une petite mise à jour de ce fichier.
