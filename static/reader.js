@@ -167,10 +167,11 @@ const homeReader=(()=>{
  // iPhone-style home: the reader takes the place of the treasury and of two small cards, so 2 stay visible and
  // nothing below moves; elsewhere it is at least 300px and the list gives up the difference.
  function readerHeight(){return ios()?(view.treasuryH||0)+(cap()-Math.max(1,cap()-2))*pitch():Math.max(view.treasuryH||0,MIN_H);}
+ // While reading, the box keeps its size (21/10) down to the last message: the end of the list is never cut.
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
-  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:Math.max(reading?1:0,Math.min(view.cards.length-(reading?view.focus+1:0),reading?Math.max(1,cap()-2):cap()));list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
