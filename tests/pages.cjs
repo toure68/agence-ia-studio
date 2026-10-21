@@ -91,6 +91,13 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const gap=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list')?.getBoundingClientRect(),pg=document.querySelector('#content .home-pages')?.getBoundingClientRect();if(!lr||!pg)return null;const vis=[...document.querySelectorAll('#content .reader-item')].map(e=>e.getBoundingClientRect()).filter(r=>r.bottom>lr.top+2&&r.top<lr.bottom-2);return vis.length?{gap:Math.round(pg.top-Math.max(...vis.map(r=>r.bottom))),cards:vis.length,slots:document.body.dataset.readerSlots}:null;});
   console.log('cards/grid',JSON.stringify(gap));
   if(gap){assert(gap.gap>=6,'Cards never touch the function pages '+JSON.stringify(gap));assert(gap.gap<=24,'Cards fill the room above the function pages '+JSON.stringify(gap));}
+  // Unfolded treasury opens over the cards: cards keep their place and count, panel stops above the functions (21/10).
+  const before=await page.evaluate(()=>({top:Math.round(document.querySelector('#content .reader-list').getBoundingClientRect().top),slots:document.body.dataset.readerSlots}));
+  await page.evaluate(()=>bankDialSetOpen(document.querySelector('#homeTreasury'),true));await page.waitForTimeout(700);
+  const opened=await page.evaluate(()=>{const t=document.querySelector('#homeTreasury .home-treasury').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {top:Math.round(document.querySelector('#content .reader-list').getBoundingClientRect().top),slots:document.body.dataset.readerSlots,tBottom:Math.round(t.bottom),pTop:Math.round(pg.top),folded:document.querySelector('#homeTreasury .home-treasury').classList.contains('is-folded')};});
+  console.log('treasury open',JSON.stringify({before,opened}));
+  if(!opened.folded){assert.equal(opened.top,before.top,'Cards do not move when the treasury unfolds');assert.equal(opened.slots,before.slots,'Card count unchanged');assert(opened.tBottom<=opened.pTop,'Unfolded treasury stops above the functions');}
+  await page.evaluate(()=>bankDialSetOpen(document.querySelector('#homeTreasury'),false));await page.waitForTimeout(600);
   // Stable: the number of cards does not change once the home has settled.
   const s1=await page.evaluate(()=>document.body.dataset.readerSlots);await page.waitForTimeout(1200);assert.equal(await page.evaluate(()=>document.body.dataset.readerSlots),s1,'Card count stays stable');
   // One single way back at the end of the list: « ✓ Fin de la liste » itself (21/10).

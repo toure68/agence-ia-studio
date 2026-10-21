@@ -111,6 +111,12 @@ const homePages=(()=>{
   const tre=home.querySelector('#homeTreasury .home-treasury');
   if(tre&&tre.classList.contains('is-folded')&&tre.offsetHeight){document.body.dataset.treasuryFolded=String(tre.offsetHeight);try{localStorage.setItem('aia-treasury-folded-h',String(tre.offsetHeight));}catch(e){}}
   else if(!document.body.dataset.treasuryFolded){try{const v=Number(localStorage.getItem('aia-treasury-folded-h'));if(v)document.body.dataset.treasuryFolded=String(v);}catch(e){}}
+  // Unfolded treasury = a panel laid OVER the notification cards (21/10, user's idea): its place keeps the folded
+  // height, so the cards never move nor change count; it stops just above the function pages and scrolls inside.
+  const box=home.querySelector('#homeTreasury'),fhNow=Number(document.body.dataset.treasuryFolded)||0;
+  if(box){const open=!!tre&&!tre.classList.contains('is-folded')&&fhNow>0;box.classList.toggle('is-open',open);
+   if(fhNow)document.body.style.setProperty('--treasury-folded',fhNow+'px');
+   const pg=home.querySelector('.home-pages');if(pg)document.body.style.setProperty('--treasury-overlay-max',Math.max(fhNow,pg.getBoundingClientRect().top-box.getBoundingClientRect().top-10)+'px');}
   let free=h;for(const el of home.children){const cs=getComputedStyle(el);if(el===block||cs.display==='none'||el.id==='moduleFocus'&&el.hidden||cs.position==='absolute'||cs.position==='fixed')continue; // laid-over parts (stack, reminder, back zone) take no room
   free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
@@ -122,9 +128,6 @@ const homePages=(()=>{
   let slots=Math.max(2,Math.min(5,Math.floor(room/50)));
   const cardH=Math.max(36,Math.min(60,Math.floor(room/slots)-6)),step=String(cardH+6);
   const b=document.body;
-  // The unfolded treasury never gets taller than the reader (folded treasury + the reader's card slots).
-  const fh=Number(b.dataset.treasuryFolded)||0;
-  if(fh)b.style.setProperty('--treasury-max',(fh+(slots-Math.max(1,slots-2))*(cardH+6))+'px');
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
@@ -227,6 +230,8 @@ const homePages=(()=>{
  }
  function install(){
   if(!on()||typeof homeModulesMarkup!=='function')return;
+  // Folding/unfolding the treasury re-lays the panel at once (no frame where it pushes the cards).
+  if(typeof bankDialSetOpen==='function'){const baseFold=bankDialSetOpen;window.bankDialSetOpen=bankDialSetOpen=function(host,open){baseFold(host,open);fit();requestAnimationFrame(fit);};}
   const base=homeModulesMarkup;
   window.homeModulesMarkup=homeModulesMarkup=function(workspace,state){homeLayout.workspace=workspace;homeLayout.state=state;requestAnimationFrame(observeHomeGrids);setTimeout(sync,0);return pagesMarkup(base,workspace,state);};
   const baseUpdate=updateHomeGrid;

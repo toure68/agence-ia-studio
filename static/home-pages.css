@@ -85,5 +85,8 @@ html.home-ios .filler-tag{align-self:flex-start;font-size:10px;font-weight:800;l
 /* While reading: the empty room under the cards is a touch zone back to the home (invisible). */
 html.home-ios .home-back-zone{position:absolute;left:0;right:0;z-index:1;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
 
-/* 21/10 : the unfolded treasury is never taller than the reader; its details scroll inside the card. */
-html.home-ios #homeTreasury .home-treasury:not(.is-folded){max-height:var(--treasury-max,none);overflow-y:auto;overscroll-behavior:contain}
+
+/* 21/10 : the unfolded treasury opens OVER the notification cards (its place keeps the folded height, nothing moves),
+   stops just above the function pages and scrolls inside. Folded again, it is the small card. */
+html.home-ios #homeTreasury.is-open{height:calc(var(--treasury-folded) + 8px)}
+html.home-ios #homeTreasury.is-open .home-treasury{position:absolute;top:0;left:0;right:0;z-index:6;max-height:var(--treasury-overlay-max,none);overflow-y:auto;overscroll-behavior:contain;--glass-tint:.86;box-shadow:0 18px 44px #000b}
