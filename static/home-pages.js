@@ -107,7 +107,8 @@ const homePages=(()=>{
   const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top);
   home.style.setProperty('--home-ios-height',h+'px');
   const block=home.querySelector('#priorityBlock'),list=block?.querySelector('.reader-list');
-  let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
+  let free=h;for(const el of home.children){const cs=getComputedStyle(el);if(el===block||cs.display==='none'||el.id==='moduleFocus'&&el.hidden||cs.position==='absolute'||cs.position==='fixed')continue; // laid-over parts (stack, reminder, back zone) take no room
+  free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
   // The cards fill the room exactly (21/10): as many as fit at 44px or more (at most 5), each one sized so the
