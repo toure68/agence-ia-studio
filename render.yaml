@@ -1,0 +1,26 @@
+# Render Blueprint (21/10/2026) — same Docker image as on Railway, Frankfurt, persistent disk for the SQLite base.
+# In Render: New + → Blueprint → choose toure68/agence-ia-studio → fill ADMIN_EMAIL / ADMIN_PASSWORD → Apply.
+services:
+  - type: web
+    name: agence-ia-studio
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_PATH
+        value: /app/data/app.db
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
