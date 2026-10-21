@@ -37,7 +37,7 @@ const homePages=(()=>{
   return [...new Set([...action,...visible,...all])];
  }
  let reserve=false;
- function setReserve(on){on=!!on;if(on===reserve)return;reserve=on;const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace&&typeof updateHomeGrid==='function'){box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);}}
+ function setReserve(on){on=!!on;if(on===reserve)return;reserve=on;const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace&&typeof updateHomeGrid==='function'){box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);if(typeof observeHomeGrids==='function')observeHomeGrids();window.homeActions?.place();}} // sizes set at once: the grid never jumps
  function pagesMarkup(base,workspace,state){
   const {cols:COLS,rows:ROWS}=layout(),PER=COLS*ROWS;
   const ws={...workspace,columns:COLS,rows:10,dynamic:false,visible:orderedKeys(workspace,state)};
