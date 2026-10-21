@@ -95,14 +95,16 @@ html.home-ios #homeTreasury.is-open .home-treasury{position:absolute;top:0;left:
 html.home-ios .home-pages.has-actions[data-columns="4"] .home-page>:nth-child(-n+4),
 html.home-ios .home-pages.has-actions[data-columns="3"] .home-page>:nth-child(-n+3),
 html.home-ios .home-pages.has-actions[data-columns="2"] .home-page>:nth-child(-n+2){visibility:hidden}
-html.home-ios .home-action-row{position:absolute;z-index:4;display:grid;align-items:stretch}
+html.home-ios .reference-home .home-action-row.home-page{position:absolute;z-index:4;display:grid!important;align-items:stretch;align-content:stretch;margin:0!important;padding:0!important;flex:none!important;scroll-snap-align:none;overflow:visible}
+/* Separator between the actions and the functions below. */
+html.home-ios .home-action-row::after{content:"";position:absolute;left:4px;right:4px;bottom:calc(var(--row-gap,8px) / -2);height:1px;background:rgba(255,255,255,.22);pointer-events:none}
 html.home-ios .home-action-row .action-card{margin:0;min-width:0}
-html.home-ios .home-action-row .action-tile{width:100%;height:100%;font:inherit;cursor:pointer;animation:actionIn .22s ease-out}
-html.home-ios .home-action-row .action-tile:disabled{opacity:.55;cursor:default}
+html.home-ios .home-action-row .action-tile{cursor:pointer;animation:actionIn .22s ease-out}
+html.home-ios .home-action-row .action-tile[aria-disabled="true"]{opacity:.55;cursor:default}
 html.home-ios .home-action-row .is-main .module-icon{color:#4ade80;border-color:#4ade80}
 html.home-ios .home-action-row .is-danger .module-icon{color:#fb7185;border-color:#fb7185}
 html.home-ios .home-action-row .is-second .module-icon{color:#60a5fa;border-color:#60a5fa}
-html.home-ios .home-action-row .module-copy strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+html.home-ios .home-action-row .module-copy strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes actionIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){html.home-ios .home-action-row .action-tile{animation:none}}
 /* The reader card keeps its information and its reading commands; its action buttons are in the grid. */

@@ -292,6 +292,9 @@ const homeActions=(()=>{
   const gap=tiles[1]?Math.max(0,tiles[1].getBoundingClientRect().left-a.right):8;
   row.style.top=(a.top-hr.top)+'px';row.style.left=(a.left-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
   row.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;row.style.gap=gap+'px';
+  // Same size scale as the page (every --… value the page carries: --home-grid-scale, --home-grid-height…).
+  if(pg)for(const v of [...pg.style])if(v.startsWith('--'))row.style.setProperty(v,pg.style.getPropertyValue(v));
+  const next=pg?.children[cols]?.getBoundingClientRect();row.style.setProperty('--row-gap',(next?Math.max(4,next.top-a.bottom):8)+'px');
  }
  // Shows the actions; returns how many of them were placed in the grid row (0 when there is no iPhone grid).
  function show(btns){
@@ -300,9 +303,29 @@ const homeActions=(()=>{
   const cols=Number(box.dataset.columns)||4,list=btns.slice(0,cols);current=btns;
   let row=home.querySelector('.home-action-row');
   if(!row){row=document.createElement('div');row.className='home-action-row';row.setAttribute('role','group');row.setAttribute('aria-label','Actions du message ouvert');home.append(row);
-   row.addEventListener('click',e=>{const b=e.target.closest('[data-action-run]');if(!b||b.disabled)return;const i=Number(b.dataset.actionRun);current?.[i]?.run();});}
-  row.innerHTML=list.map((b,i)=>{const kind=b.kind==='main'?'is-main':b.kind==='danger'?'is-danger':b.kind==='done'?'is-done':'is-second';
-   return `<article class="module-card action-card ${kind}"><button type="button" class="module-tile action-tile" data-action-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''} aria-label="${esc(b.label)}"><span class="module-face"><span class="module-icon" aria-hidden="true">${svg(pick(b.label))}</span></span><span class="module-copy"><strong>${esc(shortLabel(b.label))}</strong></span></button></article>`;}).join('');
+   row.addEventListener('click',e=>{const b=e.target.closest('[data-action-run]');if(!b||b.getAttribute('aria-disabled')==='true')return;e.preventDefault();const i=Number(b.dataset.actionRun);current?.[i]?.run();});}
+  // Each action is a copy of a real function square (same frame, icon size and name below), placed on the RIGHT
+  // of the row; the empty cells stay on the left (21/10).
+  const pg=box.querySelectorAll('.home-page')[Math.round(box.scrollLeft/Math.max(1,box.clientWidth))]||box.querySelector('.home-page');
+  const model=[...(pg?.children||[])].find(e=>e.matches('.module-card:not(.home-grid-card)'))||box.querySelector('.module-card:not(.home-grid-card)');
+  row.className='module-grid home-page home-action-row'; // same frame as a page, so the squares get the same styles
+  row.dataset.columns=String(cols);row.replaceChildren();
+  list.forEach((b,i)=>{
+   const kind=b.kind==='main'?'is-main':b.kind==='danger'?'is-danger':b.kind==='done'?'is-done':'is-second';
+   const card=model?model.cloneNode(true):document.createElement('article');
+   card.className=card.className.replace(/\bstate-\S+/g,'')+' action-card '+kind;card.removeAttribute('data-module');card.removeAttribute('data-reserve-fill');
+   card.style.gridColumn=String(cols-list.length+1+i);
+   let tile=card.querySelector('.module-tile');
+   if(!tile){card.className='module-card action-card '+kind;card.innerHTML='<a class="module-tile"><span class="module-face"><span class="module-icon"></span></span><span class="module-copy"><strong></strong></span></a>';tile=card.querySelector('.module-tile');}
+   ['href','data-go','data-company-id','data-module-label','data-state','title'].forEach(a=>tile.removeAttribute(a));
+   tile.className=tile.className.replace(/\bstate-\S+/g,'')+' action-tile';
+   tile.setAttribute('role','button');tile.setAttribute('tabindex','0');tile.dataset.actionRun=String(i);tile.setAttribute('aria-label',b.label);
+   if(b.kind==='done')tile.setAttribute('aria-disabled','true');
+   card.querySelectorAll('.module-count,.module-insight,.module-widget,.widget,.module-chevron,[class*="widget-"]:not(.widget-copy)').forEach(e=>e.remove());
+   const icon=card.querySelector('.module-icon');if(icon)icon.innerHTML=svg(pick(b.label));
+   const name=card.querySelector('.module-copy strong');if(name)name.textContent=shortLabel(b.label);
+   row.append(card);
+  });
   box.classList.add('has-actions');home.classList.add('actions-in-grid');
   place();requestAnimationFrame(place);
   return list.length;

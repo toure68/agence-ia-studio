@@ -125,7 +125,16 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    return {labels:row?[...row.querySelectorAll('.action-tile')].map(b=>b.getAttribute('aria-label')):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[4]||document.body).visibility};});
   await openAt(0);const a1=await state();console.log('actions 1',JSON.stringify(a1));
   assert(a1.labels&&a1.labels.length>0&&a1.labels.length<=4,'Actions shown in the grid row');
-  assert(a1.over,'Action row sits exactly on the first row');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
+  assert(a1.over,'Action row sits exactly on the first row');
+  // Same look as a function square (same icon size, name written), placed on the right, separator below (21/10).
+  const look=await page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),act=row.querySelector('.module-card'),fn=document.querySelector('#content .home-page').children[4];
+   const ib=e=>e?.querySelector('.module-icon')?.getBoundingClientRect();const ia=ib(act),ifn=ib(fn),ca=act.getBoundingClientRect(),cf=fn.getBoundingClientRect();
+   const cards=[...row.querySelectorAll('.module-card')],last=cards[cards.length-1].getBoundingClientRect(),rr=row.getBoundingClientRect();
+   return {icon:[Math.round(ia.width),Math.round(ifn.width)],card:[Math.round(ca.width),Math.round(cf.width),Math.round(ca.height),Math.round(cf.height)],name:act.querySelector('.module-copy strong')?.textContent||'',right:Math.round(rr.right-last.right),sep:getComputedStyle(row,'::after').content};});
+  console.log('look',JSON.stringify(look));
+  await page.screenshot({path:out+'/96-lecteur-actions-dans-la-grille.png'});
+  assert.equal(look.icon[0],look.icon[1],'Same icon size as the functions');assert(Math.abs(look.card[0]-look.card[1])<=1&&Math.abs(look.card[2]-look.card[3])<=1,'Same square size');
+  assert(look.name.length>0,'Name written under the icon');assert(look.right<=1,'Actions on the right');assert(look.sep&&look.sep!=='none','Separator under the actions');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
   assert.equal(a1.second,'visible','Other rows stay reachable');assert.equal(a1.inCard,0,'Actions left the reader card');
   await openAt(1);const a2=await state();console.log('actions 2',JSON.stringify(a2));
   assert(a2.title!==a1.title,'Next message');assert(a2.labels&&a2.labels.length>0,'Actions follow the message');
