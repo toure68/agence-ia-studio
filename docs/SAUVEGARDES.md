@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT BAS COMPACT** | `sauvegarde/avant-bas-compact` (be5d929) | Le 21/10/2026 vers 9 h : Assistant IA de 56 points, 32 points entre fonctions et Assistant, 10 points sous l'Assistant. |
 | **RETOUR AVANT BOUTONS DANS LA GRILLE** | `sauvegarde/avant-boutons-grille` (ae69ded) | Le 21/10/2026 vers 8 h 40 : actions en carrés de fonctions dans la première rangée. |
 | **RETOUR AVANT ACTIONS DANS LA GRILLE** | `sauvegarde/avant-actions-grille` (6b1e35b) | Le 21/10/2026 vers 6 h : les boutons d'action restent dans la carte du lecteur. |
 | **RETOUR AVANT TRÉSORERIE PAR-DESSUS** | `sauvegarde/avant-tresorerie-par-dessus` (7cf089f) | Le 21/10/2026 vers 5 h 25 : trésorerie dépliée bornée à la taille du lecteur, qui poussait encore les cartes. |
