@@ -11,7 +11,7 @@ const homeReader=(()=>{
  const KEY='aia-reader',MAX=5,MIN_H=300;
  // Card pitch (height + gap): 64 + 8 normally, 52 + 6 on the iPhone-style home (home-pages.js).
  const ios=()=>document.documentElement.classList.contains('home-ios');
- const pitch=()=>ios()?55:72;
+ const pitch=()=>ios()?54:72;
  // Accueil façon iPhone (home-pages.js): as many small cards as fit on the one screen, at most 5.
  // iPhone-style home: 4 small cards with the treasury (3 if the screen is too short — home-pages.js sets
  // body[data-reader-slots]), 2 fewer while reading; the rest waits in the stack under the functions.

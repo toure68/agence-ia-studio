@@ -110,9 +110,9 @@ const homePages=(()=>{
   let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
-  // Cards are 49px + 6px gap here (reader.js): up to 5 when they fit whole (with 6px left for the stack under them).
-  free-=6;
-  const slots=Math.max(2,Math.min(5,Math.floor((free+6)/55)));
+  // Cards are 48px + 6px gap here (reader.js): up to 5 when they fit whole; the 7px stack hangs in the margin under them.
+  free-=2;
+  const slots=Math.max(2,Math.min(5,Math.floor((free+6)/54)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
@@ -135,7 +135,7 @@ const homePages=(()=>{
   let el=home.querySelector('.home-stack');
   if(rest){
    if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
-    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:55,behavior:'smooth'});};}
+    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:54,behavior:'smooth'});};}
    el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
    if(!el.firstChild)el.innerHTML='<i></i><i></i>';
    // Hangs right under the last visible card, like the iPhone notification stack (21/10): widest edge on top,
