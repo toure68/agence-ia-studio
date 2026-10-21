@@ -87,6 +87,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.waitForTimeout(600);
   const mixed=await page.evaluate(()=>document.querySelectorAll('#content .reader-item').length>0&&!!document.querySelector('#content .home-filler [data-filler="calendar"],#content .home-filler [data-filler="veille"]'));
   assert.equal(mixed,false,'Préparer demain / Veille hidden while notifications are shown');
+  // Cards never touch the function pages; the gap left is small (21/10, choice A).
+  const gap=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list')?.getBoundingClientRect(),pg=document.querySelector('#content .home-pages')?.getBoundingClientRect();if(!lr||!pg)return null;const vis=[...document.querySelectorAll('#content .reader-item')].map(e=>e.getBoundingClientRect()).filter(r=>r.bottom>lr.top+2&&r.top<lr.bottom-2);return vis.length?{gap:Math.round(pg.top-Math.max(...vis.map(r=>r.bottom))),cards:vis.length,slots:document.body.dataset.readerSlots}:null;});
+  console.log('cards/grid',JSON.stringify(gap));
+  if(gap)assert(gap.gap>=6,'Cards never touch the function pages '+JSON.stringify(gap));
   // One single way back at the end of the list: « ✓ Fin de la liste » itself (21/10).
   assert.equal(await page.locator('#content .filler-back').count(),0);
   const end=await page.evaluate(()=>{const b=document.querySelector('#content .reader-end [data-reader-top]');return b?{text:b.textContent.trim(),n:document.querySelectorAll('#content .reader-end button').length}:null;});

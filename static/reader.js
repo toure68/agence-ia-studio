@@ -11,11 +11,11 @@ const homeReader=(()=>{
  const KEY='aia-reader',MAX=5,MIN_H=300;
  // Card pitch (height + gap): 64 + 8 normally, 52 + 6 on the iPhone-style home (home-pages.js).
  const ios=()=>document.documentElement.classList.contains('home-ios');
- const pitch=()=>ios()?58:72;
+ const pitch=()=>ios()?55:72;
  // Accueil façon iPhone (home-pages.js): as many small cards as fit on the one screen, at most 5.
  // iPhone-style home: 4 small cards with the treasury (3 if the screen is too short — home-pages.js sets
  // body[data-reader-slots]), 2 fewer while reading; the rest waits in the stack under the functions.
- const cap=()=>ios()?Math.max(1,Math.min(4,Number(document.body.dataset.readerSlots)||4)):MAX;
+ const cap=()=>ios()?Math.max(1,Math.min(5,Number(document.body.dataset.readerSlots)||4)):MAX;
  const enabled=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  const doneKey=()=>'aia-reader-done-'+(company?.id||0)+'-'+new Date().toISOString().slice(0,10);
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
