@@ -307,7 +307,8 @@ const homeActions=(()=>{
   // of the row; the empty cells stay on the left (21/10).
   const pg=box.querySelectorAll('.home-page')[Math.round(box.scrollLeft/Math.max(1,box.clientWidth))]||box.querySelector('.home-page');
   const model=[...(pg?.children||[])].find(e=>e.matches('.module-card:not(.home-grid-card)'))||box.querySelector('.module-card:not(.home-grid-card)');
-  row.className='module-grid home-action-row';row.dataset.columns=String(cols);row.replaceChildren();
+  row.className='module-grid home-page home-action-row'; // same frame as a page, so the squares get the same styles
+  row.dataset.columns=String(cols);row.replaceChildren();
   list.forEach((b,i)=>{
    const kind=b.kind==='main'?'is-main':b.kind==='danger'?'is-danger':b.kind==='done'?'is-done':'is-second';
    const card=model?model.cloneNode(true):document.createElement('article');
