@@ -113,6 +113,11 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    if(roomBelow>16){await page.mouse.click(pt.x,pt.y);await page.waitForTimeout(900);assert(await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTop<4),'Empty room under the end button goes back home');}
    await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(600);}
   if(end){assert(end.text.startsWith('✓ Fin de la liste'));assert.equal(end.n,1);}
+  // Compact bottom (21/10): Assistant IA 44px high, dots centred between the functions and the Assistant.
+  const bottom=await page.evaluate(()=>{const d=document.querySelector('#content .reference-home .home-topbar .assistant-dock').getBoundingClientRect(),dots=document.querySelector('#content .home-page-dots'),pg=document.querySelector('#content .home-pages').getBoundingClientRect();const dot=dots?.querySelector('.home-page-dot')?.getBoundingClientRect();
+   return {h:Math.round(d.height),gap:Math.round(d.top-pg.bottom),above:dot?Math.round(dot.top-pg.bottom):null,below:dot?Math.round(d.top-dot.bottom):null,under:Math.round(innerHeight-d.bottom)};});
+  console.log('bottom',JSON.stringify(bottom));assert(bottom.h>=43&&bottom.h<=46,'Assistant 44px');assert(bottom.gap<=20,'Small gap above the Assistant');
+  if(bottom.above!==null)assert(Math.abs(bottom.above-bottom.below)<=3,'Dots centred');
   // 21/10 step 1 — reader actions in the first row of the function grid (trial messages, nothing sent).
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','on');}catch(e){}});
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .reader-item').first().waitFor();await page.waitForTimeout(800);

@@ -15,7 +15,7 @@ html.home-ios .home-setting span{white-space:nowrap}
 html.home-ios .home-account-slot{display:none}
 
 /* Bottom: the Assistant IA bar, under the functions. */
-html.home-ios .reference-home .home-topbar{order:99;position:static;margin:10px -20px 0;padding:6px 20px calc(10px + env(safe-area-inset-bottom,0px));background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+html.home-ios .reference-home .home-topbar{order:99;position:static;margin:5px -20px 0;padding:0 20px calc(2px + env(safe-area-inset-bottom,0px));background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
 
 /* Middle keeps what is left; the functions sit at the bottom and never move. */
 html.home-ios #priorityBlock{flex:1 1 auto;min-height:0;margin-bottom:6px}
@@ -26,8 +26,8 @@ html.home-ios #moduleFocus{margin-top:auto}
 html.home-ios .home-pages.module-grid{display:flex!important;grid-template-columns:none!important;gap:0!important;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -20px;padding:6px 0 0;overscroll-behavior-x:contain}
 html.home-ios .home-pages::-webkit-scrollbar{display:none}
 html.home-ios .home-page.module-grid{flex:0 0 100%;box-sizing:border-box;padding:0 20px;scroll-snap-align:start;scroll-snap-stop:always;align-content:start;margin:0}
-html.home-ios .home-page-dots{display:flex;justify-content:center;gap:8px;padding:8px 0 0}
-html.home-ios .home-page-dot{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#ffffff40;cursor:pointer;position:relative}
+html.home-ios .home-page-dots{display:flex;justify-content:center;align-items:center;gap:7px;padding:5px 0 0}
+html.home-ios .home-page-dot{width:6px;height:6px;padding:0;border:0;border-radius:50%;background:#ffffff40;cursor:pointer;position:relative}
 html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-10px}
 html.home-ios .home-page-dot[aria-selected="true"]{background:#fff}
 
@@ -103,3 +103,7 @@ html.home-ios .home-action-row .reader-btn{width:100%;min-width:0;padding:0 6px;
 @media (prefers-reduced-motion:reduce){html.home-ios .home-action-row .reader-btn{animation:none}}
 /* The reader card keeps its information and its reading commands; its action buttons are in the grid. */
 html.home-ios .home-reader.actions-out .reader-actions{display:none}
+
+/* 21/10 : compact bottom — Assistant IA 44px high (comfortable tap size), 5px / 6px dots / 5px between the functions
+   and the Assistant, just above the iPhone home bar. The room won goes to the notifications (fit()). */
+html.home-ios .reference-home .home-topbar .assistant-dock{min-height:44px;padding-top:6px;padding-bottom:6px}
