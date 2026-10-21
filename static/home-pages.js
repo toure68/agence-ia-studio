@@ -110,9 +110,9 @@ const homePages=(()=>{
   let free=h;for(const el of home.children){if(el===block||getComputedStyle(el).display==='none'||el.id==='moduleFocus'&&el.hidden)continue;const cs=getComputedStyle(el);free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
-  // Cards are 52px + 6px gap here (reader.js): 4 when they fit whole (with room for the stack above the grid).
-  free-=20;
-  const slots=Math.max(2,Math.min(4,Math.floor((free+6)/58)));
+  // Cards are 49px + 6px gap here (reader.js): up to 5 when they fit whole (with 6px left for the stack under them).
+  free-=6;
+  const slots=Math.max(2,Math.min(5,Math.floor((free+6)/55)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
@@ -135,14 +135,14 @@ const homePages=(()=>{
   let el=home.querySelector('.home-stack');
   if(rest){
    if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
-    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:58,behavior:'smooth'});};}
+    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:55,behavior:'smooth'});};}
    el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
    if(!el.firstChild)el.innerHTML='<i></i><i></i>';
    // Hangs right under the last visible card, like the iPhone notification stack (21/10): widest edge on top,
    // narrower below; never over the function pages.
    const vis=lr?items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}):[];
    const under=vis.length?Math.max(...vis.map(e=>e.getBoundingClientRect().bottom)):pr.top-20;
-   el.style.top=(Math.min(under+2,pr.top-20)-hr.top)+'px';
+   el.style.top=(Math.min(under+2,pr.top-8)-hr.top)+'px';
    if(lastRest>=0&&rest!==lastRest){el.classList.remove('is-moving');void el.offsetWidth;el.classList.add('is-moving');}
   }else el?.remove();
   lastRest=rest;

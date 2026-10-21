@@ -42,10 +42,10 @@ html.home-ios .home-grid-tile .module-icon{--tile-accent:var(--home-muted);color
 /* The chooser opens as a small panel above the functions (nothing on the home moves). */
 html.home-ios .reference-home .home-modules-heading .column-chooser:not([hidden]){position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:14px;border:1px solid #ffffff26;border-radius:20px;background:rgba(14,19,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 14px 40px #0008}
 
-/* Small cards: 52px + 6px gap, exactly 4 (or 2 while reading), never cut (no fade). */
+/* Small cards: 49px + 6px gap, up to 5 (2 fewer while reading), never cut (no fade). */
 html.home-ios .reader-list{gap:6px}
 html.home-ios .reader-list.has-more{-webkit-mask-image:none;mask-image:none}
-html.home-ios .reader-item{flex-basis:52px;height:52px;border-radius:16px;gap:10px;padding:0 12px}
+html.home-ios .reader-item{flex-basis:49px;height:49px;border-radius:16px;gap:10px;padding:0 12px}
 html.home-ios .reader-item .module-icon{width:32px;height:32px;flex-basis:32px;border-radius:10px}
 html.home-ios .reader-item .module-icon svg{width:17px;height:17px}
 html.home-ios .reader-item-copy strong{font-size:13.5px}
@@ -55,9 +55,9 @@ html.home-ios .home-reader{margin-bottom:8px}
 
 /* Notification stack hanging under the last visible card (iPhone style): laid over, never moves the grid. */
 html.home-ios #content>.reference-home{position:relative}
-html.home-ios .home-stack{position:absolute;left:20px;right:20px;height:18px;z-index:0;display:block;padding:0;border:0;background:transparent;cursor:pointer}
-html.home-ios .home-stack i{position:absolute;left:12px;right:12px;top:0;height:9px;border-radius:0 0 16px 16px;background:linear-gradient(rgba(255,255,255,.04),rgba(255,255,255,.14));border:1px solid rgba(255,255,255,.18);border-top:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-html.home-ios .home-stack i+i{left:28px;right:28px;top:9px;height:7px;background:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,.09));border-color:rgba(255,255,255,.11)}
+html.home-ios .home-stack{position:absolute;left:20px;right:20px;height:7px;z-index:0;display:block;padding:0;border:0;background:transparent;cursor:pointer}
+html.home-ios .home-stack i{position:absolute;left:12px;right:12px;top:0;height:4px;border-radius:0 0 12px 12px;background:linear-gradient(rgba(255,255,255,.04),rgba(255,255,255,.14));border:1px solid rgba(255,255,255,.18);border-top:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html.home-ios .home-stack i+i{left:28px;right:28px;top:4px;height:3px;background:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,.09));border-color:rgba(255,255,255,.11)}
 html.home-ios .home-stack.is-moving i{animation:stackUp .35s ease-out}
 html.home-ios .home-stack.is-moving i+i{animation-delay:.06s}
 @keyframes stackUp{0%{transform:translateY(8px) scaleX(.94);opacity:.4}100%{transform:none;opacity:1}}
