@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT CARTES 48** | `sauvegarde/avant-cartes-48` (5b7ed19) | Le 21/10/2026 vers 3 h 15 : cartes de 49 points, restées à 4 sur l'iPhone de Mohamed. |
 | **RETOUR AVANT CARTE DE PLUS** | `sauvegarde/avant-carte-de-plus` (e1d825b) | Le 21/10/2026 vers 2 h 50 : petites cartes de 52 points, 4 avec la trésorerie et 2 pendant la lecture, grand espace au-dessus des fonctions. |
 | **RETOUR AVANT PILE RETOURNÉE** | `sauvegarde/avant-pile-retournee` (63183bf) | Le 21/10/2026 vers 2 h 30 : la pile des cartes en attente posée juste au-dessus des fonctions, bord étroit en haut et bord large en bas. |
 | **RETOUR AVANT FIN DE LISTE** | `sauvegarde/avant-fin-de-liste` (a4bb753) | Le 21/10/2026 vers 2 h : au bout des notifications, « ✓ Fin de la liste » et un bouton « ↑ Revenir à la trésorerie » séparé. |
