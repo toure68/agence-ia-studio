@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT TRÉSORERIE BORNÉE** | `sauvegarde/avant-tresorerie-bornee` (51b6de6) | Le 21/10/2026 vers 5 h 10 : trésorerie dépliée sans limite de hauteur ; le lecteur reprenait cette grande taille. |
 | **RETOUR AVANT BOÎTE FIXE** | `sauvegarde/avant-boite-fixe` (dba01c1) | Le 21/10/2026 vers 4 h 30 : en lecture, la boîte des cartes rétrécissait jusqu'au dernier message et coupait « Fin de la liste ». |
 | **RETOUR AVANT RAPPEL** | `sauvegarde/avant-rappel` (e6278c7) | Le 21/10/2026 vers 4 h : « Fin de la liste » en simple texte cliquable, espace vide inactif, pas de carte de rappel. |
 | **RETOUR AVANT CARTES AJUSTÉES** | `sauvegarde/avant-cartes-ajustees` (04ec458) | Le 21/10/2026 vers 3 h 30 : cartes fixes de 48 points ; à l'ouverture une 5e carte apparaissait puis disparaissait. |

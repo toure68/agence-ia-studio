@@ -107,6 +107,10 @@ const homePages=(()=>{
   const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top);
   home.style.setProperty('--home-ios-height',h+'px');
   const block=home.querySelector('#priorityBlock'),list=block?.querySelector('.reader-list');
+  // Folded treasury height, kept (also across openings): the reader and the unfolded treasury use it (21/10).
+  const tre=home.querySelector('#homeTreasury .home-treasury');
+  if(tre&&tre.classList.contains('is-folded')&&tre.offsetHeight){document.body.dataset.treasuryFolded=String(tre.offsetHeight);try{localStorage.setItem('aia-treasury-folded-h',String(tre.offsetHeight));}catch(e){}}
+  else if(!document.body.dataset.treasuryFolded){try{const v=Number(localStorage.getItem('aia-treasury-folded-h'));if(v)document.body.dataset.treasuryFolded=String(v);}catch(e){}}
   let free=h;for(const el of home.children){const cs=getComputedStyle(el);if(el===block||cs.display==='none'||el.id==='moduleFocus'&&el.hidden||cs.position==='absolute'||cs.position==='fixed')continue; // laid-over parts (stack, reminder, back zone) take no room
   free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
@@ -118,6 +122,9 @@ const homePages=(()=>{
   let slots=Math.max(2,Math.min(5,Math.floor(room/50)));
   const cardH=Math.max(36,Math.min(60,Math.floor(room/slots)-6)),step=String(cardH+6);
   const b=document.body;
+  // The unfolded treasury never gets taller than the reader (folded treasury + the reader's card slots).
+  const fh=Number(b.dataset.treasuryFolded)||0;
+  if(fh)b.style.setProperty('--treasury-max',(fh+(slots-Math.max(1,slots-2))*(cardH+6))+'px');
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
  // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
