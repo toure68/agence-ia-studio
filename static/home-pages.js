@@ -123,6 +123,29 @@ const homePages=(()=>{
  // top, narrower below); it moves up a little each time a card comes up. Laid over: the grid never moves.
  // The room between the cards and the grid is never empty: when no card fills it (end of the list, nothing to
  // read), « Préparer demain / Veille » cards, only when there is no notification at all.
+ // Next real agenda item for the reminder card (module-peek/calendar), fetched at most every 5 minutes.
+ let next={at:0,item:null,busy:false};
+ function loadNext(){
+  if(next.busy||Date.now()-next.at<300000)return;
+  const cid=typeof company!=='undefined'&&company?company.id:null;if(!cid||typeof api!=='function')return;
+  next.busy=true;api(`/api/companies/${cid}/module-peek/calendar`).then(d=>{next.item=(d?.items||[])[0]||null;}).catch(()=>{next.item=null;}).finally(()=>{next.at=Date.now();next.busy=false;requestAnimationFrame(stack);});
+ }
+ function friendlyDate(iso){
+  if(!iso)return '';const d=new Date(iso+'T12:00:00'),t=new Date();t.setHours(12,0,0,0);const diff=Math.round((d-t)/864e5);
+  if(diff===0)return 'aujourd’hui';if(diff===1)return 'demain';if(diff<0)return 'en retard';
+  return 'le '+d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+ }
+ function reminderCard(){
+  loadNext();
+  const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const icon=k=>typeof moduleIcon==='function'?moduleIcon(k):'';
+  if(next.item)return `<button type="button" class="filler-row filler-card filler-reminder" data-filler="reminder"><span class="module-icon" aria-hidden="true">${icon('calendar')}</span><span class="filler-copy"><span class="filler-tag">Rappel</span><strong>${esc(next.item.title)}</strong><small>${esc(friendlyDate(next.item.meta))}</small></span><span aria-hidden="true">›</span></button>`;
+  return `<button type="button" class="filler-row filler-card filler-reminder" data-filler="idea"><span class="module-icon" aria-hidden="true">${icon('drafts')}</span><span class="filler-copy"><span class="filler-tag">Idée</span><strong>Un problème au quotidien ?</strong><small>Décrivez-le, l’Assistant IA cherche une solution</small></span><span aria-hidden="true">›</span></button>`;
+ }
+ function openIdea(){
+  try{const cid=company?.id,uid=me?.id;if(cid&&uid&&typeof assistantDrafts!=='undefined'){const k=uid+':'+cid,d=assistantDrafts.get(k)||{text:'',files:[],requestId:null};if(!d.text)d.text='Mon problème au quotidien : ';assistantDrafts.set(k,d);}}catch(e){}
+  document.querySelector('#assistantDock')?.click();
+ }
  let lastRest=-1;
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
@@ -154,17 +177,31 @@ const homePages=(()=>{
   const after=lr&&shown?Math.max(...items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).map(e=>e.getBoundingClientRect().bottom)):(block?.querySelector('.reader-bar')?.getBoundingClientRect().bottom||block?.getBoundingClientRect().top||pr.top);
   const top=after+8,bottom=pr.top-(rest?24:10),room=bottom-top;
   let f=home.querySelector('.home-filler');
-  if(room>=64){
+  // While reading, the whole empty room under the cards is a touch zone back to the home (treasury + cards).
+  // It starts under the cards box, so it never covers a card nor blocks sliding them (21/10).
+  let z=home.querySelector('.home-back-zone');
+  const zTop=lr?lr.bottom+(rest?12:4):top,zBottom=pr.top-(rest?12:4);
+  if(reading&&zBottom-zTop>=24){
+   if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
+    z.onclick=()=>home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});}
+   z.style.top=(zTop-hr.top)+'px';z.style.height=(zBottom-zTop)+'px';
+  }else z?.remove();
+  if(room>=64&&!reading){
    if(!f){f=document.createElement('section');f.className='home-filler';f.setAttribute('aria-label','À préparer');home.append(f);
-    f.addEventListener('click',e=>{const b=e.target.closest('[data-filler]');if(!b)return;const k=b.dataset.filler;
+    f.addEventListener('click',e=>{const b=e.target.closest('[data-filler]');if(!b)return;let k=b.dataset.filler;
+     if(k==='idea'){openIdea();return;}
+     if(k==='reminder')k='calendar';
      const tile=home.querySelector(`.home-pages [data-go="${k}"]`);if(tile)tile.click();else if(typeof openTab==='function')openTab(k);});}
    // « Préparer demain » and « Veille concurrentielle » are never part of the notification group (user request
    // 21/10): they show as their own cards only when there is no notification card at all (pending or done).
-   // While notifications are there, the room stays empty: « ✓ Fin de la liste » (reader.js) is the way back.
+   // While notifications are there, only the reminder card below may fill the room (never while reading).
+   // With a few notifications that leave room (21/10): ONE reminder card of another style, never counted as a
+   // notification, gone as soon as a notification is touched (reading). Real next agenda item, otherwise an
+   // invitation to describe a daily problem to the Assistant IA. Nothing invented.
    const solo=items.length===0,tall=room>=150;
-   f.classList.toggle('is-tall',tall);f.classList.toggle('is-cards',solo);
+   f.classList.toggle('is-tall',tall);f.classList.toggle('is-cards',true);f.classList.toggle('is-reminder',!solo);
    const row=(k,title,sub)=>`<button type="button" class="filler-row filler-card" data-filler="${k}"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon(k):''}</span><span class="filler-copy"><strong>${title}</strong><small>${sub}</small></span><span aria-hidden="true">›</span></button>`;
-   f.innerHTML=solo?row('calendar','Préparer demain','Rendez-vous, chantiers et rappels de demain')+(tall?row('veille','Veille concurrentielle','Marchés, prix et nouveautés de votre métier'):''):'';
+   f.innerHTML=solo?row('calendar','Préparer demain','Rendez-vous, chantiers et rappels de demain')+(tall?row('veille','Veille concurrentielle','Marchés, prix et nouveautés de votre métier'):''):reminderCard();
    if(!f.innerHTML){f.remove();return;}
    f.style.top=(top-hr.top)+'px';f.style.height=room+'px';
   }else f?.remove();
@@ -173,7 +210,8 @@ const homePages=(()=>{
  function sync(){if(!on())return;settingsRow();wirePages();requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
   const block=document.querySelector('#content #priorityBlock');
   if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch=new MutationObserver(()=>requestAnimationFrame(stack));stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
-   block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});}
+   block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});
+   block.addEventListener('pointerdown',e=>{if(e.target.closest('.reader-list'))document.querySelector('#content .home-filler.is-reminder')?.remove();},{capture:true,passive:true});}
   // Re-fit when a block changes height (treasury folded/unfolded, grid sized, settings shown…).
   const home=document.querySelector('#content .reference-home');if(!home||typeof ResizeObserver!=='function')return;
   watcher?.disconnect();watcher=new ResizeObserver(()=>requestAnimationFrame(fit));

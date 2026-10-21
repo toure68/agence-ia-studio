@@ -77,3 +77,10 @@ html.home-ios .home-filler.is-cards .module-icon svg{width:21px;height:21px}
 html.home-ios .home-filler.is-cards .filler-copy strong{font-size:15.5px}
 html.home-ios .home-filler.is-cards .filler-copy small{font-size:12.5px}
 html.home-ios .home-pages,html.home-ios .home-page-dots{position:relative;z-index:1}
+
+/* 21/10 : reminder card (with a few notifications) — another style than the notifications, never counted. */
+html.home-ios .home-filler.is-reminder{justify-content:flex-start;padding-top:4px}
+html.home-ios .home-filler.is-reminder .filler-card{flex:0 0 auto;min-height:64px;border-style:dashed;border-color:rgba(255,255,255,.22);background:transparent}
+html.home-ios .filler-tag{align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7dd3fc;background:#7dd3fc1f;border-radius:6px;padding:1px 6px;margin-bottom:2px}
+/* While reading: the empty room under the cards is a touch zone back to the home (invisible). */
+html.home-ios .home-back-zone{position:absolute;left:0;right:0;z-index:1;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
