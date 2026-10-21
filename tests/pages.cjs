@@ -132,6 +132,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    const cards=[...row.querySelectorAll('.module-card')],last=cards[cards.length-1].getBoundingClientRect(),rr=row.getBoundingClientRect();
    return {icon:[Math.round(ia.width),Math.round(ifn.width)],card:[Math.round(ca.width),Math.round(cf.width),Math.round(ca.height),Math.round(cf.height)],name:act.querySelector('.module-copy strong')?.textContent||'',right:Math.round(rr.right-last.right),sep:getComputedStyle(row,'::after').content};});
   console.log('look',JSON.stringify(look));
+  await page.screenshot({path:out+'/96-lecteur-actions-dans-la-grille.png'});
   assert.equal(look.icon[0],look.icon[1],'Same icon size as the functions');assert(Math.abs(look.card[0]-look.card[1])<=1&&Math.abs(look.card[2]-look.card[3])<=1,'Same square size');
   assert(look.name.length>0,'Name written under the icon');assert(look.right<=1,'Actions on the right');assert(look.sep&&look.sep!=='none','Separator under the actions');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
   assert.equal(a1.second,'visible','Other rows stay reachable');assert.equal(a1.inCard,0,'Actions left the reader card');
