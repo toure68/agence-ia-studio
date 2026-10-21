@@ -21,18 +21,23 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.screenshot({path:out+'/95-accueil-iphone.png'});
 
   // One screen: nothing to scroll vertically, the date tab and the treasury fully visible.
-  const box=await page.evaluate(()=>{const h=document.querySelector('#content .reference-home').getBoundingClientRect(),t=document.querySelector('#homeTreasury').getBoundingClientRect(),a=document.querySelector('#assistantDock').getBoundingClientRect(),g=document.querySelector('.home-pages').getBoundingClientRect(),s=document.querySelector('.home-settings').getBoundingClientRect();
-   return {bottom:h.bottom,vh:innerHeight,overflow:getComputedStyle(document.body).overflow,date:document.querySelector('#homeTreasury').getAttribute('data-date'),tTop:t.top,aTop:a.top,aBottom:a.bottom,gBottom:g.bottom,sBottom:s.bottom};});
+  const box=await page.evaluate(()=>{const h=document.querySelector('#content .reference-home').getBoundingClientRect(),t=document.querySelector('#homeTreasury').getBoundingClientRect(),a=document.querySelector('#assistantDock').getBoundingClientRect(),g=document.querySelector('.home-pages').getBoundingClientRect(),s=document.querySelector('#content .reference-home').getBoundingClientRect();
+   return {bottom:h.bottom,vh:innerHeight,overflow:getComputedStyle(document.body).overflow,date:document.querySelector('#homeTreasury').getAttribute('data-date'),tTop:t.top,aTop:a.top,aBottom:a.bottom,gBottom:g.bottom,sBottom:s.top};});
   assert.ok(box.bottom<=box.vh+1,'the home fits the screen '+JSON.stringify(box));
   assert.equal(box.overflow,'hidden','no vertical scroll on the home');
   assert.ok(box.tTop>=box.sBottom&&box.date,'date tab and treasury visible under the réglages '+JSON.stringify(box));
   assert.ok(box.aTop>=box.gBottom&&box.aBottom<=box.vh+1,'Assistant IA at the bottom, under the functions '+JSON.stringify(box));
   await page.evaluate(()=>scrollTo(0,500));assert.equal(await page.evaluate(()=>scrollY),0,'the page does not move up');
 
-  // Réglages as icons: one tap, no menu.
-  for(const name of ['Fond','Lecteur','Voix','Outils'])assert.ok(await page.locator('.home-setting',{hasText:name}).isVisible(),'réglage '+name);
-  assert.ok(!await page.locator('.account-menu summary').isVisible(),'no account menu to open');
-  assert.equal(await page.locator('.home-setting',{hasText:'Lecteur'}).getAttribute('aria-pressed'),'true');
+  // Réglages grouped behind the account button, left of the Assistant IA (21/10); no icon row at the top.
+  assert.equal(await page.locator('.home-settings').count(),0,'no réglage icons row');
+  const acc=await page.evaluate(()=>{const s=document.querySelector('#content .home-account-slot .account-menu summary')?.getBoundingClientRect(),a=document.querySelector('#assistantDock').getBoundingClientRect();return s?{right:Math.round(s.right),aLeft:Math.round(a.left),dy:Math.round(Math.abs((s.top+s.bottom)/2-(a.top+a.bottom)/2))}:null;});
+  assert(acc&&acc.right<=acc.aLeft&&acc.dy<=4,'account button left of the Assistant IA '+JSON.stringify(acc));
+  await page.locator('#content .home-account-slot .account-menu summary').click();
+  for(const id of ['accountWallpaper','accountReader','accountTools'])assert.ok(await page.locator('#'+id).isVisible(),'menu entry '+id);
+  const panel=await page.evaluate(()=>{const p=document.querySelector('.account-panel').getBoundingClientRect();return {top:Math.round(p.top),bottom:Math.round(p.bottom),vh:innerHeight};});
+  assert(panel.top>=0&&panel.bottom<=panel.vh,'menu fully on screen '+JSON.stringify(panel));
+  await page.locator('#content .home-account-slot .account-menu summary').click();
 
   // Function pages: 4 columns × 2 rows, dots, swipe sideways; no « Réserve de fonctions ».
   const pages=await page.locator('.home-page').count(),dots=await page.locator('.home-page-dot').count();
@@ -79,9 +84,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.waitForFunction(()=>!document.querySelector('#contextLayer'));
 
   // The « Lecteur » icon switches the reader mode right away.
-  await page.locator('.home-setting',{hasText:'Lecteur'}).click();
+  const toggleReader=async()=>{await page.locator('#content .home-account-slot .account-menu summary').click();await page.locator('#accountReader').click();await page.evaluate(()=>document.querySelector('.account-menu')?.removeAttribute('open'));};
+  await toggleReader();
   await page.locator('.priority-card').first().waitFor();
-  await page.locator('.home-setting',{hasText:'Lecteur'}).click();
+  await toggleReader();
   await page.locator('.reader-item,.priority-card').first().waitFor();
   // « Préparer demain » / « Veille » never mix with the notification cards (21/10).
   await page.waitForTimeout(600);
@@ -128,20 +134,22 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    const first=[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>getComputedStyle(e).visibility);
    const r=row?.getBoundingClientRect(),t=document.querySelector('#content .home-page').children[0].getBoundingClientRect();
    return {labels:row?[...row.querySelectorAll('[data-action-run]')].map(b=>b.textContent.trim()):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[4]||document.body).visibility};});
-  await openAt(0);const a1=await state();console.log('actions 1',JSON.stringify(a1));
+  const nFn=await page.evaluate(()=>document.querySelectorAll('#content .home-pages [data-go]').length);
+  await openAt(0);const a1=await state();
+  assert.equal(await page.evaluate(()=>document.querySelectorAll('#content .home-pages [data-go]').length),nFn,'No function hidden while reading: they move to the next pages');console.log('actions 1',JSON.stringify(a1));
   assert(a1.labels&&a1.labels.length>0&&a1.labels.length<=4,'Actions shown in the grid row');
   assert(a1.over,'Action row sits exactly on the first row');
   // Same buttons as the reader (words written, green main / grey / red), on the right, separator below (21/10, mock-up OK).
   const look=await page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),btns=[...row.querySelectorAll('.reader-btn')];
    const rr=row.getBoundingClientRect(),last=btns[btns.length-1].getBoundingClientRect(),main=row.querySelector('.reader-btn.is-main');
-   return {texts:btns.map(b=>b.textContent.trim()),h:Math.round(last.height),right:Math.round(rr.right-last.right),mainBg:main?getComputedStyle(main).backgroundColor:null,sep:getComputedStyle(row,'::after').content,squares:row.querySelectorAll('.module-card,.module-tile').length};});
+   return {left:Math.round(btns[0].getBoundingClientRect().left-rr.left),texts:btns.map(b=>b.textContent.trim()),h:Math.round(last.height),right:Math.round(rr.right-last.right),mainBg:main?getComputedStyle(main).backgroundColor:null,sep:getComputedStyle(row,'::after').content,squares:row.querySelectorAll('.module-card,.module-tile').length};});
   console.log('look',JSON.stringify(look));
   await page.screenshot({path:out+'/96-lecteur-actions-dans-la-grille.png'});
   // Swiping the function pages while reading never moves the buttons (they stay on the right of the grid).
   const xr=await page.evaluate(async()=>{const box=document.querySelector('#content .home-pages'),row=document.querySelector('#content .home-action-row');const r0=Math.round(row.getBoundingClientRect().right);box.scrollLeft=box.clientWidth*0.5;await new Promise(r=>setTimeout(r,250));window.homeActions.place();const r1=Math.round(row.getBoundingClientRect().right);box.scrollLeft=0;await new Promise(r=>setTimeout(r,400));window.homeActions.place();return [r0,r1,Math.round(box.getBoundingClientRect().right)];});
   console.log('swipe',JSON.stringify(xr));assert(Math.abs(xr[0]-xr[1])<=1,'Buttons stay put while the pages slide');
   assert(look.texts.every(t=>t.length>0),'Words written on the buttons');assert(look.h>=40,'Reader-size buttons');
-  assert(look.right<=1,'Buttons on the right');assert(look.sep&&look.sep!=='none','Separator under the buttons');assert.equal(look.squares,0,'No function square in the reserved row');
+  assert(look.right<=1&&look.left<=1,'Buttons fill the whole row');assert.equal(look.squares,0,'No function square in the reserved row');
   if(look.mainBg)assert(!/rgba?\(0, 0, 0, 0\)|transparent/.test(look.mainBg),'Main button filled (green)');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
   assert.equal(a1.second,'visible','Other rows stay reachable');assert.equal(a1.inCard,0,'Actions left the reader card');
   await openAt(1);const a2=await state();console.log('actions 2',JSON.stringify(a2));
