@@ -1,0 +1,23 @@
+name: Vérification Render
+# Checks the Render site (21/10): health, then the same version check as the live check (page + files identical).
+on:
+  push:
+    branches: ['verif/**']
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIVE_URL: https://agence-ia-studio.onrender.com
+      PLAYWRIGHT_BROWSER_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright
+      - name: Wait for the Render site
+        run: |
+          for i in $(seq 1 40); do c=$(curl -s -o /dev/null -w "%{http_code}" "$LIVE_URL/health"); echo "health $c"; [ "$c" = 200 ] && break; sleep 20; done
+          echo "::notice title=Render::health $c on $LIVE_URL"
+      - run: node tests/live_check.cjs
