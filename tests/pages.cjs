@@ -132,12 +132,6 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    const cards=[...row.querySelectorAll('.module-card')],last=cards[cards.length-1].getBoundingClientRect(),rr=row.getBoundingClientRect();
    return {icon:[Math.round(ia.width),Math.round(ifn.width)],card:[Math.round(ca.width),Math.round(cf.width),Math.round(ca.height),Math.round(cf.height)],name:act.querySelector('.module-copy strong')?.textContent||'',right:Math.round(rr.right-last.right),sep:getComputedStyle(row,'::after').content};});
   console.log('look',JSON.stringify(look));
-  const why=await page.evaluate(()=>{const a=document.querySelector('#content .home-page').children[4],c=document.querySelector('#content .home-action-row .module-card'),out=[];
-   const pairs=[[a,c],[a.querySelector('.module-tile'),c.querySelector('.module-tile')],[a.querySelector('.module-icon'),c.querySelector('.module-icon')],[a.querySelector('.module-face'),c.querySelector('.module-face')],[a.parentElement,c.parentElement]];
-   for(const sh of document.styleSheets){const walk=rules=>{for(const r of rules){if(r.cssRules&&!r.selectorText){walk(r.cssRules);continue;}if(!r.selectorText)continue;
-    pairs.forEach(([x,y],k)=>{let mx=false,my=false;try{mx=x.matches(r.selectorText);my=y.matches(r.selectorText);}catch(e){}if(mx!==my&&/width|height|flex|padding|grid|container|display|font-size/.test(r.style.cssText))out.push(k+(mx?' FN ':' ACT ')+r.selectorText.slice(0,140)+' {'+r.style.cssText.slice(0,90));});}};try{walk(sh.cssRules);}catch(e){}}
-   const st=e=>e.getAttribute('style')||'';return {diff:out.slice(0,30),styles:[st(a),st(c),st(a.querySelector('.module-tile')),st(c.querySelector('.module-tile')),st(a.parentElement).slice(0,200),st(c.parentElement).slice(0,300)],cls:[a.className,c.className,a.querySelector('.module-tile').className,c.querySelector('.module-tile').className]};});
-  console.log('why',JSON.stringify(why));
   await page.screenshot({path:out+'/96-lecteur-actions-dans-la-grille.png'});
   assert.equal(look.icon[0],look.icon[1],'Same icon size as the functions');assert(Math.abs(look.card[0]-look.card[1])<=1&&Math.abs(look.card[2]-look.card[3])<=1,'Same square size');
   assert(look.name.length>0,'Name written under the icon');assert(look.right<=1,'Actions on the right');assert(look.sep&&look.sep!=='none','Separator under the actions');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);

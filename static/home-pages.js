@@ -292,7 +292,8 @@ const homeActions=(()=>{
   const gap=tiles[1]?Math.max(0,tiles[1].getBoundingClientRect().left-a.right):8;
   row.style.top=(a.top-hr.top)+'px';row.style.left=(a.left-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
   row.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;row.style.gap=gap+'px';
-  ['--module-reference-width','--module-scale','--module-height'].forEach(v=>{const x=pg?.style.getPropertyValue(v);if(x)row.style.setProperty(v,x);else row.style.removeProperty(v);});
+  // Same size scale as the page (every --… value the page carries: --home-grid-scale, --home-grid-height…).
+  if(pg)for(const v of [...pg.style])if(v.startsWith('--'))row.style.setProperty(v,pg.style.getPropertyValue(v));
   const next=pg?.children[cols]?.getBoundingClientRect();row.style.setProperty('--row-gap',(next?Math.max(4,next.top-a.bottom):8)+'px');
  }
  // Shows the actions; returns how many of them were placed in the grid row (0 when there is no iPhone grid).
