@@ -96,6 +96,11 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // One single way back at the end of the list: « ✓ Fin de la liste » itself (21/10).
   assert.equal(await page.locator('#content .filler-back').count(),0);
   const end=await page.evaluate(()=>{const b=document.querySelector('#content .reader-end [data-reader-top]');return b?{text:b.textContent.trim(),n:document.querySelectorAll('#content .reader-end button').length}:null;});
+  // At the very end of the list (reading), the end button is shown whole, never cut by the box (21/10).
+  if(end){await page.evaluate(()=>{const l=document.querySelector('#content .reader-list');l.scrollTo({top:l.scrollHeight});});await page.waitForTimeout(900);
+   const cut=await page.evaluate(()=>{const l=document.querySelector('#content .reader-list').getBoundingClientRect(),b=document.querySelector('#content .reader-end [data-reader-top]').getBoundingClientRect();return {list:[Math.round(l.top),Math.round(l.bottom)],btn:[Math.round(b.top),Math.round(b.bottom)]};});
+   console.log('end button',JSON.stringify(cut));assert(cut.btn[0]>=cut.list[0]-1&&cut.btn[1]<=cut.list[1]+1,'End button not cut '+JSON.stringify(cut));
+   await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(600);}
   if(end){assert(end.text.startsWith('✓ Fin de la liste'));assert.equal(end.n,1);}
   assert.deepEqual(errors,[]);
   console.log('pages ok');

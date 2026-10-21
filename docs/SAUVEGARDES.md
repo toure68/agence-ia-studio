@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT BOÎTE FIXE** | `sauvegarde/avant-boite-fixe` (dba01c1) | Le 21/10/2026 vers 4 h 30 : en lecture, la boîte des cartes rétrécissait jusqu'au dernier message et coupait « Fin de la liste ». |
 | **RETOUR AVANT RAPPEL** | `sauvegarde/avant-rappel` (e6278c7) | Le 21/10/2026 vers 4 h : « Fin de la liste » en simple texte cliquable, espace vide inactif, pas de carte de rappel. |
 | **RETOUR AVANT CARTES AJUSTÉES** | `sauvegarde/avant-cartes-ajustees` (04ec458) | Le 21/10/2026 vers 3 h 30 : cartes fixes de 48 points ; à l'ouverture une 5e carte apparaissait puis disparaissait. |
 | **RETOUR AVANT CARTES 48** | `sauvegarde/avant-cartes-48` (5b7ed19) | Le 21/10/2026 vers 3 h 15 : cartes de 49 points, restées à 4 sur l'iPhone de Mohamed. |
