@@ -28,7 +28,7 @@ html.home-ios .home-pages::-webkit-scrollbar{display:none}
 html.home-ios .home-page.module-grid{flex:0 0 100%;box-sizing:border-box;padding:0 20px;scroll-snap-align:start;scroll-snap-stop:always;align-content:start;margin:0}
 html.home-ios .home-page-dots{display:flex;justify-content:center;align-items:center;gap:7px;padding:5px 0 0}
 html.home-ios .home-page-dot{width:6px;height:6px;padding:0;border:0;border-radius:50%;background:#ffffff40;cursor:pointer;position:relative}
-html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-10px}
+html.home-ios .home-page-dot::after{content:"";position:absolute;inset:-10px -3px} /* never over the next dot */
 html.home-ios .home-page-dot[aria-selected="true"]{background:#fff}
 
 /* iOS-style red number badge on the icon (number of actions to do). */
