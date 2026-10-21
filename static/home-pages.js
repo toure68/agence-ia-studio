@@ -115,8 +115,8 @@ const homePages=(()=>{
   const slots=Math.max(2,Math.min(4,Math.floor((free+6)/58)));
   if(document.body.dataset.readerSlots!==String(slots)){document.body.dataset.readerSlots=String(slots);if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
- // Waiting cards peek out ABOVE the function pages (the side closest to the cards), like an iPhone notification
- // stack sliding under the grid; it moves a little each time a card comes up. Laid over: the grid never moves.
+ // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
+ // top, narrower below); it moves up a little each time a card comes up. Laid over: the grid never moves.
  // The room between the cards and the grid is never empty: when no card fills it (end of the list, nothing to
  // read), « Préparer demain / Veille » cards, only when there is no notification at all.
  let lastRest=-1;
@@ -138,7 +138,11 @@ const homePages=(()=>{
     el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:58,behavior:'smooth'});};}
    el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
    if(!el.firstChild)el.innerHTML='<i></i><i></i>';
-   el.style.top=(pr.top-hr.top-18)+'px';
+   // Hangs right under the last visible card, like the iPhone notification stack (21/10): widest edge on top,
+   // narrower below; never over the function pages.
+   const vis=lr?items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}):[];
+   const under=vis.length?Math.max(...vis.map(e=>e.getBoundingClientRect().bottom)):pr.top-20;
+   el.style.top=(Math.min(under+2,pr.top-20)-hr.top)+'px';
    if(lastRest>=0&&rest!==lastRest){el.classList.remove('is-moving');void el.offsetWidth;el.classList.add('is-moving');}
   }else el?.remove();
   lastRest=rest;
