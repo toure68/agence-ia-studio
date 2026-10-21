@@ -76,8 +76,6 @@ function bankInitials(name){return String(name).replace(/^Banque\s+/i,'').split(
 function bankHomeKey(){return (me?.id||'')+'-'+(company?.id||'');}
 function bankHomeSelected(banks){const id=bankHomeSelection.get(bankHomeKey());return banks.some(b=>String(b.id)===String(id))?String(id):'all';}
 function bankShortDate(value){if(!value)return '';const tomorrow=new Date(bankToday()+'T12:00:00Z');tomorrow.setUTCDate(tomorrow.getUTCDate()+1);if(value===tomorrow.toISOString().slice(0,10))return 'demain';if(value===bankToday())return 'aujourd’hui';return 'le '+bankDate(value).slice(0,5);}
-function bankPeriod(month){return new Intl.DateTimeFormat('fr-FR',{month:'long',timeZone:'Europe/Paris'}).format(new Date((month||bankToday().slice(0,7))+'-15T12:00:00Z'));}
-function bankMoneyList(map){const rows=Object.entries(map||{});return rows.length?rows.map(([currency,amount])=>clean(quoteMoney(amount,currency))).join('<br>'):clean(quoteMoney(0));}
 // Home treasury dial (Apple Watch Ultra–style face): read-only, compact, identical size for "Toutes" and each bank.
 let bankHomeTab='last';
 const bankDialShown=new Map();
