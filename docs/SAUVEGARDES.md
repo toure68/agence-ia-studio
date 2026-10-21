@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT CINQ RÉGLAGES** | `sauvegarde/avant-cinq-reglages` (74254a3) | Le 21/10/2026 vers 9 h 30 : réglages en icônes en haut, boutons d'action à droite avec ligne de séparation, fonctions de la 1re rangée masquées pendant la lecture, pas de cadre. |
 | **RETOUR AVANT BAS COMPACT** | `sauvegarde/avant-bas-compact` (be5d929) | Le 21/10/2026 vers 9 h : Assistant IA de 56 points, 32 points entre fonctions et Assistant, 10 points sous l'Assistant. |
 | **RETOUR AVANT BOUTONS DANS LA GRILLE** | `sauvegarde/avant-boutons-grille` (ae69ded) | Le 21/10/2026 vers 8 h 40 : actions en carrés de fonctions dans la première rangée. |
 | **RETOUR AVANT ACTIONS DANS LA GRILLE** | `sauvegarde/avant-actions-grille` (6b1e35b) | Le 21/10/2026 vers 6 h : les boutons d'action restent dans la carte du lecteur. |

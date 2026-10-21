@@ -36,6 +36,8 @@ const homePages=(()=>{
   const action=all.filter(k=>(counts[k]||0)>0||weight(k)>=3).sort((a,b)=>weight(b)-weight(a)||(counts[b]||0)-(counts[a]||0));
   return [...new Set([...action,...visible,...all])];
  }
+ let reserve=false;
+ function setReserve(on){on=!!on;if(on===reserve)return;reserve=on;const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace&&typeof updateHomeGrid==='function'){box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);}}
  function pagesMarkup(base,workspace,state){
   const {cols:COLS,rows:ROWS}=layout(),PER=COLS*ROWS;
   const ws={...workspace,columns:COLS,rows:10,dynamic:false,visible:orderedKeys(workspace,state)};
@@ -44,7 +46,10 @@ const homePages=(()=>{
   const cards=[...box.querySelector('.module-grid').children].map(c=>c.outerHTML),pages=[];
   // Last square: the grid réglage (columns and rows), right after the functions.
   cards.push(`<article class="module-card home-grid-card" data-module="grille"><button type="button" class="module-tile home-grid-tile" data-grid-tile aria-label="Régler la grille : colonnes et rangées" title="Colonnes et rangées">${COLS===4?`<span class="module-face"><span class="module-icon" aria-hidden="true">${GRID_ICON}</span></span><span class="module-copy"><strong>Grille</strong></span>`:`<span class="module-icon" aria-hidden="true">${GRID_ICON}</span><span class="widget-copy"><span class="module-copy"><strong>Grille</strong></span></span>`}</button></article>`);
-  for(let i=0;i<cards.length;i+=PER)pages.push(cards.slice(i,i+PER));
+  // While reading (21/10): the first row of every page is kept free for the action buttons and the functions
+  // flow onto the next rows/pages, so none is hidden — all stay reachable by swiping. Normal order otherwise.
+  if(reserve&&ROWS>1){const per=COLS*(ROWS-1),slot='<article class="module-card home-slot-reserved" aria-hidden="true"></article>'.repeat(COLS);for(let i=0;i<cards.length;i+=per)pages.push([slot,...cards.slice(i,i+per)]);}
+  else for(let i=0;i<cards.length;i+=PER)pages.push(cards.slice(i,i+PER));
   const at=Math.min(page,Math.max(0,pages.length-1));
   return `<div class="module-grid home-pages" data-columns="${COLS}" data-layout="${COLS}x${ROWS}" aria-label="Fonctions, balayez pour la page suivante">${pages.map((p,i)=>`<nav class="module-grid home-page" data-columns="${COLS}" data-page="${i}" aria-label="Fonctions, page ${i+1} sur ${pages.length}">${p.join('')}</nav>`).join('')}</div><div class="home-page-dots" role="tablist" aria-label="Pages de fonctions">${pages.map((_,i)=>`<button type="button" role="tab" class="home-page-dot" data-page-dot="${i}" aria-label="Page ${i+1}" aria-selected="${i===at}"></button>`).join('')}</div>`;
  }
@@ -59,52 +64,13 @@ const homePages=(()=>{
   dots.forEach(d=>d.onclick=()=>box.scrollTo({left:Number(d.dataset.pageDot)*box.clientWidth,behavior:'smooth'}));
  }
 
- // Réglages as icons, straight on the home (each one does what its menu entry does).
- const I=p=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
- const SETTINGS=[
-  {id:'accountWallpaper',label:'Fond',icon:I('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>')},
-  {id:'accountReader',label:'Lecteur',icon:I('<rect x="4" y="3" width="16" height="7" rx="2"/><path d="M4 14h16M4 18h10"/>'),sw:true},
-  {id:'accountSpeech',label:'Voix',icon:I('<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>')},
-  {id:'accountReaderSamples',label:'Essais',icon:I('<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/>'),sw:true},
-  {id:'accountTools',label:'Outils',icon:I('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>')},
-  {id:'accountAudit',label:'Conformité',icon:I('<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/>')},
-  {id:'company',label:'Entreprise',icon:I('<path d="M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2M3 21h18"/>')},
-  {id:'passwordBtn',label:'Mot de passe',icon:I('<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l2 2M15 8l2 2"/>')},
-  {id:'logout',label:'Quitter',icon:I('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/>')}
- ];
- function chooseCompany(){
-  const select=document.querySelector('#companySelect');if(!select)return;
-  openModal(`<h2>Entreprise</h2><div class="stack company-pick">${[...select.options].map(o=>`<button type="button" class="btn${o.selected?' primary':''}" data-pick-company="${clean(o.value)}">${clean(o.title||o.textContent)}</button>`).join('')}</div>`);
-  document.querySelectorAll('[data-pick-company]').forEach(b=>b.onclick=()=>{closeModal();select.value=b.dataset.pickCompany;select.dispatchEvent(new Event('change'));});
- }
- function settingsRow(){
-  const home=document.querySelector('#content .reference-home,#cockpitContent .reference-home');if(!home)return;
-  let row=home.querySelector('.home-settings');
-  if(!row){row=document.createElement('nav');row.className='home-settings';row.setAttribute('aria-label','Réglages');home.prepend(row);
-   row.innerHTML=SETTINGS.map(s=>`<button type="button" class="home-setting" data-setting="${s.id}" title="${s.label}">${s.icon}<span>${s.label}</span></button>`).join('');
-   row.addEventListener('click',e=>{const b=e.target.closest('[data-setting]');if(!b)return;const id=b.dataset.setting;
-    if(id==='company')return chooseCompany();
-    const target=document.getElementById(id);if(!target)return notify('Réglage indisponible ici.');
-    target.click();setTimeout(syncSettings,50);});}
-  syncSettings();
- }
- function syncSettings(){
-  document.querySelectorAll('.home-setting').forEach(b=>{
-   const id=b.dataset.setting,s=SETTINGS.find(x=>x.id===id),target=document.getElementById(id);
-   if(id==='company'){b.hidden=(document.querySelector('#companySelect')?.options.length||0)<=1;return;}
-   b.hidden=!target||target.hidden||target.classList.contains('hide');
-   if(s.sw){const active=target?.getAttribute('aria-checked')==='true';b.classList.toggle('is-on',active);b.setAttribute('aria-pressed',String(active));
-    b.setAttribute('aria-label',(target?.textContent||s.label));}
-   else b.setAttribute('aria-label',target?.textContent||s.label);
-  });
- }
-
  // One screen: the cards list gets the room left once everything else is laid out.
  function fit(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
   // Counted with the treasury shown; while reading, the reader's extra height comes out of the list (reader.js).
   if(home.classList.contains('reader-active'))return;
-  const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top);
+  // 10px kept under the home for its floating frame (21/10).
+  const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top-10);
   home.style.setProperty('--home-ios-height',h+'px');
   const block=home.querySelector('#priorityBlock'),list=block?.querySelector('.reader-list');
   // Folded treasury height, kept (also across openings): the reader and the unfolded treasury use it (21/10).
@@ -117,7 +83,7 @@ const homePages=(()=>{
   if(box){const open=!!tre&&!tre.classList.contains('is-folded')&&fhNow>0;box.classList.toggle('is-open',open);
    if(fhNow)document.body.style.setProperty('--treasury-folded',fhNow+'px');
    const pg=home.querySelector('.home-pages');if(pg)document.body.style.setProperty('--treasury-overlay-max',Math.max(fhNow,pg.getBoundingClientRect().top-box.getBoundingClientRect().top-10)+'px');}
-  let free=h;for(const el of home.children){const cs=getComputedStyle(el);if(el===block||cs.display==='none'||el.id==='moduleFocus'&&el.hidden||cs.position==='absolute'||cs.position==='fixed')continue; // laid-over parts (stack, reminder, back zone) take no room
+  const hs=getComputedStyle(home);let free=h-parseFloat(hs.paddingTop)-parseFloat(hs.paddingBottom);for(const el of home.children){const cs=getComputedStyle(el);if(el===block||cs.display==='none'||el.id==='moduleFocus'&&el.hidden||cs.position==='absolute'||cs.position==='fixed')continue; // laid-over parts (stack, reminder, back zone) take no room
   free-=el.getBoundingClientRect().height+parseFloat(cs.marginTop)+parseFloat(cs.marginBottom);}
   const bar=block?.querySelector('.reader-bar');
   free-=(bar?bar.offsetHeight:26)+(block?parseFloat(getComputedStyle(block).marginBottom)||0:0)+2;
@@ -218,7 +184,7 @@ const homePages=(()=>{
   }else f?.remove();
  }
  let watcher=null,stackWatch=null;
- function sync(){if(!on())return;settingsRow();wirePages();setTimeout(()=>window.homeActions?.place(),0);requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
+ function sync(){if(!on())return;wirePages();setTimeout(()=>window.homeActions?.place(),0);requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
   const block=document.querySelector('#content #priorityBlock');
   if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch=new MutationObserver(()=>requestAnimationFrame(stack));stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
    block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});
@@ -248,49 +214,45 @@ const homePages=(()=>{
  install();
  addEventListener('resize',()=>requestAnimationFrame(fit));
  document.addEventListener('DOMContentLoaded',()=>{const c=document.querySelector('#content');if(c)new MutationObserver(sync).observe(c,{childList:true});});
- return {on,sync,fit,orderedKeys,layout};
+ return {on,sync,fit,orderedKeys,layout,setReserve};
 })();
 window.homePages=homePages;
 
-// Reader actions in the function grid (user request 21/10, step 1, look validated on a mock-up): while a message is
-// open in the reader, the FIRST ROW of the function pages becomes a space reserved for its action buttons, drawn
-// exactly like the reader buttons (green main, grey others, red refuse, words written), aligned on the right, with a
-// separator line under them. No function shows in that row while reading; the squares are only hidden, never
-// removed, and come back exactly as before on the home. At most one row (= columns); step 2 adds pages.
+// Reader actions in the function grid (user requests 21/10): while a message is open in the reader, the FIRST ROW
+// of the function pages is a space reserved for its action buttons, drawn like the reader buttons (green main, grey
+// others, red refuse, words written) and filling the whole row (1 wide button, 2 halves, many compact). The
+// functions flow onto the next rows/pages meanwhile (setReserve), never hidden; normal order back on the home.
 const homeActions=(()=>{
  const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  let current=null;
  function place(){
   const home=document.querySelector('#content .reference-home'),row=home?.querySelector('.home-action-row'),box=home?.querySelector('.home-pages');
   if(!home||!row||!box)return;
-  box.classList.add('has-actions'); // kept after the pages are redrawn
   const pg=box.querySelectorAll('.home-page')[Math.round(box.scrollLeft/Math.max(1,box.clientWidth))]||box.querySelector('.home-page');
   const cols=Number(box.dataset.columns)||4,tiles=[...(pg?.children||[])].slice(0,cols);if(!tiles.length)return;
   const hr=home.getBoundingClientRect(),a=tiles[0].getBoundingClientRect(),z=tiles[tiles.length-1].getBoundingClientRect();
-  const gap=tiles[1]?Math.max(0,tiles[1].getBoundingClientRect().left-a.right):8;
-  const next=pg?.children[cols]?.getBoundingClientRect();
-  // Horizontal place taken from the fixed pages box, not from a page that may be sliding (21/10).
+  // Horizontal place taken from the fixed pages box, not from a page that may be sliding.
   const br=box.getBoundingClientRect(),pr=pg.getBoundingClientRect(),x=br.left+(a.left-pr.left);
   row.style.top=(a.top-hr.top)+'px';row.style.left=(x-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
-  row.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;row.style.columnGap=gap+'px';
-  row.style.setProperty('--row-gap',(next?Math.max(4,next.top-a.bottom):8)+'px');
  }
  // Shows the actions; returns how many of them were placed in the reserved row (0 when there is no iPhone grid).
  function show(btns){
   const home=document.querySelector('#content .reference-home'),box=home?.querySelector('.home-pages');
   if(!home||!box||!homePages.on())return 0;
-  const cols=Number(box.dataset.columns)||4,list=btns.slice(0,cols);current=btns;
+  // All the actions, in one row filling its whole width (21/10): 1 → one wide button, 2 → two halves, many → compact.
+  const list=btns;current=btns;
   let row=home.querySelector('.home-action-row');
   if(!row){row=document.createElement('div');row.className='home-action-row';row.setAttribute('role','group');row.setAttribute('aria-label','Actions du message ouvert');home.append(row);
    row.addEventListener('click',e=>{const b=e.target.closest('[data-action-run]');if(!b||b.disabled)return;current?.[Number(b.dataset.actionRun)]?.run();});}
-  row.innerHTML=list.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind==='main'||b.kind==='danger'||b.kind==='done'?b.kind:'second'}" data-action-run="${i}" style="grid-column:${cols-list.length+1+i}"${b.kind==='done'?' disabled aria-disabled="true"':''}>${esc(b.label)}</button>`).join('');
-  box.classList.add('has-actions');home.classList.add('actions-in-grid');
+  row.classList.toggle('is-many',list.length>4);
+  row.innerHTML=list.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind==='main'||b.kind==='danger'||b.kind==='done'?b.kind:'second'}" data-action-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''}>${esc(b.label)}</button>`).join('');
+  home.classList.add('actions-in-grid');homePages.setReserve(true);
   place();requestAnimationFrame(place);
   return list.length;
  }
  function hide(){
   current=null;const home=document.querySelector('#content .reference-home');
-  home?.querySelector('.home-action-row')?.remove();home?.querySelector('.home-pages')?.classList.remove('has-actions');home?.classList.remove('actions-in-grid');
+  home?.querySelector('.home-action-row')?.remove();home?.classList.remove('actions-in-grid');homePages.setReserve(false);
  }
  addEventListener('resize',()=>requestAnimationFrame(place));
  return {show,hide,place};
