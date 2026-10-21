@@ -12,6 +12,9 @@ jobs:
   apercu:
     runs-on: ubuntu-24.04
     timeout-minutes: 300
+    permissions:
+      contents: read
+      statuses: write
     env:
       APP_ENV: development
       DATABASE_PATH: /tmp/apercu.db
@@ -25,7 +28,6 @@ jobs:
       - name: Start the app (empty test database)
         run: |
           PASS=$(openssl rand -hex 6)
-          echo "::add-mask::unused"
           echo "ADMIN_PASSWORD=Essai-$PASS" >> "$GITHUB_ENV"
           echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: |
@@ -38,6 +40,7 @@ jobs:
           nohup ./cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8123 > /tmp/cf.log 2>&1 &
           for i in $(seq 1 60); do URL=$(grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' /tmp/cf.log | head -1); [ -n "$URL" ] && break; sleep 2; done
           echo "::notice title=Apercu::$URL | identifiant $ADMIN_EMAIL | mot de passe $ADMIN_PASSWORD"
+          GH_TOKEN=${{ github.token }} gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state=success -f context=apercu -f target_url="$URL" -f description="identifiant $ADMIN_EMAIL | mot de passe $ADMIN_PASSWORD" >/dev/null
           echo "Lien : $URL — identifiant $ADMIN_EMAIL — mot de passe $ADMIN_PASSWORD" >> "$GITHUB_STEP_SUMMARY"
       - name: Keep the preview open (about 4 hours 45)
         run: sleep 17100
