@@ -1,0 +1,43 @@
+name: Aperçu temporaire
+# Temporary preview while the host is down (21/10): runs the app on a GitHub runner with an EMPTY test database
+# (test account only, trial messages, nothing sent) and opens a public https link for a few hours. Pushing a branch
+# named apercu/... starts it; real data stays on the host and is never touched.
+on:
+  push:
+    branches: ['apercu/**']
+concurrency:
+  group: apercu
+  cancel-in-progress: true
+jobs:
+  apercu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      APP_ENV: development
+      DATABASE_PATH: /tmp/apercu.db
+      ADMIN_EMAIL: apercu@essai.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Start the app (empty test database)
+        run: |
+          PASS=$(openssl rand -hex 6)
+          echo "::add-mask::unused"
+          echo "ADMIN_PASSWORD=Essai-$PASS" >> "$GITHUB_ENV"
+          echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - run: |
+          nohup python -m uvicorn app:app --host 127.0.0.1 --port 8123 > /tmp/app.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8123/health && break; sleep 1; done
+      - name: Open the public link
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          chmod +x cloudflared
+          nohup ./cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8123 > /tmp/cf.log 2>&1 &
+          for i in $(seq 1 60); do URL=$(grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' /tmp/cf.log | head -1); [ -n "$URL" ] && break; sleep 2; done
+          echo "::notice title=Apercu::$URL | identifiant $ADMIN_EMAIL | mot de passe $ADMIN_PASSWORD"
+          echo "Lien : $URL — identifiant $ADMIN_EMAIL — mot de passe $ADMIN_PASSWORD" >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the preview open (about 4 hours 45)
+        run: sleep 17100
