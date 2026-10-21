@@ -10,6 +10,27 @@ const out='/tmp/live';fs.mkdirSync(out,{recursive:true});
  const problems=[],done=[];
  const health=await fetch(BASE+'/health').then(r=>r.status).catch(e=>'error '+e.message);
  if(health!==200)problems.push('health '+health);
+ // The live site must serve EXACTLY this version of the app (21/10): same asset version in the page and
+ // byte-identical scripts/styles. Waits up to 12 minutes for the deployment, then fails loudly.
+ {
+  const path=require('path'),root=path.join(__dirname,'..');
+  const html=fs.readFileSync(path.join(root,'static','admin.html'),'utf8'),ver=(html.match(/\?v=([\w-]+)/)||[])[1];
+  const files=['reader.js','home-pages.js','home-pages.css','reader.css','banks.js'];
+  let ok=false,last='';
+  for(let i=0;i<24&&!ok;i++){
+   try{
+    const page=await fetch(BASE+'/?_='+Date.now(),{headers:{'cache-control':'no-cache'}}).then(r=>r.text());
+    if(!page.includes('?v='+ver)){last='page version '+((page.match(/\?v=([\w-]+)/)||[])[1])+' ≠ '+ver;}
+    else{
+     const diff=[];for(const f of files){const live=await fetch(`${BASE}/static/${f}?v=${ver}&_=${Date.now()}`).then(r=>r.text());if(live!==fs.readFileSync(path.join(root,'static',f),'utf8'))diff.push(f);}
+     if(diff.length)last='files differ: '+diff.join(', ');else ok=true;
+    }
+   }catch(e){last=e.message;}
+   if(!ok)await new Promise(r=>setTimeout(r,30000));
+  }
+  console.log(ok?`live version OK: ${ver}`:`live version NOT OK: ${last}`);
+  if(!ok)problems.push('version en ligne: '+last);
+ }
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'reduce'});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
