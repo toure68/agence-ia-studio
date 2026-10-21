@@ -195,7 +195,8 @@ const homeReader=(()=>{
   host.classList.add('reader-host');
   host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button></div></div></div>`;
   const list=host.querySelector('.reader-list');
-  host.querySelector('[data-reader-top]').onclick=()=>list.scrollTo({top:0,behavior:'smooth'});
+  // The whole end block (button and the empty room under it) goes back to the home (21/10).
+  host.querySelector('.reader-end').onclick=()=>list.scrollTo({top:0,behavior:'smooth'});
   host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
   // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
   let focus=-1;
