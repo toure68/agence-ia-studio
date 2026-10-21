@@ -53,11 +53,11 @@ html.home-ios .reader-item-copy small{font-size:11.5px}
 html.home-ios .reader-bar{padding-bottom:5px}
 html.home-ios .home-reader{margin-bottom:8px}
 
-/* Notification stack peeking out under the function pages (iPhone style): laid over, never moves the grid. */
+/* Notification stack hanging under the last visible card (iPhone style): laid over, never moves the grid. */
 html.home-ios #content>.reference-home{position:relative}
 html.home-ios .home-stack{position:absolute;left:20px;right:20px;height:18px;z-index:0;display:block;padding:0;border:0;background:transparent;cursor:pointer}
-html.home-ios .home-stack i{position:absolute;left:12px;right:12px;bottom:0;height:12px;border-radius:16px 16px 0 0;background:linear-gradient(rgba(255,255,255,.16),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.18);border-bottom:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-html.home-ios .home-stack i+i{left:28px;right:28px;bottom:10px;height:9px;background:linear-gradient(rgba(255,255,255,.10),rgba(255,255,255,.02));border-color:rgba(255,255,255,.11)}
+html.home-ios .home-stack i{position:absolute;left:12px;right:12px;top:0;height:9px;border-radius:0 0 16px 16px;background:linear-gradient(rgba(255,255,255,.04),rgba(255,255,255,.14));border:1px solid rgba(255,255,255,.18);border-top:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html.home-ios .home-stack i+i{left:28px;right:28px;top:9px;height:7px;background:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,.09));border-color:rgba(255,255,255,.11)}
 html.home-ios .home-stack.is-moving i{animation:stackUp .35s ease-out}
 html.home-ios .home-stack.is-moving i+i{animation-delay:.06s}
 @keyframes stackUp{0%{transform:translateY(8px) scaleX(.94);opacity:.4}100%{transform:none;opacity:1}}
