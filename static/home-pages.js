@@ -269,7 +269,9 @@ const homeActions=(()=>{
   const hr=home.getBoundingClientRect(),a=tiles[0].getBoundingClientRect(),z=tiles[tiles.length-1].getBoundingClientRect();
   const gap=tiles[1]?Math.max(0,tiles[1].getBoundingClientRect().left-a.right):8;
   const next=pg?.children[cols]?.getBoundingClientRect();
-  row.style.top=(a.top-hr.top)+'px';row.style.left=(a.left-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
+  // Horizontal place taken from the fixed pages box, not from a page that may be sliding (21/10).
+  const br=box.getBoundingClientRect(),pr=pg.getBoundingClientRect(),x=br.left+(a.left-pr.left);
+  row.style.top=(a.top-hr.top)+'px';row.style.left=(x-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
   row.style.gridTemplateColumns=`repeat(${cols},minmax(0,1fr))`;row.style.columnGap=gap+'px';
   row.style.setProperty('--row-gap',(next?Math.max(4,next.top-a.bottom):8)+'px');
  }

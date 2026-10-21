@@ -131,6 +131,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    const rr=row.getBoundingClientRect(),last=btns[btns.length-1].getBoundingClientRect(),main=row.querySelector('.reader-btn.is-main');
    return {texts:btns.map(b=>b.textContent.trim()),h:Math.round(last.height),right:Math.round(rr.right-last.right),mainBg:main?getComputedStyle(main).backgroundColor:null,sep:getComputedStyle(row,'::after').content,squares:row.querySelectorAll('.module-card,.module-tile').length};});
   console.log('look',JSON.stringify(look));
+  await page.screenshot({path:out+'/96-lecteur-actions-dans-la-grille.png'});
+  // Swiping the function pages while reading never moves the buttons (they stay on the right of the grid).
+  const xr=await page.evaluate(async()=>{const box=document.querySelector('#content .home-pages'),row=document.querySelector('#content .home-action-row');const r0=Math.round(row.getBoundingClientRect().right);box.scrollLeft=box.clientWidth*0.5;await new Promise(r=>setTimeout(r,250));window.homeActions.place();const r1=Math.round(row.getBoundingClientRect().right);box.scrollLeft=0;await new Promise(r=>setTimeout(r,400));window.homeActions.place();return [r0,r1,Math.round(box.getBoundingClientRect().right)];});
+  console.log('swipe',JSON.stringify(xr));assert(Math.abs(xr[0]-xr[1])<=1,'Buttons stay put while the pages slide');
   assert(look.texts.every(t=>t.length>0),'Words written on the buttons');assert(look.h>=40,'Reader-size buttons');
   assert(look.right<=1,'Buttons on the right');assert(look.sep&&look.sep!=='none','Separator under the buttons');assert.equal(look.squares,0,'No function square in the reserved row');
   if(look.mainBg)assert(!/rgba?\(0, 0, 0, 0\)|transparent/.test(look.mainBg),'Main button filled (green)');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
