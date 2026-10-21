@@ -122,25 +122,24 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    const inCard=[...card.querySelectorAll('[data-reader-run]')].filter(b=>!b.hidden&&b.offsetParent).length;
    const first=[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>getComputedStyle(e).visibility);
    const r=row?.getBoundingClientRect(),t=document.querySelector('#content .home-page').children[0].getBoundingClientRect();
-   return {labels:row?[...row.querySelectorAll('.action-tile')].map(b=>b.getAttribute('aria-label')):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[4]||document.body).visibility};});
+   return {labels:row?[...row.querySelectorAll('[data-action-run]')].map(b=>b.textContent.trim()):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[4]||document.body).visibility};});
   await openAt(0);const a1=await state();console.log('actions 1',JSON.stringify(a1));
   assert(a1.labels&&a1.labels.length>0&&a1.labels.length<=4,'Actions shown in the grid row');
   assert(a1.over,'Action row sits exactly on the first row');
-  // Same look as a function square (same icon size, name written), placed on the right, separator below (21/10).
-  const look=await page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),act=row.querySelector('.module-card'),fn=document.querySelector('#content .home-page').children[4];
-   const ib=e=>e?.querySelector('.module-icon')?.getBoundingClientRect();const ia=ib(act),ifn=ib(fn),ca=act.getBoundingClientRect(),cf=fn.getBoundingClientRect();
-   const cards=[...row.querySelectorAll('.module-card')],last=cards[cards.length-1].getBoundingClientRect(),rr=row.getBoundingClientRect();
-   return {icon:[Math.round(ia.width),Math.round(ifn.width)],card:[Math.round(ca.width),Math.round(cf.width),Math.round(ca.height),Math.round(cf.height)],name:act.querySelector('.module-copy strong')?.textContent||'',right:Math.round(rr.right-last.right),sep:getComputedStyle(row,'::after').content};});
+  // Same buttons as the reader (words written, green main / grey / red), on the right, separator below (21/10, mock-up OK).
+  const look=await page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),btns=[...row.querySelectorAll('.reader-btn')];
+   const rr=row.getBoundingClientRect(),last=btns[btns.length-1].getBoundingClientRect(),main=row.querySelector('.reader-btn.is-main');
+   return {texts:btns.map(b=>b.textContent.trim()),h:Math.round(last.height),right:Math.round(rr.right-last.right),mainBg:main?getComputedStyle(main).backgroundColor:null,sep:getComputedStyle(row,'::after').content,squares:row.querySelectorAll('.module-card,.module-tile').length};});
   console.log('look',JSON.stringify(look));
-  await page.screenshot({path:out+'/96-lecteur-actions-dans-la-grille.png'});
-  assert.equal(look.icon[0],look.icon[1],'Same icon size as the functions');assert(Math.abs(look.card[0]-look.card[1])<=1&&Math.abs(look.card[2]-look.card[3])<=1,'Same square size');
-  assert(look.name.length>0,'Name written under the icon');assert(look.right<=1,'Actions on the right');assert(look.sep&&look.sep!=='none','Separator under the actions');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
+  assert(look.texts.every(t=>t.length>0),'Words written on the buttons');assert(look.h>=40,'Reader-size buttons');
+  assert(look.right<=1,'Buttons on the right');assert(look.sep&&look.sep!=='none','Separator under the buttons');assert.equal(look.squares,0,'No function square in the reserved row');
+  if(look.mainBg)assert(!/rgba?\(0, 0, 0, 0\)|transparent/.test(look.mainBg),'Main button filled (green)');assert.deepEqual(a1.first,['hidden','hidden','hidden','hidden']);
   assert.equal(a1.second,'visible','Other rows stay reachable');assert.equal(a1.inCard,0,'Actions left the reader card');
   await openAt(1);const a2=await state();console.log('actions 2',JSON.stringify(a2));
   assert(a2.title!==a1.title,'Next message');assert(a2.labels&&a2.labels.length>0,'Actions follow the message');
   // Running an action (trial message: simulated, nothing sent) works from the grid row.
   const before2=await page.evaluate(()=>document.querySelector('#content .reader-count')?.textContent);
-  const target=await page.evaluate(()=>{const b=[...document.querySelectorAll('#content .home-action-row .action-tile')].find(b=>!/modif|répond|appel|itinéraire|détail|ouvrir/i.test(b.getAttribute('aria-label')));return b?b.dataset.actionRun:null;});
+  const target=await page.evaluate(()=>{const b=[...document.querySelectorAll('#content .home-action-row [data-action-run]')].find(b=>!/modif|répond|appel|itinéraire|détail|ouvrir/i.test(b.textContent));return b?b.dataset.actionRun:null;});
   if(target!==null){await page.locator(`#content .home-action-row [data-action-run="${target}"]`).click();await page.waitForTimeout(900);
    const after2=await page.evaluate(()=>document.querySelector('#content .reader-count')?.textContent);console.log('run',before2,'→',after2);assert.notEqual(after2,before2,'Action ran from the grid');}
   // Back to the home: the first row is exactly as before.
