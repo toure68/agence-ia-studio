@@ -42,10 +42,10 @@ html.home-ios .home-grid-tile .module-icon{--tile-accent:var(--home-muted);color
 /* The chooser opens as a small panel above the functions (nothing on the home moves). */
 html.home-ios .reference-home .home-modules-heading .column-chooser:not([hidden]){position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:14px;border:1px solid #ffffff26;border-radius:20px;background:rgba(14,19,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 14px 40px #0008}
 
-/* Small cards: 48px + 6px gap, up to 5 (2 fewer while reading), never cut (no fade). */
+/* Small cards: height set by home-pages.js to fill the room (44–60px) + 6px gap, up to 5 (2 fewer while reading). */
 html.home-ios .reader-list{gap:6px}
 html.home-ios .reader-list.has-more{-webkit-mask-image:none;mask-image:none}
-html.home-ios .reader-item{flex-basis:48px;height:48px;border-radius:16px;gap:10px;padding:0 12px}
+html.home-ios .reader-item{flex-basis:var(--reader-card-h,48px);height:var(--reader-card-h,48px);border-radius:16px;gap:10px;padding:0 12px}
 html.home-ios .reader-item .module-icon{width:32px;height:32px;flex-basis:32px;border-radius:10px}
 html.home-ios .reader-item .module-icon svg{width:17px;height:17px}
 html.home-ios .reader-item-copy strong{font-size:13.5px}
