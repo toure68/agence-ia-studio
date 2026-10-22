@@ -116,9 +116,36 @@ const homeReader=(()=>{
   return c.must||f?`<div class="reader-facts">${c.must?'<span class="reader-fact is-must">À lire en entier</span>':''}${f}</div>`:'';
  }
  function bodyMarkup(c,cp){
+  // Attachments (22/10): the chosen one is shown big on top of the text; thumbnails sit under the reader.
+  if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const f=c.files[Math.min(view.file||0,c.files.length-1)];return fileBig(f)+(cp.detail?`<div class="reader-file-text">${clean(cp.detail)}</div>`:'');}
   if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
   if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
   return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';
+ }
+ const FILE_ICON={pdf:'PDF',doc:'DOC',xls:'XLS',other:'FICHIER'};
+ function fileBig(f){
+  if(f.type==='image')return `<figure class="reader-file is-image"><img src="${clean(f.src)}" alt="${clean(f.name)}"><figcaption>${clean(f.name)}</figcaption></figure>`;
+  return `<figure class="reader-file is-doc"><span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span><figcaption>${clean(f.name)}${f.pages?` · ${f.pages} pages`:''}</figcaption></figure>`;
+ }
+ function fileThumb(f,i,on){
+  const inner=f.type==='image'?`<img src="${clean(f.src)}" alt="">`:`<span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span>`;
+  return `<button type="button" class="reader-thumb${on?' is-on':''}" data-file="${i}" aria-label="${clean(f.name)}" aria-pressed="${on}">${inner}<span>${clean(f.name)}</span></button>`;
+ }
+ // Thumbnails carousel laid over the cards box (4 visible, swipe sideways for the others); a vertical swipe on it
+ // still moves to the next / previous message.
+ function syncFiles(){
+  const host=view.host,queue=host?.querySelector('.reader-queue'),list=host?.querySelector('.reader-list');if(!queue||!list)return;
+  const c=view.focus>=0?view.cards[view.focus]:null;let box=queue.querySelector('.reader-files');
+  if(!c||!c.files?.length||!ios()){box?.remove();queue.classList.remove('has-files');return;}
+  if(!box){box=document.createElement('div');box.className='reader-files';box.setAttribute('role','group');box.setAttribute('aria-label','Pièces jointes');queue.append(box);
+   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]');if(!b)return;view.file=Number(b.dataset.file);showReader();});
+   let y0=null,x0=0;box.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;},{passive:true});
+   box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
+  const key=c.key+':'+(view.file||0);
+  if(box.dataset.key!==key){const sx=box.dataset.card===c.key?box.querySelector('.reader-thumbs')?.scrollLeft||0:0;box.dataset.key=key;box.dataset.card=c.key;
+   box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i,i===(view.file||0))).join('')}</div><span class="reader-files-hint">${c.files.length} pièce${c.files.length>1?'s':''} jointe${c.files.length>1?'s':''}${c.files.length>4?' · glissez →':''}</span>`;
+   box.querySelector('.reader-thumbs').scrollLeft=sx;}
+  queue.classList.add('has-files');box.style.top=list.offsetTop+'px';box.style.height=list.offsetHeight+'px';
  }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
@@ -139,10 +166,10 @@ const homeReader=(()=>{
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
   if(view.focus<0&&doneCards.length&&!view.busy){doneCards.length=0;view.keepKey=null;setTimeout(()=>renderPriorities().catch(()=>{}),0);}
-  if(view.focus<0){if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
+  if(view.focus<0){view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
-  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
+  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;view.file=0;}view.keepKey=c.key;
   const editing=view.editing===c.key;
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'');
@@ -165,6 +192,7 @@ const homeReader=(()=>{
   wireRail(card);
   host.querySelectorAll('.reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
   fitList();
+  syncFiles();
   hint();
  }
  // The reader may be taller than the treasury (to show 3–4 lines of text, or while editing): the list gets
@@ -176,7 +204,10 @@ const homeReader=(()=>{
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
-  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+  if(ios()){const reading=view.focus>=0&&card&&!card.hidden;
+   // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
+   let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;}
+   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }

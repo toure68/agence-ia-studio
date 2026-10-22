@@ -5,6 +5,8 @@
 // sent: their buttons are simulated (the card is counted as done for the day and the next one comes up).
 // Button kinds: p = green main, s = secondary, e = « Modifier » (the reader grows with fields), r = reply by mail,
 // d = refuse/ignore (red), done = text shown once the button is used.
+// Fictitious « photos » drawn as SVG (no outside image, allowed by the page's security rules).
+function essaiPhoto(c1,c2,label){const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="400" height="300" fill="url(#g)"/><path d="M0 230 L110 150 L190 205 L270 120 L400 215 L400 300 L0 300Z" fill="#00000033"/><circle cx="320" cy="70" r="28" fill="#ffffff55"/><text x="20" y="282" font-family="sans-serif" font-size="26" fill="#fff">${label}</text></svg>`;return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}
 window.readerSamples=[
  {key:'essai-01',module:'requests',source:'E-mail',time:'8:42',state:'warning',state_label:'Devis demandé',title:'Bâtiplus SARL',amount:'1 200 €',sign:'+',
   facts:[['Dès','25 oct.'],['Répondre sous','48 h']],
@@ -17,6 +19,12 @@ window.readerSamples=[
   body:'Rénovation intérieure de l’école Ronsard, estimée à 45 000 € HT. Visite du site obligatoire avant la remise de l’offre. Pièces à fournir : DC1, DC2, mémoire technique, attestations fiscales et sociales. Critères de choix : prix 40 %, valeur technique 60 %. Dépôt sur la plateforme de la mairie avant le 3 novembre, 12 h.',
   raw:'Avis d’appel public à la concurrence. La commune de Tours lance une consultation pour la rénovation intérieure de l’école Ronsard. Montant estimé : 45 000 € HT. Visite du site obligatoire. Pièces à fournir : DC1, DC2, mémoire technique, attestations fiscales et sociales. Critères : prix 40 %, valeur technique 60 %. Date limite de remise des offres : 3 novembre, 12 h.',
   actions:[{l:'Répondre',t:'p',d:'Réponse au marché en préparation'},{l:'Plus tard',t:'s',d:'Rappel demain matin'},{l:'Ignorer',t:'d',d:'Marché ignoré'}]},
+ {key:'essai-17',module:'activities',source:'E-mail',time:'9:05',state:'warning',state_label:'Pièces jointes',title:'Photos du chantier Lefèvre',
+  facts:[['Pièces','7'],['De','Mme Lefèvre']],
+  body:'Mme Lefèvre envoie 5 photos de l’état actuel, le devis signé et son cahier des charges, avant le démarrage des travaux lundi.',
+  raw:'Bonjour, voici les photos de la cuisine, de la salle de bain et de la façade, la fissure du plafond et le plan au sol. Je joins aussi le devis signé et le cahier des charges. Bonne journée, Claire Lefèvre.',
+  files:[{type:'image',name:'Cuisine avant.jpg',src:essaiPhoto('#7a5c3e','#d8b48a','Cuisine avant')},{type:'image',name:'Salle de bain.jpg',src:essaiPhoto('#3d5a6c','#9cc3d5','Salle de bain')},{type:'image',name:'Façade.jpg',src:essaiPhoto('#5b6b3a','#c5d39a','Façade')},{type:'image',name:'Fissure plafond.jpg',src:essaiPhoto('#6b3a4a','#d79aae','Fissure plafond')},{type:'image',name:'Plan au sol.jpg',src:essaiPhoto('#3a3a6b','#a3a3e0','Plan au sol')},{type:'pdf',name:'Devis_D-2041.pdf',pages:3},{type:'doc',name:'Cahier_des_charges.docx'}],
+  actions:[{l:'Bien reçu',t:'p',d:'Pièces jointes classées'},{l:'Répondre',t:'r'},{l:'Plus tard',t:'s',d:'Rappel demain'}]},
  {key:'essai-03',module:'emails',source:'E-mail',time:'7:58',state:'warning',state_label:'Réponse préparée',title:'M. Bernard',
   facts:[['Préparée par','l’IA']],
   body:'Réponse proposée : « Bonjour Monsieur Bernard, je vous confirme notre passage jeudi 23 à 9 h pour le diagnostic de votre chaudière. Bien à vous. »',
