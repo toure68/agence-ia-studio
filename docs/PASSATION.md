@@ -31,8 +31,8 @@ Les règles produit détaillées sont dans `AGENTS.md` (lu automatiquement par C
 2. **Mot-clé de retour avant chaque modification** : pousser l'état actuel de `main` sur `sauvegarde/avant-<nom>` et ajouter une ligne en tête de la table de `docs/SAUVEGARDES.md` (« RETOUR AVANT … »). S'il écrit ce mot-clé, restaurer cet état par une nouvelle PR.
 3. **Une branche + une PR par changement**, jamais de commit direct sur `main`.
 4. **Changer la version des fichiers** à chaque modification de `static/` : remplacer partout dans `static/admin.html` `?v=prio-vNN-AAAAMMJJ` par le numéro suivant (sinon l'iPhone garde l'ancien code en cache).
-5. **Tests verts** (`test` et `ui`) avant de proposer la mise en ligne ; ajouter un test pour chaque nouveau comportement.
-6. **Demander « Oui » / « Non »** avant de fusionner : « Oui » = fusionner, « Non » = ne pas fusionner.
+5. Ajouter ou adapter un test pour chaque nouveau comportement (lancé lors du test global).
+6. **Ne plus demander « Oui » / « Non »** (décision du 22/10) : le travail fini, fusionner et publier directement, puis passer au sujet suivant ; Mohamed demande un retour (mot-clé) si le résultat ne lui va pas. Ne pas lancer de tests GitHub payants à chaque fois (un test global à la fin, quand il le décide).
 7. **Après la fusion**, ne dire « c'est en ligne » **qu'après** que le contrôle de version a réussi sur Render (et regarder la capture concernée dans `captures/<sha>`). Ne jamais annoncer une mise en ligne sans preuve.
 8. Quand une fonction est retirée : supprimer **tout** (code, styles, tests, notes) — pas de code mort.
 9. Noter chaque décision produit dans `AGENTS.md` (une ligne datée).

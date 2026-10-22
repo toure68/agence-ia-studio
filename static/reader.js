@@ -119,23 +119,20 @@ const homeReader=(()=>{
   return c.must||f?`<div class="reader-facts">${c.must?'<span class="reader-fact is-must">À lire en entier</span>':''}${f}</div>`:'';
  }
  function bodyMarkup(c,cp){
-  // Attachments (22/10): the chosen one is shown big on top of the text; thumbnails sit under the reader.
-  if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const f=c.files[Math.min(view.file||0,c.files.length-1)];
+  // Attachments (22/10, step 2): files are kept apart from the text — only « 📎 N pièces jointes » on top;
+  // small thumbnails under the cards open the full-screen viewer (static/image-viewer.js).
+  if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const n=c.files.length;
    const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
    // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
-   return `<dl class="reader-mail">${row('De',c.from||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text">${clean(c.raw||cp.detail||'')}</div><div class="reader-mail-files">${c.files.length} pièce${c.files.length>1?'s':''} jointe${c.files.length>1?'s':''}</div>${fileBig(f)}`;}
+   return `<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div><dl class="reader-mail">${row('De',c.from||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text">${clean(c.raw||cp.detail||'')}</div>`;}
   if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
   if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
   return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';
  }
  const FILE_ICON={pdf:'PDF',doc:'DOC',xls:'XLS',other:'FICHIER'};
- function fileBig(f){
-  if(f.type==='image')return `<figure class="reader-file is-image"><img src="${clean(f.src)}" alt="${clean(f.name)}"><figcaption>${clean(f.name)}</figcaption></figure>`;
-  return `<figure class="reader-file is-doc"><span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span><figcaption>${clean(f.name)}${f.pages?` · ${f.pages} pages`:''}</figcaption></figure>`;
- }
- function fileThumb(f,i,on){
+ function fileThumb(f,i){
   const inner=f.type==='image'?`<img src="${clean(f.src)}" alt="">`:`<span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span>`;
-  return `<button type="button" class="reader-thumb${on?' is-on':''}" data-file="${i}" aria-label="${clean(f.name)}" aria-pressed="${on}">${inner}<span>${clean(f.name)}</span></button>`;
+  return `<button type="button" class="reader-thumb" data-file="${i}" aria-label="Voir en grand : ${clean(f.name)}">${inner}</button>`;
  }
  // Thumbnails carousel laid over the cards box (4 visible, swipe sideways for the others); a vertical swipe on it
  // still moves to the next / previous message.
@@ -144,13 +141,11 @@ const homeReader=(()=>{
   const c=view.focus>=0?view.cards[view.focus]:null;let box=queue.querySelector('.reader-files');
   if(!c||!c.files?.length||!ios()){box?.remove();queue.classList.remove('has-files');return;}
   if(!box){box=document.createElement('div');box.className='reader-files';box.setAttribute('role','group');box.setAttribute('aria-label','Pièces jointes');queue.append(box);
-   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]');if(!b)return;view.file=Number(b.dataset.file);showReader();requestAnimationFrame(()=>{const fig=view.host?.querySelector('.home-reader .reader-file'),body=view.host?.querySelector('.home-reader .reader-body');if(fig&&body)body.scrollTo({top:fig.offsetTop-body.offsetTop-6,behavior:'smooth'});});});
+   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]'),cur=view.focus>=0?view.cards[view.focus]:null;if(b&&cur?.files?.length)window.imageViewer?.open(cur.files,Number(b.dataset.file));});
    let y0=null,x0=0;box.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;},{passive:true});
    box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
-  const key=c.key+':'+(view.file||0);
-  if(box.dataset.key!==key){const sx=box.dataset.card===c.key?box.querySelector('.reader-thumbs')?.scrollLeft||0:0;box.dataset.key=key;box.dataset.card=c.key;
-   box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i,i===(view.file||0))).join('')}</div>`; // the count is in the reader (« N pièces jointes »)
-   box.querySelector('.reader-thumbs').scrollLeft=sx;}
+  if(box.dataset.card!==c.key){box.dataset.card=c.key;
+   box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div>`;} // the count is in the reader (« 📎 N pièces jointes »)
   queue.classList.add('has-files');box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';box.style.height='';
   // Measured after drawing: if the thumbnails would reach the function pages, drop as many cards as needed.
   const pg=document.querySelector('#content .home-pages');
@@ -180,7 +175,7 @@ const homeReader=(()=>{
   if(view.focus<0){view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
-  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;view.file=0;}view.keepKey=c.key;
+  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
   const editing=view.editing===c.key;
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'');
@@ -219,7 +214,7 @@ const homeReader=(()=>{
    // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
    let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;
     // A message with attachments keeps the cards and puts its thumbnails under them: one row of 4 + names.
-    const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+30;}
+    const cur=view.cards[view.focus];if(cur?.files?.length)room-=46+6;}
    const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
