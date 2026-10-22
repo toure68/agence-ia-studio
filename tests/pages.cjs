@@ -133,7 +133,14 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('#assistantDock').click();await page.locator('#contextPanel').waitFor();await page.waitForTimeout(400);
   const sheet=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),pg=document.querySelector('.reference-home .home-pages')?.getBoundingClientRect(),t=document.querySelector('.reference-home .home-topbar')?.getBoundingClientRect();return {module:document.querySelector('#contextPanel').dataset.module,top:Math.round(p.top),bottom:Math.round(p.bottom),pagesTop:pg?Math.round(pg.top):null,barTop:t?Math.round(t.top):null};});
   console.log('assistant sheet',JSON.stringify(sheet));
-  if(sheet.barTop)assert(sheet.bottom<=sheet.barTop&&sheet.bottom>=sheet.barTop-14&&sheet.top<=sheet.pagesTop,'Assistant window over the functions, right above the bar '+JSON.stringify(sheet));
+  if(sheet.barTop)assert(sheet.bottom<=sheet.barTop&&sheet.bottom>=sheet.barTop-14,'Assistant window right above the bar '+JSON.stringify(sheet));
+  // 22/10 step 3: chat behaviour — no bottom close button, the window grows upwards with the messages and stays on the screen.
+  assert(!(await page.locator('#contextPanel .context-footer').isVisible()),'No form-like bottom button in the Assistant window');
+  const grow=await page.evaluate(async()=>{const panel=document.querySelector('#contextPanel'),log=document.querySelector('#chatTurns'),before=panel.getBoundingClientRect();log.classList.remove('hide');for(let i=0;i<14;i++){const a=document.createElement('article');a.className='chat-message '+(i%2?'chat-assistant':'chat-user');a.innerHTML='<strong>x</strong><p>Message de test numéro '+i+' assez long pour occuper une ligne entière.</p>';log.append(a);}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const after=panel.getBoundingClientRect(),form=document.querySelector('#assistantForm').getBoundingClientRect(),u=log.querySelector('.chat-user').getBoundingClientRect();return {topBefore:Math.round(before.top),top:Math.round(after.top),bottom:Math.round(after.bottom),bottomBefore:Math.round(before.bottom),formBottom:Math.round(form.bottom),scrolls:log.scrollHeight>log.clientHeight+2,userRight:Math.round(after.right-u.right)};});
+  console.log('assistant grow',JSON.stringify(grow));
+  assert(grow.top<grow.topBefore-40&&grow.top>=8&&grow.bottom===grow.bottomBefore,'Assistant window grows upwards with the conversation '+JSON.stringify(grow));
+  assert(grow.formBottom<=grow.bottom&&grow.scrolls,'Message field stays visible, messages scroll '+JSON.stringify(grow));
+  assert(grow.userRight<=24,'User messages are bubbles on the right '+JSON.stringify(grow));
   await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});
   // 21/10 step 1 — reader actions in the first row of the function grid (trial messages, nothing sent).
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','on');}catch(e){}});
