@@ -197,3 +197,12 @@ html.home-ios #contextPanel[data-module="assistant"] #assistantMessage{min-heigh
 html.home-ios #contextPanel[data-module="assistant"] .chat-toolbar{margin-top:2px!important;gap:8px}
 html.home-ios #contextPanel[data-module="assistant"] .chat-icon-button{width:34px;height:34px;flex-basis:34px}
 html.home-ios #contextPanel[data-module="assistant"] .chat-notice{flex:none;margin:6px 8px 0;text-align:center;font-size:10px;line-height:1.3;color:#7c8794!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 22/10 step 4 (user): clean chat window like Claude's composer — no header (title, speaker, Connecter l'IA, ×: close by
+   touching outside, swiping down or the back gesture), one-line field growing up to 6 lines, + like the micro, and with
+   the keyboard the window sits right above it (not full screen). */
+html.home-ios #contextPanel[data-module="assistant"] .context-header,html.home-ios #contextPanel[data-module="assistant"] .chat-heading,html.home-ios #contextPanel[data-module="assistant"] .chat-notice{display:none!important}
+html.home-ios #contextPanel[data-module="assistant"] .context-scroll{padding-top:10px!important}
+html.home-ios #contextPanel[data-module="assistant"] #assistantMessage{min-height:0;max-height:150px;padding:9px 4px 3px!important;line-height:22px}
+html.home-ios #contextPanel[data-module="assistant"] .chat-attach-menu>summary,html.home-ios #contextPanel[data-module="assistant"] #assistantMic{width:34px!important;height:34px!important;flex-basis:34px;border:0!important;border-radius:50%!important;background:rgba(255,255,255,.10)!important;color:#e2e8f0!important;opacity:1}
+html.home-ios #contextPanel[data-module="assistant"] .chat-attach-menu>summary svg,html.home-ios #contextPanel[data-module="assistant"] #assistantMic svg{width:20px;height:20px}
+html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{top:auto!important;left:8px;right:8px;bottom:calc(var(--kb-bottom,0px) + 8px)!important;height:auto!important;max-height:calc(var(--vv-h,60dvh) - 16px)!important;border-radius:28px!important;padding-top:0!important}
