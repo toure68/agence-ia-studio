@@ -105,6 +105,8 @@ const homePages=(()=>{
   if(slots<want){const g=Math.floor((room-want*cardH)/(want-1));if(g>=6){gap=Math.min(9,g);slots=want;}}
   slots=Math.max(2,slots);const step=String(cardH+gap);
   document.body.style.setProperty('--reader-gap',gap+'px');
+  // 22/10 (user): the Assistant bar sits at the very bottom, like Claude's reply bar; moved down visually only, the grid keeps its place.
+  {const t=home.querySelector('.home-topbar');if(t){const r=t.getBoundingClientRect(),m=new DOMMatrix(getComputedStyle(t).transform).m42||0;document.body.style.setProperty('--dock-under',Math.max(0,Math.round(innerHeight-(r.bottom-m)))+'px');}}
   const b=document.body;
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }

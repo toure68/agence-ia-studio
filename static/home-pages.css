@@ -148,3 +148,17 @@ html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-top:
 #homeTreasury .bank-dial .dial-today b{font-size:20px;font-weight:700;letter-spacing:0;color:var(--home-text,#fff)}
 /* 22/10 (user): same side margins as the native iPhone notification list (about 14px left and right). */
 html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+/* 22/10 (user): Assistant bar like Claude's reply bar — at the very bottom (moved down visually, nothing else moves),
+   a capsule with + on the left, the question text, a microphone and a white voice button on the right. */
+.assistant-dock .dock-ios{display:none}
+html.home-ios .reference-home .home-topbar{transform:translateY(max(0px,calc(var(--dock-under,0px) - max(8px,calc(env(safe-area-inset-bottom,0px) - 2px)))))}
+html.home-ios .reference-home .home-topbar .assistant-dock{display:flex;align-items:center;gap:6px;justify-content:flex-start;padding:6px 6px 6px 8px;border-radius:999px;text-align:left}
+html.home-ios .reference-home .home-topbar .assistant-dock>.assistant-spark,html.home-ios .reference-home .home-topbar .assistant-dock>strong,html.home-ios .reference-home .home-topbar .assistant-dock>.assistant-dock-hint{display:none}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-ios{display:grid;place-items:center;flex:none}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-plus{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.10);color:#e2e8f0}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-plus svg{width:20px;height:20px}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-ph{display:block;flex:1 1 auto;min-width:0;font-size:16px;font-weight:400;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-mic{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.10);color:#e2e8f0}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-mic svg{width:18px;height:18px}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-voice{width:34px;height:34px;border-radius:50%;background:#fff;color:#0b0e14}
+html.home-ios .reference-home .home-topbar .assistant-dock .dock-voice svg{width:18px;height:18px;stroke-width:2.4}
