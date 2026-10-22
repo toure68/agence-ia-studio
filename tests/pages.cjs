@@ -19,6 +19,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.home-pages .home-page').first().waitFor();
   await page.waitForTimeout(600);
   await page.screenshot({path:out+'/95-accueil-iphone.png'});
+  throw new Error('MESURE '+JSON.stringify(await page.evaluate(()=>{const r=[];let e=document.querySelector('#content .reference-home');while(e&&e!==document.documentElement){const b=e.getBoundingClientRect(),cs=getComputedStyle(e);r.push([e.tagName+'.'+(e.className||'').toString().slice(0,30)+'#'+e.id,Math.round(b.top),cs.paddingTop,cs.marginTop]);for(const s of e.parentElement?[...e.parentElement.children]:[]){if(s===e)break;const sb=s.getBoundingClientRect();if(sb.height)r.push(['  avant:'+s.tagName+'.'+(s.className||'').toString().slice(0,30)+'#'+s.id,Math.round(sb.top),Math.round(sb.height),getComputedStyle(s).position]);}e=e.parentElement;}return r;})));
 
   // One screen: nothing to scroll vertically, the date tab and the treasury fully visible.
   const box=await page.evaluate(()=>{const h=document.querySelector('#content .reference-home').getBoundingClientRect(),t=document.querySelector('#homeTreasury').getBoundingClientRect(),a=document.querySelector('#assistantDock').getBoundingClientRect(),g=document.querySelector('.home-pages').getBoundingClientRect(),s=document.querySelector('#content .reference-home').getBoundingClientRect();
