@@ -109,3 +109,17 @@ def test_bank_logo_upload_is_recropped_private_and_removable(env):
     assert c.put(base+'/banks/999999/logo',headers=h,json={'image':image}).status_code==404
     assert c.delete(base+f'/banks/{b}/logo',headers=h).status_code==200
     rows={x['id']:x for x in c.get(base+'/banks').json()['banks']};assert rows[b]['logo'] is None
+
+
+def test_trial_banks_add_and_remove_only_trial_rows(env):
+    c,h=owner(env);base='/api/companies/1'
+    bank(c,h,'Ma vraie banque','100')
+    assert c.post(base+'/trial-treasury').status_code==403  # CSRF required
+    r=c.post(base+'/trial-treasury',headers=h);assert r.status_code==201,r.text;assert r.json()['banks']==3
+    assert c.post(base+'/trial-treasury',headers=h).status_code==409
+    names=[b['name'] for b in c.get(base+'/banks').json()['banks']]
+    assert sum(n.startswith('Essai · ') for n in names)==3 and 'Ma vraie banque' in names
+    assert len(c.get(base+'/treasury').json()['movements'])>=7
+    assert c.delete(base+'/trial-treasury',headers=h).json()['removed']==3
+    assert [b['name'] for b in c.get(base+'/banks').json()['banks']]==['Ma vraie banque']
+    assert c.get(base+'/treasury').json()['movements']==[]

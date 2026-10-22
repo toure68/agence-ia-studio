@@ -146,6 +146,48 @@ def install(app,db,require,own_company,utcnow):
         scope(req,cid)
         with db() as con:return snapshot(con,cid)
 
+    # Trial banks (user request 22/10): one tap fills the treasury with clearly named fictitious banks
+    # (« Essai · … ») and movements of the month, to see how the dial behaves; another tap removes them all.
+    # Logos can then be uploaded on them like on any bank. Nothing outside these trial rows is touched.
+    TRIAL='Essai · '
+    @app.post('/api/companies/{cid}/trial-treasury',status_code=201)
+    def add_trial(cid:int,req:Request):
+        scope(req,cid,True)
+        today=datetime.now(ZoneInfo('Europe/Paris')).date();first=today.replace(day=1)
+        day=lambda n:min(today,first+timedelta(days=n)).isoformat()
+        banks=[('Banque Nord',1850000,0),('Banque Sud',640000,150000),('Néo Pro',-120000,0)]
+        moves={0:[('Facture client Dupont','in',420000,2),('Loyer atelier','out',180000,4),('Acompte chantier Moreau','in',950000,9)],
+               1:[('Achat matériaux','out',260000,3),('Paiement client Lefèvre','in',310000,7)],
+               2:[('Abonnement logiciels','out',8900,1),('Carburant','out',21000,6)]}
+        with db() as con:
+            con.execute('BEGIN IMMEDIATE')
+            if con.execute('SELECT 1 FROM bank_accounts WHERE company_id=? AND name LIKE ?',(cid,TRIAL+'%')).fetchone():
+                raise HTTPException(409,'Les banques d’essai sont déjà là.')
+            ids=[]
+            for name,opening,reserved in banks:
+                ids.append(con.execute('INSERT INTO bank_accounts(company_id,name,currency,opening_minor,reserved_minor) VALUES (?,?,?,?,?)',(cid,TRIAL+name,'EUR',opening,reserved)).lastrowid)
+            for i,rows in moves.items():
+                for label,direction,amount,n in rows:
+                    con.execute('INSERT INTO cash_movements(company_id,bank_id,label,direction,amount_minor,currency,date,created) VALUES (?,?,?,?,?,?,?,?)',(cid,ids[i],TRIAL+label,direction,amount,'EUR',day(n),utcnow()))
+            con.execute('INSERT INTO bank_debits(company_id,bank_id,label,amount_minor,due) VALUES (?,?,?,?,?)',(cid,ids[1],TRIAL+'Prélèvement assurance',45000,(today+timedelta(days=5)).isoformat()))
+            con.execute('INSERT INTO bank_debits(company_id,bank_id,label,amount_minor,due) VALUES (?,?,?,?,?)',(cid,ids[2],TRIAL+'Prélèvement leasing',62000,(today+timedelta(days=3)).isoformat()))
+            con.execute('COMMIT')
+        return {'ok':True,'banks':len(ids)}
+    @app.delete('/api/companies/{cid}/trial-treasury')
+    def remove_trial(cid:int,req:Request):
+        scope(req,cid,True)
+        with db() as con:
+            con.execute('BEGIN IMMEDIATE')
+            ids=[r['id'] for r in con.execute('SELECT id FROM bank_accounts WHERE company_id=? AND name LIKE ?',(cid,TRIAL+'%'))]
+            if ids:
+                q=','.join('?'*len(ids))
+                con.execute(f'DELETE FROM cash_movements WHERE company_id=? AND bank_id IN ({q})',(cid,*ids))
+                con.execute(f'DELETE FROM bank_debits WHERE company_id=? AND bank_id IN ({q})',(cid,*ids))
+                con.execute(f'DELETE FROM bank_transfers WHERE company_id=? AND (source_id IN ({q}) OR target_id IN ({q}))',(cid,*ids,*ids))
+                con.execute(f'DELETE FROM bank_accounts WHERE company_id=? AND id IN ({q})',(cid,*ids))
+            con.execute('COMMIT')
+        return {'ok':True,'removed':len(ids)}
+
     @app.post('/api/companies/{cid}/banks',status_code=201)
     def add_bank(cid:int,data:BankInput,req:Request):
         scope(req,cid,True)
