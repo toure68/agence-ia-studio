@@ -166,6 +166,22 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(900);
   const back=await page.evaluate(()=>({row:!!document.querySelector('#content .home-action-row'),first:[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>[e.dataset.module,getComputedStyle(e).visibility])}));
   console.log('back',JSON.stringify(back));assert.equal(back.row,false);assert.deepEqual(back.first.map(x=>x[0]),rowBefore,'Same functions, same order');assert(back.first.every(x=>x[1]==='visible'));
+  // 22/10 — while reading, the cards fill the room down to the function pages.
+  await openAt(0);
+  const fill=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {gap:Math.round(pg.top-lr.bottom),pitch:Number(document.body.dataset.readerPitch)||54};});
+  console.log('reading fill',JSON.stringify(fill));assert(fill.gap<=20,'No empty room under the cards while reading');
+  // 22/10 — a message with attachments: big preview on top, 7 thumbnails (4 visible) in place of the cards, tap = big.
+  const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
+  assert(idx>=0,'Trial message with attachments present');await openAt(idx);
+  const att=await page.evaluate(()=>{const box=document.querySelector('#content .reader-files'),th=[...box.querySelectorAll('.reader-thumb')],bw=box.getBoundingClientRect();
+   return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,big:!!document.querySelector('#content .home-reader .reader-file.is-image img'),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
+  console.log('attachments',JSON.stringify(att));
+  assert.equal(att.thumbs,7);assert.equal(att.visible,4,'4 thumbnails visible');assert(att.big,'Big preview on top');assert.equal(att.list,'hidden','Thumbnails replace the cards');
+  await page.screenshot({path:out+'/89-lecteur-pieces-jointes.png'});
+  await page.locator('#content .reader-thumb[data-file="5"]').click();await page.waitForTimeout(400);
+  assert.match(await page.locator('#content .home-reader .reader-file figcaption').textContent(),/Devis_D-2041\.pdf/,'Tapped thumbnail shown big');
+  await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(800);
+  assert.equal(await page.locator('#content .reader-files').count(),0,'Thumbnails gone back home');
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','off');}catch(e){}});
   // Settings follow the account (22/10): a change here is saved, and a new phone gets it at sign-in.
   await page.evaluate(()=>localStorage.setItem('aia-pages-grid',JSON.stringify({cols:4,rows:3})));await page.waitForTimeout(900);
