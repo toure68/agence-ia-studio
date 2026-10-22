@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT ESSAI PHOTOS RÉELLES** | `sauvegarde/avant-essai-photos-reelles` (main du 22/10, v124) | Messages d’essai avec photos SVG ; pictogrammes à 64% sans cadrage propre à chaque fonction. |
 | **RETOUR AVANT ICÔNES SANS LIBELLÉS** | `sauvegarde/avant-icones-sans-libelles` (main du 22/10, v123) | Icônes iOS avec noms visibles sous chaque carré. |
 | **RETOUR AVANT ICÔNES IOS** | `sauvegarde/avant-icones-ios` (main du 22/10, v122) | Boutons de fonctions rectangulaires en verre, pictogrammes colorés sur fond sombre. |
 | **RETOUR AVANT CARTES PRÉSERVÉES** | `sauvegarde/avant-cartes-preservees` (main du 22/10, v121) | La zone de confort de 52 px pouvait retirer une notification visible au lieu de réduire le lecteur. |

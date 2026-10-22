@@ -124,6 +124,8 @@ jobs:
           fi
       - name: Verify visual function icons
         run: node tests/ios_icons.cjs
+      - name: Verify real trial photos
+        run: node tests/real_photos.cjs
       - name: Verify reader spacing and gestures
         run: node tests/reader_layout.cjs
       - name: Run node tests/pages.cjs
