@@ -199,7 +199,7 @@ const homeReader=(()=>{
   card.querySelectorAll('[data-draft]').forEach(f=>f.oninput=()=>{view.draft[f.dataset.draft]=f.value;});
   card.querySelector('[data-draft]')?.focus({preventScroll:true});
   wireRail(card);
-  host.querySelectorAll('.reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
+  host.querySelectorAll('.reader-list .reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
   fitList();
   syncFiles();
   hint();

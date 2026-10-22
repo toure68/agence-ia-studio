@@ -142,11 +142,11 @@ const homePages=(()=>{
   const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list'),block=home.querySelector('#priorityBlock');
   if(!pages)return;
   const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
-  const items=[...home.querySelectorAll('.reader-item')];
+  const items=[...home.querySelectorAll('.reader-list .reader-item')];
   const lr=list?.getBoundingClientRect();
   const shown=lr?items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).length:0;
   const reading=home.classList.contains('reader-active');
-  const read=reading?home.querySelectorAll('.reader-item.is-read').length:0;
+  const read=reading?home.querySelectorAll('.reader-list .reader-item.is-read').length:0;
   const rest=Math.max(0,items.length-read-shown);
   // Stack above the grid.
   let el=home.querySelector('.home-stack');

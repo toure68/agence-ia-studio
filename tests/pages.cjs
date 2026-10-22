@@ -91,10 +91,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.reader-item,.priority-card').first().waitFor();
   // « Préparer demain » / « Veille » never mix with the notification cards (21/10).
   await page.waitForTimeout(600);
-  const mixed=await page.evaluate(()=>document.querySelectorAll('#content .reader-item').length>0&&!!document.querySelector('#content .home-filler [data-filler="calendar"],#content .home-filler [data-filler="veille"]'));
+  const mixed=await page.evaluate(()=>document.querySelectorAll('#content .reader-list .reader-item').length>0&&!!document.querySelector('#content .home-filler [data-filler="calendar"],#content .home-filler [data-filler="veille"]'));
   assert.equal(mixed,false,'Préparer demain / Veille hidden while notifications are shown');
   // Cards never touch the function pages; the gap left is small (21/10, choice A).
-  const gap=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list')?.getBoundingClientRect(),pg=document.querySelector('#content .home-pages')?.getBoundingClientRect();if(!lr||!pg)return null;const vis=[...document.querySelectorAll('#content .reader-item')].map(e=>e.getBoundingClientRect()).filter(r=>r.bottom>lr.top+2&&r.top<lr.bottom-2);return vis.length?{gap:Math.round(pg.top-Math.max(...vis.map(r=>r.bottom))),cards:vis.length,slots:document.body.dataset.readerSlots}:null;});
+  const gap=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list')?.getBoundingClientRect(),pg=document.querySelector('#content .home-pages')?.getBoundingClientRect();if(!lr||!pg)return null;const vis=[...document.querySelectorAll('#content .reader-list .reader-item')].map(e=>e.getBoundingClientRect()).filter(r=>r.bottom>lr.top+2&&r.top<lr.bottom-2);return vis.length?{gap:Math.round(pg.top-Math.max(...vis.map(r=>r.bottom))),cards:vis.length,slots:document.body.dataset.readerSlots}:null;});
   console.log('cards/grid',JSON.stringify(gap));
   if(gap){assert(gap.gap>=6,'Cards never touch the function pages '+JSON.stringify(gap));assert(gap.gap<=30,'Cards fill the room above the function pages (stack included) '+JSON.stringify(gap));}
   // No notification: the filler cards sit under the replacement card, never over it (22/10).
@@ -129,7 +129,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   if(bottom.above!==null)assert(Math.abs(bottom.above-bottom.below)<=3,'Dots centred');
   // 21/10 step 1 — reader actions in the first row of the function grid (trial messages, nothing sent).
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','on');}catch(e){}});
-  await page.reload({waitUntil:'networkidle'});await page.locator('#content .reader-item').first().waitFor();await page.waitForTimeout(800);
+  await page.reload({waitUntil:'networkidle'});await page.locator('#content .reader-list .reader-item').first().waitFor();await page.waitForTimeout(800);
   const rowBefore=await page.evaluate(()=>[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>e.dataset.module));
   const openAt=async i=>{await page.evaluate(i=>{const l=document.querySelector('#content .reader-list');l.scrollTo({top:(i+1)*(Number(document.body.dataset.readerPitch)||54)});},i);await page.waitForTimeout(900);};
   const state=()=>page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),card=document.querySelector('#content .home-reader');
@@ -171,7 +171,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const fill=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {gap:Math.round(pg.top-lr.bottom),pitch:Number(document.body.dataset.readerPitch)||54};});
   console.log('reading fill',JSON.stringify(fill));assert(fill.gap<=30,'No empty room under the cards while reading (stack included)');
   // 22/10 — a message with attachments: big preview on top, 7 thumbnails (4 visible) in place of the cards, tap = big.
-  const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
+  const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-list .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
   assert(idx>=0,'Trial message with attachments present');await openAt(idx);
   const att=await page.evaluate(()=>{const box=document.querySelector('#content .reader-files'),th=[...box.querySelectorAll('.reader-thumb')],bw=box.getBoundingClientRect();
    return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,big:!!document.querySelector('#content .home-reader .reader-file.is-image img'),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
