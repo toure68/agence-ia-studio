@@ -1,6 +1,7 @@
 name: Application tests
 # Save minutes (user decision 2026-10-21): tests run once per pull request (not twice: branch push + PR),
 # again on main after a merge, and an older run of the same branch is cancelled when a new commit arrives.
+# 22/10: repository made public by the user, Actions are free again, automatic runs are back.
 on:
   push:
     branches: [main]

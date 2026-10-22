@@ -1,9 +1,10 @@
 name: Contrôle du site en ligne
+# 22/10: repository made public by the user, Actions are free again, automatic runs are back.
 on:
   push:
     branches: [main]
   schedule:
-    - cron: '17 5 * * *' # once a day, 7 h 17 in Paris (was every 4 hours)
+    - cron: '17 5 * * *' # once a day, 7 h 17 in Paris
   workflow_dispatch:
 permissions:
   contents: write
