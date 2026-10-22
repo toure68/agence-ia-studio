@@ -124,3 +124,11 @@ html.home-ios .reader-item .module-icon{border:0!important;box-shadow:none!impor
 html.home-ios .reader-item .module-icon svg{width:18px;height:18px}
 html.home-ios .reader-item .reader-state{color:var(--c)!important;font-weight:600;letter-spacing:.03em}
 html.home-ios .reader-item .reader-tag{border-radius:999px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#C4B5FD;background:rgba(167,139,250,.16);margin-right:8px}
+
+/* 22/10 : in the reader, the top is the very same notification card (same size and style); the rest only holds
+   what the card does not show (details chips, full text). Title, state and amount are not repeated. */
+html.home-ios .home-reader .reader-head .module-icon,html.home-ios .home-reader .reader-head .reader-state{display:none}
+html.home-ios .home-reader .reader-head{justify-content:space-between;min-height:30px}
+html.home-ios .home-reader .reader-title{display:none}
+html.home-ios .home-reader .reader-card{margin:0 -14px}
+html.home-ios .home-reader .reader-card .reader-item{display:flex;width:100%;height:60px;flex:none;cursor:default;scroll-snap-align:none}

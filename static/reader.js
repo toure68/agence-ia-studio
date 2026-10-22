@@ -105,13 +105,14 @@ const homeReader=(()=>{
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
   const pos=view.focus+1,total=view.cards.length;
   return `<div class="reader-head"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-state state-${p.state}">${clean(p.label)}</span><span class="reader-pos">${pos}/${total}</span><span class="reader-tools"><button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button><button type="button" class="reader-icon" data-reader-open aria-label="Ouvrir le détail" title="Ouvrir le détail"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="reader-icon" data-reader-hide aria-label="Masquer ce message" title="Masquer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button type="button" class="reader-icon" data-reader-back aria-label="Revenir à la trésorerie" title="Trésorerie"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>
+  ${ios()?`<div class="reader-card">${small(c,view.focus).replace(/ data-reader-item="\d+"/,'').replace(/^<button type="button"/,'<div').replace(/<\/button>$/,'</div>')}</div>`:''}
   <div class="reader-title"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong>${cp.amount?`<span class="reader-amount ${sg?sg.cls:''}">${sg?sg.s:''}${clean(cp.amount)}${sg?`<small>${sg.word}</small>`:''}</span>`:''}</div>
   ${facts(c)}<div class="reader-body-wrap"><div class="reader-body" tabindex="0">${bodyMarkup(c,cp)}</div><div class="reader-rail" aria-hidden="true"><i></i></div></div>
   <div class="reader-actions">${btns.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind}" data-reader-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''}>${clean(b.label)}</button>`).join('')}</div>`;
  }
 
  function facts(c){
-  const src=c.source?`<span class="reader-fact is-source">${clean(c.source)}${c.time?' · '+clean(c.time):''}</span>`:'';
+  const src=c.source&&!ios()?`<span class="reader-fact is-source">${clean(c.source)}${c.time?' · '+clean(c.time):''}</span>`:'';
   const f=src+(c.facts||[]).map(([k,v])=>`<span class="reader-fact"><span>${clean(k)}</span> <b>${clean(v)}</b></span>`).join('');
   return c.must||f?`<div class="reader-facts">${c.must?'<span class="reader-fact is-must">À lire en entier</span>':''}${f}</div>`:'';
  }
@@ -198,7 +199,7 @@ const homeReader=(()=>{
   card.querySelectorAll('[data-draft]').forEach(f=>f.oninput=()=>{view.draft[f.dataset.draft]=f.value;});
   card.querySelector('[data-draft]')?.focus({preventScroll:true});
   wireRail(card);
-  host.querySelectorAll('.reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
+  host.querySelectorAll('.reader-list .reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
   fitList();
   syncFiles();
   hint();
@@ -217,7 +218,7 @@ const homeReader=(()=>{
    let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;
     // A message with attachments keeps the cards and puts its thumbnails under them: one row of 4 + names.
     const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+30;}
-   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
