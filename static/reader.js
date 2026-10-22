@@ -238,10 +238,15 @@ const homeReader=(()=>{
      // Whole cards, stack edge, optional files with 12px gaps, then a clear 52px gesture zone.
      // No empty attachment slot for a message without files. Spare pixels improve the text/image reader.
      const stack=view.cards.length>1?9:0,space=12;
-     const tail=stack+52+(files?space+files.getBoundingClientRect().height+space:0);
+     const fileSpace=files?files.getBoundingClientRect().height+space:0;
+     const previousTail=stack+space;
+     const tail=stack+52+(files?space+fileSpace:0);
      let baseHeight=readerHeight(),room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
-     // A compact phone must still expose a card to scroll; let the reader yield room instead of hiding the queue.
-     if(!editing&&room<tail+pitch()-gap){baseHeight=Math.max(180,baseHeight-(tail+pitch()-gap-room));card.style.height=baseHeight+'px';room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);}
+     // Preserve the notification capacity from before the comfort zone was added (v120).
+     // The reader yields room for files AND the 52px: opening images must not replace a notification.
+     const keep=Math.max(1,Math.floor((room-previousTail+gap)/pitch()));
+     const needed=tail+keep*pitch()-gap;
+     if(!editing&&room<needed){baseHeight=Math.max(180,baseHeight-(needed-room));card.style.height=baseHeight+'px';room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);}
      n=editing?0:Math.max(0,Math.floor((room-tail+gap)/pitch()));
      const height=n? n*pitch()-gap:0;
      if(!editing)card.style.height=(baseHeight+Math.max(0,room-tail-height))+'px';
