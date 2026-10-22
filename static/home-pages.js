@@ -123,6 +123,8 @@ const homePages=(()=>{
   try{const cid=company?.id,uid=me?.id;if(cid&&uid&&typeof assistantDrafts!=='undefined'){const k=uid+':'+cid,d=assistantDrafts.get(k)||{text:'',files:[],requestId:null};if(!d.text)d.text='Mon problème au quotidien : ';assistantDrafts.set(k,d);}}catch(e){}
   document.querySelector('#assistantDock')?.click();
  }
+ // Bottom of the last visible thing in the cards block (e.g. the single replacement card), or its top when empty.
+ function lastBottom(block){if(!block)return 0;const kids=[...block.querySelectorAll('.priority-card,.priority-stack>*,article')].filter(e=>e.offsetParent&&!e.closest('.home-filler'));return kids.length?Math.max(...kids.map(e=>e.getBoundingClientRect().bottom)):block.getBoundingClientRect().top;}
  let lastRest=-1;
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
@@ -151,7 +153,7 @@ const homePages=(()=>{
   }else el?.remove();
   lastRest=rest;
   // Filler in the empty room.
-  const after=lr&&shown?Math.max(...items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).map(e=>e.getBoundingClientRect().bottom)):(block?.querySelector('.reader-bar')?.getBoundingClientRect().bottom||block?.getBoundingClientRect().top||pr.top);
+  const after=lr&&shown?Math.max(...items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).map(e=>e.getBoundingClientRect().bottom)):(block?.querySelector('.reader-bar')?.getBoundingClientRect().bottom||lastBottom(block)||pr.top); // under the replacement card when there is no notification (21/10)
   const top=after+8,bottom=pr.top-(rest?24:10),room=bottom-top;
   let f=home.querySelector('.home-filler');
   // While reading, the whole empty room under the cards is a touch zone back to the home (treasury + cards).
