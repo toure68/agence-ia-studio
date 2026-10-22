@@ -61,7 +61,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert.match(await page.locator('.reader-count').innerText(),/1 traité/);
 
   // Back to the top: the treasury returns.
-  await page.locator('[data-reader-back]').click();
+  await page.locator('.reader-list').evaluate(el=>el.scrollTo({top:0}));
   await page.locator('#homeTreasury .home-treasury').waitFor({state:'visible'});
   assert.ok(Math.abs(await gridTop()-before)<2,'grid back at its place');
 
