@@ -149,6 +149,11 @@ const homeReader=(()=>{
    box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i,i===(view.file||0))).join('')}</div><span class="reader-files-hint">${c.files.length} pièce${c.files.length>1?'s':''} jointe${c.files.length>1?'s':''}${c.files.length>4?' · glissez →':''}</span>`;
    box.querySelector('.reader-thumbs').scrollLeft=sx;}
   queue.classList.add('has-files');box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';box.style.height='';
+  // Measured after drawing: if the thumbnails would reach the function pages, drop as many cards as needed.
+  const pg=document.querySelector('#content .home-pages');
+  if(pg){const over=box.getBoundingClientRect().bottom-(pg.getBoundingClientRect().top-4);
+   if(over>0){const p=pitch(),g=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6,n=Math.max(1,Math.round((list.offsetHeight+g)/p)-Math.ceil(over/p));
+    list.style.height=Math.max(0,n*p-g)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';}}
  }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
