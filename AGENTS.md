@@ -1,5 +1,7 @@
 # Product invariants — Agence IA Studio
 
+**Read `docs/PASSATION.md` first** (how to work with Mohamed: French only, backup keyword before each change, one PR per change, bump the asset version, green tests, ask « Oui »/« Non » before merging, confirm « online » only after the live version check passes on Render, one assistant at a time).
+
 Preserve working behavior and approved design. A request to add a feature does not authorize replacing, removing, redesigning, or changing an existing feature. Change an established behavior only when the user explicitly requests that particular change. Keep unrelated work out of the change.
 
 - Function buttons open a floating panel over the mounted cockpit. Keep the home address and document; do not turn module clicks into separate screens. Preserve cockpit scroll, assistant text and attachments. Keep an immediately available close cross and bottom close button.
