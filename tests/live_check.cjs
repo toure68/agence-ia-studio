@@ -4,7 +4,7 @@
 // with a dedicated test account that only opens screens. Fails (red) when the site is down or a page breaks.
 const fs=require('node:fs');
 const {chromium}=require('playwright');
-const BASE=process.env.LIVE_URL||'https://agence-ia-studio-production.up.railway.app';
+const BASE=process.env.LIVE_URL||'https://agence-ia-studio.onrender.com'; // main host since 21/10 (Railway build outage)
 const out='/tmp/live';fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const problems=[],done=[];
