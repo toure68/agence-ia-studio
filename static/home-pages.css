@@ -34,10 +34,10 @@ html.home-ios .home-grid-tile .module-icon{--tile-accent:var(--home-muted);color
 html.home-ios .reference-home .home-modules-heading .column-chooser:not([hidden]){position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:14px;border:1px solid #ffffff26;border-radius:20px;background:rgba(14,19,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 14px 40px #0008}
 
 /* Small cards: height set by home-pages.js to fill the room (44–60px) + 6px gap, up to 5 (2 fewer while reading). */
-html.home-ios .reader-list{gap:6px}
+html.home-ios .reader-list{gap:var(--reader-gap,8px)}
 html.home-ios .reader-list.has-more{-webkit-mask-image:none;mask-image:none}
-html.home-ios .reader-item{flex-basis:var(--reader-card-h,48px);height:var(--reader-card-h,48px);border-radius:16px;gap:10px;padding:0 12px}
-html.home-ios .reader-item .module-icon{width:32px;height:32px;flex-basis:32px;border-radius:10px}
+html.home-ios .reader-item{flex-basis:var(--reader-card-h,52px);height:var(--reader-card-h,52px);border-radius:20px;gap:12px;padding:0 12px 0 10px}
+html.home-ios .reader-item .module-icon{width:34px;height:34px;flex-basis:34px;border-radius:50%}
 html.home-ios .reader-item .module-icon svg{width:17px;height:17px}
 html.home-ios .reader-item-copy strong{font-size:13.5px}
 html.home-ios .reader-item-copy small{font-size:11.5px}
@@ -111,3 +111,10 @@ html.home-ios #content>.reference-home.reader-active{outline-color:rgba(255,255,
 html.home-ios .home-page .module-card.is-reading{position:relative}
 html.home-ios .home-page .module-card.is-reading .module-tile{outline:2px solid #4ADE80;outline-offset:-2px}
 html.home-ios .home-page .module-card.is-reading::after{content:"En lecture";position:absolute;right:8px;bottom:7px;font-size:9.5px;font-weight:800;color:#4ADE80;pointer-events:none}
+
+/* 22/10 : notification icons as on the reference capture — a round tinted badge in the colour of the state. */
+html.home-ios .reader-item .module-icon{border:0!important;box-shadow:none!important;background:#ffffff14!important;color:#C9D2DC!important}
+html.home-ios .reader-item.state-warning .module-icon{background:#E2B04A2E!important;color:#E2B04A!important}
+html.home-ios .reader-item.state-danger .module-icon{background:#F2616B2E!important;color:#F2616B!important}
+html.home-ios .reader-item.state-info .module-icon{background:#60A5FA2E!important;color:#60A5FA!important}
+html.home-ios .reader-item.state-success .module-icon{background:#4ADE802E!important;color:#4ADE80!important}

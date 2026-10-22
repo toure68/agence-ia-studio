@@ -97,8 +97,11 @@ const homePages=(()=>{
   // space left above the function pages is only the margin (the 7px stack hangs there). Height 44–60px + 6px gap.
   free-=2;
   const room=free+6;
-  let slots=Math.max(2,Math.min(5,Math.floor(room/50)));
-  const cardH=Math.max(36,Math.min(60,Math.floor(room/slots)-6)),step=String(cardH+6);
+  // Cards as on the reference capture (22/10): 52px high, 8px apart; as many as fit (no 5-card limit), and the
+  // little room left is shared between the gaps (8–16px) so nothing stays empty under the cards.
+  const cardH=52;let slots=Math.max(2,Math.min(9,Math.floor((room+2)/(cardH+8))));
+  const gap=Math.max(8,Math.min(16,Math.floor((room+2-slots*cardH)/slots))),step=String(cardH+gap);
+  document.body.style.setProperty('--reader-gap',gap+'px');
   const b=document.body;
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }
