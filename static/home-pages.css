@@ -222,3 +222,48 @@ html.home-ios #contextPanel[data-module="assistant"] #assistantMessage{min-heigh
 html.home-ios #contextPanel[data-module="assistant"] .chat-attach-menu>summary,html.home-ios #contextPanel[data-module="assistant"] #assistantMic{width:34px!important;height:34px!important;flex-basis:34px;border:0!important;border-radius:50%!important;background:rgba(255,255,255,.10)!important;color:#e2e8f0!important;opacity:1}
 html.home-ios #contextPanel[data-module="assistant"] .chat-attach-menu>summary svg,html.home-ios #contextPanel[data-module="assistant"] #assistantMic svg{width:20px;height:20px}
 html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{top:auto!important;left:8px;right:8px;bottom:calc(var(--kb-bottom,0px) + 8px)!important;height:auto!important;max-height:calc(var(--vv-h,60dvh) - 16px)!important;border-radius:28px!important;padding-top:0!important}
+
+/* iOS function icons (visual only): retain every grid cell, route, order and row height.
+   Size the icon inside its existing cell; labels never inherit the old dense-grid text scaling. */
+html.home-ios .reference-home .home-page.module-grid[data-columns]>.module-card{
+ container-type:size;--ios-icon:clamp(28px,min(64px,calc(100cqh - 23px),calc(100cqw - 12px)),64px);
+ background:transparent!important;border-color:transparent!important;box-shadow:none!important;
+ -webkit-backdrop-filter:none!important;backdrop-filter:none!important;overflow:visible;
+}
+html.home-ios .reference-home .home-page.module-grid[data-columns]>.module-card>.module-tile{
+ width:100%;height:100%;max-height:none;min-height:0;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:5px;padding:0 3px;border:0;border-radius:0;
+ background:transparent!important;box-shadow:none!important;overflow:visible;
+}
+html.home-ios .reference-home .home-page.module-grid[data-columns] .module-face{display:contents}
+html.home-ios .reference-home .home-page.module-grid[data-columns] .module-icon{
+ box-sizing:border-box;display:grid;place-items:center;flex:0 0 var(--ios-icon);
+ width:var(--ios-icon);height:var(--ios-icon);max-height:none;aspect-ratio:1;border-radius:26%;
+ color:#fff!important;background:linear-gradient(150deg,color-mix(in srgb,var(--tile-accent,#5BB0FF) 72%,#fff),color-mix(in srgb,var(--tile-accent,#5BB0FF) 76%,#07101d))!important;
+ border:1px solid #ffffff24;box-shadow:inset 0 1px 1px #ffffff55,0 3px 7px #0003;filter:none;
+}
+html.home-ios .reference-home .home-page.module-grid[data-columns] .tone-purple{--tile-accent:#9474ed}
+html.home-ios .reference-home .home-page.module-grid[data-columns] .module-icon svg{width:57%;height:57%;max-height:none;stroke-width:1.9}
+html.home-ios .reference-home .home-page.module-grid[data-columns] :is(.widget-copy,.module-copy){
+ display:block;flex:0 0 auto;width:100%;height:auto;min-height:0;max-height:none;margin:0;overflow:visible;text-align:center;
+}
+html.home-ios .reference-home .home-page.module-grid[data-columns] .module-copy strong{
+ display:block;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+ font-size:clamp(12px,9cqw,14px);line-height:16px;font-weight:500;letter-spacing:0;text-transform:none;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;-webkit-line-clamp:unset;
+ color:#f5f7fa;text-shadow:0 1px 3px #0008;
+}
+html.home-ios .reference-home .home-page.module-grid[data-columns] :is(.widget-metric,.module-insight,.module-chevron){display:none}
+html.home-ios .reference-home .home-page.module-grid[data-columns] .module-count{
+ top:calc((100% - var(--ios-icon) - 21px)/2 - 6px);left:calc((100% + var(--ios-icon))/2 - 12px);right:auto;
+ min-width:18px;height:18px;line-height:18px;padding:0 5px;font-size:11px;border-radius:10px;
+}
+/* Urgency and current-reading indicators follow the new square, never outline a hidden rectangle. */
+html.home-ios .reference-home .home-page.module-grid[data-columns]>.module-card::after{
+ inset:auto;top:calc((100% - var(--ios-icon) - 21px)/2);left:calc((100% - var(--ios-icon))/2);
+ width:var(--ios-icon);height:var(--ios-icon);box-sizing:border-box;border-radius:26%;
+}
+html.home-ios .reference-home .home-page .module-card.is-reading .module-tile{outline:0}
+html.home-ios .reference-home .home-page .module-card.is-reading .module-icon{outline:2px solid #4ADE80;outline-offset:2px}
+html.home-ios .reference-home .home-page .module-card.is-reading::after{content:none}
+html.home-ios .reference-home .home-page .module-card.is-reading .module-copy strong{color:#86efac}
