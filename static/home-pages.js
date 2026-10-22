@@ -99,10 +99,11 @@ const homePages=(()=>{
   // Measured on screen when possible (22/10): from the top of the cards box to the function pages, minus the
   // stack's room — so the cards always fill the space whatever the phone, the fonts or the status bar.
   let room=free+6;{const lt=list?.getBoundingClientRect().top,pg=home.querySelector('.home-pages');if(lt&&pg){const m=pg.getBoundingClientRect().top-lt-10;if(m>0)room=m;}}
-  // Cards as on the « Façon iPhone » mock-up (22/10): 60px high (38px round icon + 11px padding), 9px apart; as many as fit (no 5-card limit), and the
-  // little room left is shared between the gaps (8–16px) so nothing stays empty under the cards.
-  const cardH=60;let slots=Math.max(2,Math.min(9,Math.floor((room+2)/(cardH+9))));
-  const gap=Math.max(9,Math.min(26,Math.floor((room-slots*cardH)/Math.max(1,slots-1)))) /* gaps between the cards only; the stack keeps its 10px */,step=String(cardH+gap);
+  // 22/10 (user): 6 cards on the home, close together like the mock-up (9px, equal everywhere). If 6 do not fit, the
+  // gap shrinks to 6px at least, then fewer cards. What is left goes under the list, above the functions (not in the gaps).
+  const cardH=60,want=6;let gap=9,slots=Math.min(want,Math.floor((room+gap)/(cardH+gap)));
+  if(slots<want){const g=Math.floor((room-want*cardH)/(want-1));if(g>=6){gap=Math.min(9,g);slots=want;}}
+  slots=Math.max(2,slots);const step=String(cardH+gap);
   document.body.style.setProperty('--reader-gap',gap+'px');
   const b=document.body;
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}

@@ -127,8 +127,10 @@ html.home-ios .reader-item .reader-tag{border-radius:999px;padding:2px 8px;font-
 
 /* 22/10 : in the reader, the top is the very same notification card (same size and style); the rest only holds
    what the card does not show (details chips, full text). Title, state and amount are not repeated. */
-html.home-ios .home-reader .reader-head .module-icon,html.home-ios .home-reader .reader-head .reader-state{display:none}
-html.home-ios .home-reader .reader-head{justify-content:space-between;min-height:30px}
 html.home-ios .home-reader .reader-title{display:none}
-html.home-ios .home-reader .reader-card{margin:0 -14px}
+/* 22/10 (user): no tool row; the card sits at the very top of the reader, a small gap, then the details. The speaker is on the card. */
+html.home-ios .home-reader{padding-top:0;gap:6px}
+html.home-ios .home-reader .reader-card{position:relative;margin:-1px -15px 0}
+html.home-ios .home-reader .reader-card .reader-item{padding-right:56px}
+html.home-ios .home-reader .reader-card [data-reader-speak]{position:absolute;right:11px;top:11px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff}
 html.home-ios .home-reader .reader-card .reader-item{display:flex;width:100%;height:60px;flex:none;cursor:default;scroll-snap-align:none}
