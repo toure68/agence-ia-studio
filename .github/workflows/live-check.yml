@@ -1,9 +1,6 @@
 name: Contrôle du site en ligne
+# 22/10 (user): no automatic runs any more (GitHub Actions budget); start by hand only, for the global test at the end.
 on:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '17 5 * * *' # once a day, 7 h 17 in Paris (was every 4 hours)
   workflow_dispatch:
 permissions:
   contents: write
