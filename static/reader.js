@@ -206,7 +206,7 @@ const homeReader=(()=>{
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
   if(ios()){const reading=view.focus>=0&&card&&!card.hidden;
    // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
-   let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-14;}
+   let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;}
    const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';

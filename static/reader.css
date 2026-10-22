@@ -115,7 +115,7 @@ body[data-wall] .reference-home .reader-item{background:linear-gradient(135deg,#
 .reader-files{position:absolute;left:0;right:0;z-index:2;display:flex;flex-direction:column;gap:6px}
 .reader-thumbs{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}
 .reader-thumbs::-webkit-scrollbar{display:none}
-.reader-thumb{flex:0 0 calc((100% - 24px) / 4);scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:0;border:0;background:none;color:var(--home-muted,#9aa4b2);font:inherit;font-size:10.5px;text-align:left;cursor:pointer}
+.reader-thumb{flex:0 0 calc((100% - 24px) / 4);min-width:0;max-width:calc((100% - 24px) / 4);scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:0;border:0;background:none;color:var(--home-muted,#9aa4b2);font:inherit;font-size:10.5px;text-align:left;cursor:pointer}
 .reader-thumb img,.reader-thumb .reader-file-kind{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:2px solid transparent;box-sizing:border-box;height:auto}
 .reader-thumb.is-on img,.reader-thumb.is-on .reader-file-kind{border-color:#4ADE80}
 .reader-thumb span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
