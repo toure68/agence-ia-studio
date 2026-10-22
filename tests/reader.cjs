@@ -89,7 +89,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.home-reader.is-editing [data-draft="amount"]').fill('1 350 €');
   await page.screenshot({path:out+'/93-lecteur-modifier.png'});
   await page.locator('.home-reader .reader-btn',{hasText:'Enregistrer et envoyer'}).click();
-  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===15);
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===16);
   await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
   await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===0);
   assert.deepEqual(errors,[]);

@@ -177,7 +177,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,big:!!document.querySelector('#content .home-reader .reader-file.is-image img'),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
   console.log('attachments',JSON.stringify(att));
   assert.equal(att.thumbs,7);assert.equal(att.visible,4,'4 thumbnails visible');assert(att.big,'Big preview on top');assert.equal(att.list,'hidden','Thumbnails replace the cards');
-  await page.screenshot({path:out+'/93-lecteur-pieces-jointes.png'});
+  await page.screenshot({path:out+'/89-lecteur-pieces-jointes.png'});
   await page.locator('#content .reader-thumb[data-file="5"]').click();await page.waitForTimeout(400);
   assert.match(await page.locator('#content .home-reader .reader-file figcaption').textContent(),/Devis_D-2041\.pdf/,'Tapped thumbnail shown big');
   await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(800);
