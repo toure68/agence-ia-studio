@@ -134,3 +134,5 @@ html.home-ios .home-reader .reader-card{position:relative;margin:-1px -15px 0}
 html.home-ios .home-reader .reader-card .reader-item{padding-right:56px}
 html.home-ios .home-reader .reader-card [data-reader-speak]{position:absolute;right:11px;top:11px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff}
 html.home-ios .home-reader .reader-card .reader-item{display:flex;width:100%;height:60px;flex:none;cursor:default;scroll-snap-align:none}
+/* 22/10 (user): while reading, no date tab — it covered the title of the card at the top. */
+html.home-ios .home-reader[data-date]::before{display:none}
