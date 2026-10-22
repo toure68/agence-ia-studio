@@ -136,3 +136,7 @@ html.home-ios .home-reader .reader-card [data-reader-speak]{position:absolute;ri
 html.home-ios .home-reader .reader-card .reader-item{display:flex;width:100%;height:60px;flex:none;cursor:default;scroll-snap-align:none}
 /* 22/10 (user): while reading, no date tab — it covered the title of the card at the top. */
 html.home-ios .home-reader[data-date]::before{display:none}
+/* 22/10 (user, to try): no frame line around the app; the content comes right under the Dynamic Island.
+   « RETOUR AVANT SANS BORDURE » brings the frame back. */
+html.home-ios #content>.reference-home,html.home-ios #content>.reference-home.reader-active{outline:0;box-shadow:none}
+html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-top:max(8px,calc(env(safe-area-inset-top,0px) - 12px))}
