@@ -1,0 +1,26 @@
+name: Diagnostic
+on:
+  push:
+    branches: ['diag/**']
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      APP_ENV: development
+      DATABASE_PATH: /tmp/diag.db
+      ADMIN_EMAIL: ui-owner@example.test
+      ADMIN_PASSWORD: local-ui-smoke-test-only
+      SESSION_SECRET: local-ui-smoke-secret-for-automated-tests-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install -r requirements.txt
+      - run: npm install --no-save --no-package-lock playwright
+      - run: |
+          python -m uvicorn app:app --host 127.0.0.1 --port 8123 > /tmp/s.log 2>&1 &
+          for a in $(seq 1 30); do curl -fsS http://127.0.0.1:8123/health && break; sleep 1; done
+      - run: node tests/diag_zone.cjs
