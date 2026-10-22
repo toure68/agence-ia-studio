@@ -122,3 +122,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - 22/10 (user correction): the 52px comfort zone must preserve the notification capacity from v120 (e.g. four stay four); take the extra room from the scrollable reader, keeping text/image carousel and function pages. On constrained screens the reader keeps a 180px minimum. Keyword « RETOUR AVANT CARTES PRÉSERVÉES ».
 
 - 22/10 (user, visual only): function-page buttons use colored iOS-style square icons with 26% corners, centered glyphs and readable labels underneath in all column modes. Existing cells, rows, module order, routes and click behavior stay identical. CSS container sizing fits the icon to each existing cell; notification capacity, reader, carousel, 52px zone and action buttons are unchanged. Keyword « RETOUR AVANT ICÔNES IOS ».
+
+- 22/10 (user correction): function-page icons have NO visible labels. Increase the square inside the same cell (up to 72px, glyph 64%), centered; preserve the original aria-label/title, routes, order and cell dimensions. Reader, notification count and action buttons are unchanged. Keyword « RETOUR AVANT ICÔNES SANS LIBELLÉS ».
