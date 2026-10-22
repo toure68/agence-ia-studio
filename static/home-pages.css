@@ -106,3 +106,8 @@ html.home-ios .home-account-slot .account-panel{top:auto;bottom:52px;left:0;righ
 html.home-ios #content>.reference-home{margin-top:calc(14px + env(safe-area-inset-top,0px));padding-top:12px;border-radius:30px;outline:1px solid rgba(255,255,255,.14);outline-offset:8px;box-shadow:0 0 0 8px rgba(255,255,255,.015),0 26px 60px -18px rgba(0,0,0,.75);transition:outline-color .3s,box-shadow .3s}
 html.home-ios #content>.reference-home.reader-active{outline-color:rgba(255,255,255,.28);box-shadow:0 0 0 8px rgba(255,255,255,.035),0 34px 80px -14px rgba(0,0,0,.9),0 0 36px rgba(74,222,128,.10)}
 @media (prefers-reduced-motion:reduce){html.home-ios #content>.reference-home{transition:none}}
+
+/* 22/10 : function of the message being read, in the first function row. */
+html.home-ios .home-page .module-card.is-reading{position:relative}
+html.home-ios .home-page .module-card.is-reading .module-tile{outline:2px solid #4ADE80;outline-offset:-2px}
+html.home-ios .home-page .module-card.is-reading::after{content:"En lecture";position:absolute;right:8px;bottom:7px;font-size:9.5px;font-weight:800;color:#4ADE80;pointer-events:none}

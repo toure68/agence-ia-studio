@@ -117,7 +117,10 @@ const homeReader=(()=>{
  }
  function bodyMarkup(c,cp){
   // Attachments (22/10): the chosen one is shown big on top of the text; thumbnails sit under the reader.
-  if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const f=c.files[Math.min(view.file||0,c.files.length-1)];return fileBig(f)+(cp.detail?`<div class="reader-file-text">${clean(cp.detail)}</div>`:'');}
+  if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const f=c.files[Math.min(view.file||0,c.files.length-1)];
+   const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
+   // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
+   return `<dl class="reader-mail">${row('De',c.from||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text">${clean(c.raw||cp.detail||'')}</div><div class="reader-mail-files">${c.files.length} pièce${c.files.length>1?'s':''} jointe${c.files.length>1?'s':''}</div>${fileBig(f)}`;}
   if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
   if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
   return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';
@@ -138,14 +141,14 @@ const homeReader=(()=>{
   const c=view.focus>=0?view.cards[view.focus]:null;let box=queue.querySelector('.reader-files');
   if(!c||!c.files?.length||!ios()){box?.remove();queue.classList.remove('has-files');return;}
   if(!box){box=document.createElement('div');box.className='reader-files';box.setAttribute('role','group');box.setAttribute('aria-label','Pièces jointes');queue.append(box);
-   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]');if(!b)return;view.file=Number(b.dataset.file);showReader();});
+   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]');if(!b)return;view.file=Number(b.dataset.file);showReader();requestAnimationFrame(()=>{const fig=view.host?.querySelector('.home-reader .reader-file'),body=view.host?.querySelector('.home-reader .reader-body');if(fig&&body)body.scrollTo({top:fig.offsetTop-body.offsetTop-6,behavior:'smooth'});});});
    let y0=null,x0=0;box.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;},{passive:true});
    box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
   const key=c.key+':'+(view.file||0);
   if(box.dataset.key!==key){const sx=box.dataset.card===c.key?box.querySelector('.reader-thumbs')?.scrollLeft||0:0;box.dataset.key=key;box.dataset.card=c.key;
    box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i,i===(view.file||0))).join('')}</div><span class="reader-files-hint">${c.files.length} pièce${c.files.length>1?'s':''} jointe${c.files.length>1?'s':''}${c.files.length>4?' · glissez →':''}</span>`;
    box.querySelector('.reader-thumbs').scrollLeft=sx;}
-  queue.classList.add('has-files');box.style.top=list.offsetTop+'px';box.style.height=list.offsetHeight+'px';
+  queue.classList.add('has-files');box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';box.style.height='';
  }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
@@ -206,7 +209,9 @@ const homeReader=(()=>{
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
   if(ios()){const reading=view.focus>=0&&card&&!card.hidden;
    // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
-   let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;}
+   let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;
+    // A message with attachments keeps the cards and puts its thumbnails under them: one row of 4 + names.
+    const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+40;}
    const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
@@ -264,6 +269,11 @@ const homeReader=(()=>{
   t.hidden=!enabled();t.setAttribute('aria-checked',String(samplesOn()));t.textContent='Messages d’essai : '+(samplesOn()?'affichés':'masqués');
  }
  document.addEventListener('DOMContentLoaded',syncMenu);if(document.readyState!=='loading')syncMenu();
- return {enabled,render,setEnabled,setSamples};
+ function readingModules(max){
+  if(view.focus<0)return [];const out=[];
+  for(let i=view.focus;i<view.cards.length&&out.length<max;i++){const c=view.cards[i];if(c._done&&i!==view.focus)continue;const k=moduleOf(c);if(!out.includes(k))out.push(k);}
+  return out;
+ }
+ return {enabled,render,setEnabled,setSamples,readingModules};
 })();
 window.homeReader=homeReader;
