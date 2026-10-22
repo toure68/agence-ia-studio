@@ -444,7 +444,7 @@ def me(req: Request):
 
 
 # Home wallpaper chosen by each user (glass design). Only the presets below are accepted.
-WALLPAPERS = ('nuit', 'emeraude', 'ocean', 'couchant', 'aurore', 'sable')
+WALLPAPERS = ('nuit', 'emeraude', 'ocean', 'couchant', 'aurore', 'liquide', 'sable')
 
 
 class WallpaperInput(BaseModel):

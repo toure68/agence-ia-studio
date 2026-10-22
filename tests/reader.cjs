@@ -74,9 +74,9 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.reader-item').first().waitFor();
   // Messages d'essai: 17 simulated messages on top, marked « Essai », a button counts them as done, nothing saved.
   await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
-  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===17);
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-list .reader-item .reader-tag').length===17);
   // Money colour code in the small cards: + green when it comes in, − red when it goes out.
-  const money=await page.evaluate(()=>{const get=t=>{const it=[...document.querySelectorAll('.reader-item')].find(e=>e.innerText.includes(t))?.querySelector('.reader-money');return it?{text:it.textContent,cls:it.className,color:getComputedStyle(it).color}:null;};return {inn:get('Bâtiplus SARL'),out:get('Matériaux Durand')};});
+  const money=await page.evaluate(()=>{const get=t=>{const it=[...document.querySelectorAll('.reader-list .reader-item')].find(e=>e.innerText.includes(t))?.querySelector('.reader-money');return it?{text:it.textContent,cls:it.className,color:getComputedStyle(it).color}:null;};return {inn:get('Bâtiplus SARL'),out:get('Matériaux Durand')};});
   assert.ok(money.inn&&money.inn.text.startsWith('+')&&money.inn.cls.includes('is-in'),'incoming amount in green: '+JSON.stringify(money));
   assert.ok(money.out&&money.out.text.startsWith('−')&&money.out.cls.includes('is-out'),'outgoing amount in red: '+JSON.stringify(money));
   assert.notEqual(money.inn.color,money.out.color);
@@ -89,9 +89,9 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('.home-reader.is-editing [data-draft="amount"]').fill('1 350 €');
   await page.screenshot({path:out+'/93-lecteur-modifier.png'});
   await page.locator('.home-reader .reader-btn',{hasText:'Enregistrer et envoyer'}).click();
-  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===16);
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-list .reader-item .reader-tag').length===16);
   await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
-  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===0);
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-list .reader-item .reader-tag').length===0);
   assert.deepEqual(errors,[]);
   console.log('reader ok');
  }catch(e){await page.screenshot({path:out+'/99-lecteur-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}

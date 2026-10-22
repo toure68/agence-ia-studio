@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTEUR CARTE** | `sauvegarde/avant-lecteur-carte` (main du 22/10 11 h 30) | Lecteur avec en-tête : état en couleur, titre en gros, montant à droite, puce de source. |
 | **RETOUR AVANT CARTES FAÇON IPHONE** | `sauvegarde/avant-cartes-iphone` (main du 22/10 10 h 15) | Cartes 52 px avec icône ronde, avant la copie exacte de la maquette « Façon iPhone ». |
 | **RETOUR AVANT CARTES CAPTURE** | `sauvegarde/avant-cartes-capture` (9d22ed0) | Le 22/10/2026 vers 10 h : cartes 44–60 px au plus 5, icônes carrées, « Photos du chantier » en 3ᵉ. |
 | **RETOUR AVANT LECTURE E-MAIL** | `sauvegarde/avant-lecture-email` (4c49ac8) | Le 22/10/2026 vers 9 h 40 : vignettes à la place des cartes, photo en grand sans en-tête d'e-mail, rangée de fonctions inchangée pendant la lecture. |

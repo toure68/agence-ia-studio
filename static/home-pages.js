@@ -96,11 +96,13 @@ const homePages=(()=>{
   // The cards fill the room exactly (21/10): as many as fit at 44px or more (at most 5), each one sized so the
   // space left above the function pages is only the margin (the 7px stack hangs there). Height 44–60px + 6px gap.
   free-=2;
-  const room=free+6;
+  // Measured on screen when possible (22/10): from the top of the cards box to the function pages, minus the
+  // stack's room — so the cards always fill the space whatever the phone, the fonts or the status bar.
+  let room=free+6;{const lt=list?.getBoundingClientRect().top,pg=home.querySelector('.home-pages');if(lt&&pg){const m=pg.getBoundingClientRect().top-lt-10;if(m>0)room=m;}}
   // Cards as on the « Façon iPhone » mock-up (22/10): 60px high (38px round icon + 11px padding), 9px apart; as many as fit (no 5-card limit), and the
   // little room left is shared between the gaps (8–16px) so nothing stays empty under the cards.
   const cardH=60;let slots=Math.max(2,Math.min(9,Math.floor((room+2)/(cardH+9))));
-  const gap=Math.max(9,Math.min(26,Math.floor((room+2-slots*cardH)/slots))),step=String(cardH+gap);
+  const gap=Math.max(9,Math.min(26,Math.floor((room-slots*cardH)/Math.max(1,slots-1)))) /* gaps between the cards only; the stack keeps its 10px */,step=String(cardH+gap);
   document.body.style.setProperty('--reader-gap',gap+'px');
   const b=document.body;
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
@@ -140,11 +142,11 @@ const homePages=(()=>{
   const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list'),block=home.querySelector('#priorityBlock');
   if(!pages)return;
   const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
-  const items=[...home.querySelectorAll('.reader-item')];
+  const items=[...home.querySelectorAll('.reader-list .reader-item')];
   const lr=list?.getBoundingClientRect();
   const shown=lr?items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).length:0;
   const reading=home.classList.contains('reader-active');
-  const read=reading?home.querySelectorAll('.reader-item.is-read').length:0;
+  const read=reading?home.querySelectorAll('.reader-list .reader-item.is-read').length:0;
   const rest=Math.max(0,items.length-read-shown);
   // Stack above the grid.
   let el=home.querySelector('.home-stack');
