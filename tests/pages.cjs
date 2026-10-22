@@ -174,6 +174,19 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.evaluate(()=>{localStorage.removeItem('aia-pages-grid');window.applyPrefs({grid:{cols:4,rows:3}});});
   assert.equal(await page.evaluate(()=>localStorage.getItem('aia-pages-grid')),JSON.stringify({cols:4,rows:3}),'Applied from the account');
   await page.evaluate(()=>api('/api/me/prefs',{method:'PUT',body:JSON.stringify({grid:{cols:4,rows:2}})}));await page.evaluate(()=>localStorage.setItem('aia-pages-grid',JSON.stringify({cols:4,rows:2})));
+  // Trial banks (22/10): the account-menu switch adds them, the dial shows them, the same switch removes them.
+  page.once('dialog',d=>d.accept());
+  await page.locator('#content .home-account-slot .account-menu summary').click();
+  await page.locator('#accountTrialBanks').waitFor();await page.waitForTimeout(500);
+  if(await page.locator('#accountTrialBanks').getAttribute('aria-checked')!=='true'){
+   await page.locator('#accountTrialBanks').click();await page.waitForTimeout(1500);
+   const n=await page.evaluate(()=>api(`/api/companies/${company.id}/banks`).then(d=>d.banks.filter(b=>b.name.startsWith('Essai · ')).length));
+   assert.equal(n,3,'Trial banks added');await page.screenshot({path:out+'/94-banques-essai.png'});
+   page.once('dialog',d=>d.accept());
+   await page.locator('#content .home-account-slot .account-menu summary').click();await page.waitForTimeout(600);
+   await page.locator('#accountTrialBanks').click();await page.waitForTimeout(1500);
+   assert.equal(await page.evaluate(()=>api(`/api/companies/${company.id}/banks`).then(d=>d.banks.filter(b=>b.name.startsWith('Essai · ')).length)),0,'Trial banks removed');
+  }
   assert.deepEqual(errors,[]);
   console.log('pages ok');
  }catch(e){await page.screenshot({path:out+'/99-iphone-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}
