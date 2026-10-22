@@ -167,6 +167,13 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const back=await page.evaluate(()=>({row:!!document.querySelector('#content .home-action-row'),first:[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>[e.dataset.module,getComputedStyle(e).visibility])}));
   console.log('back',JSON.stringify(back));assert.equal(back.row,false);assert.deepEqual(back.first.map(x=>x[0]),rowBefore,'Same functions, same order');assert(back.first.every(x=>x[1]==='visible'));
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','off');}catch(e){}});
+  // Settings follow the account (22/10): a change here is saved, and a new phone gets it at sign-in.
+  await page.evaluate(()=>localStorage.setItem('aia-pages-grid',JSON.stringify({cols:4,rows:3})));await page.waitForTimeout(900);
+  const saved=await page.evaluate(()=>api('/api/me').then(m=>m.prefs));console.log('prefs',JSON.stringify(saved));
+  assert.deepEqual(saved.grid,{cols:4,rows:3},'Grid saved in the account');
+  await page.evaluate(()=>{localStorage.removeItem('aia-pages-grid');window.applyPrefs({grid:{cols:4,rows:3}});});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('aia-pages-grid')),JSON.stringify({cols:4,rows:3}),'Applied from the account');
+  await page.evaluate(()=>api('/api/me/prefs',{method:'PUT',body:JSON.stringify({grid:{cols:4,rows:2}})}));await page.evaluate(()=>localStorage.setItem('aia-pages-grid',JSON.stringify({cols:4,rows:2})));
   assert.deepEqual(errors,[]);
   console.log('pages ok');
  }catch(e){await page.screenshot({path:out+'/99-iphone-erreur.png'}).catch(()=>{});console.error(e);process.exitCode=1;}
