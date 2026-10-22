@@ -103,3 +103,4 @@ Preserve working behavior and approved design. A request to add a feature does n
 - 22/10: iPhone reader shows no date tab (it covered the card's title); the date stays on the home treasury.
 - 22/10 (trial, user): iPhone app frame has no outline/shadow; main-body top padding max(8px, safe-area − 12px) so the content sits right under the Dynamic Island. Keyword « RETOUR AVANT SANS BORDURE ».
 - 22/10 (user): iPhone home has no date tab above the treasury; today's date (weekday, day, month) is inside the treasury dial when it shows the current month; main-body top padding max(8px, safe-area − 16px) so the treasury sits right under the Dynamic Island. Keyword « RETOUR AVANT DATE DANS LE CADRAN ».
+- 22/10 (user): iPhone home side margins 14px left and right, like the native notification list. Keyword « RETOUR AVANT MARGES IPHONE ».
