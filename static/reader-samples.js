@@ -1,5 +1,5 @@
 'use strict';
-// Messages d'essai for the Mode lecteur (user request 2026-10-20): 16 invented but realistic messages to try the
+// Messages d'essai for the Mode lecteur: invented messages and user-supplied product photos to try the
 // reader in the real app — short and long texts, money in (+) and out (−), different sources and buttons.
 // Shown only when « Messages d'essai » is switched on in the account menu, marked « Essai », never saved, never
 // sent: their buttons are simulated (the card is counted as done for the day and the next one comes up).
@@ -43,6 +43,13 @@ window.readerSamples=[
   raw:'Bonjour, voici les photos de la cuisine, de la salle de bain et de la façade, la fissure du plafond et le plan au sol. Je joins aussi le devis signé et le cahier des charges. Bonne journée, Claire Lefèvre.',
   files:[{type:'image',name:'Cuisine avant.jpg',src:essaiPhoto('#7a5c3e','#d8b48a','Cuisine avant')},{type:'image',name:'Salle de bain.jpg',src:essaiPhoto('#3d5a6c','#9cc3d5','Salle de bain')},{type:'image',name:'Façade.jpg',src:essaiPhoto('#5b6b3a','#c5d39a','Façade')},{type:'image',name:'Fissure plafond.jpg',src:essaiPhoto('#6b3a4a','#d79aae','Fissure plafond')},{type:'image',name:'Plan au sol.jpg',src:essaiPhoto('#3a3a6b','#a3a3e0','Plan au sol')},{type:'pdf',name:'Devis_D-2041.pdf',pages:3},{type:'doc',name:'Cahier_des_charges.docx'}],
   actions:[{l:'Bien reçu',t:'p',d:'Pièces jointes classées'},{l:'Répondre',t:'r'},{l:'Plus tard',t:'s',d:'Rappel demain'}]},
+ {key:'essai-18',module:'activities',source:'Photos fournies',time:'Aujourd’hui',state:'info',state_label:'Test images réelles',title:'Vos 7 photos du casque',
+  from:'Vos images de test',to:'Vous',subject:'Essai du lecteur avec sept photos réelles',
+  facts:[['Photos','7'],['Mode','Essai']],
+  body:'Voici les sept photos que vous avez fournies pour tester le lecteur. Touchez une miniature pour voir la photo, puis « Texte » pour revenir au message. Balayez la rangée pour parcourir les images.',
+  raw:'Essai avec vos sept photos du casque.\n\nLe texte s’affiche d’abord. Chaque miniature ouvre la photo dans le lecteur, en conservant ses proportions. La vignette « Texte » ramène au message.\n\nLes flèches et le défilement horizontal permettent de parcourir les sept photos. La zone libre de 52 px reste disponible sous le carrousel : glissement vers le haut ou le bas pour changer de message, appui pour revenir à l’accueil.\n\nCette notification est un essai : aucun message n’est envoyé.',
+  files:Array.from({length:7},(_,i)=>({type:'image',name:`Photo du casque ${i+1}.jpeg`,src:`/static/trial-photos/casque-0${i+1}.jpeg`})),
+  actions:[{l:'Essai terminé',t:'p',d:'Essai des photos terminé'},{l:'Plus tard',t:'s',d:'Photos conservées pour un prochain essai'}]},
  {key:'essai-06',module:'team',source:'SMS',time:'Hier',state:'info',state_label:'Congés',title:'Karim B.',amount:'5 jours',
   facts:[['Dates','2 → 6 nov.'],['Solde','12 j']],
   body:'Souhaite poser 5 jours de congés payés du 2 au 6 novembre, si le planning le permet.',

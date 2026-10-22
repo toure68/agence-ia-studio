@@ -309,7 +309,7 @@ const homeReader=(()=>{
  // Switching the test messages on puts them all back (the ones used today are shown again).
  function setSamples(on){
   try{localStorage.setItem(SAMPLES,on?'on':'off');if(on){const s=[...doneSet()].filter(k=>!String(k).startsWith('essai-'));sessionStorage.setItem(doneKey(),JSON.stringify(s));}}catch{}
-  view.focus=-1;view.keepKey=null;syncMenu();notify(on?'16 messages d’essai ajoutés au lecteur (rien n’est envoyé).':'Messages d’essai retirés.');
+  view.focus=-1;view.keepKey=null;syncMenu();notify(on?`${window.readerSamples?.length||0} messages d’essai ajoutés au lecteur (rien n’est envoyé).`:'Messages d’essai retirés.');
   if(typeof renderPriorities==='function')renderPriorities().catch(()=>{});
  }
  function syncMenu(){
