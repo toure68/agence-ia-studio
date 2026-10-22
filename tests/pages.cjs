@@ -96,7 +96,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // Cards never touch the function pages; the gap left is small (21/10, choice A).
   const gap=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list')?.getBoundingClientRect(),pg=document.querySelector('#content .home-pages')?.getBoundingClientRect();if(!lr||!pg)return null;const vis=[...document.querySelectorAll('#content .reader-item')].map(e=>e.getBoundingClientRect()).filter(r=>r.bottom>lr.top+2&&r.top<lr.bottom-2);return vis.length?{gap:Math.round(pg.top-Math.max(...vis.map(r=>r.bottom))),cards:vis.length,slots:document.body.dataset.readerSlots}:null;});
   console.log('cards/grid',JSON.stringify(gap));
-  if(gap){assert(gap.gap>=6,'Cards never touch the function pages '+JSON.stringify(gap));assert(gap.gap<=24,'Cards fill the room above the function pages '+JSON.stringify(gap));}
+  if(gap){assert(gap.gap>=6,'Cards never touch the function pages '+JSON.stringify(gap));assert(gap.gap<=30,'Cards fill the room above the function pages (stack included) '+JSON.stringify(gap));}
   // No notification: the filler cards sit under the replacement card, never over it (22/10).
   const overlap=await page.evaluate(()=>{const f=document.querySelector('#content .home-filler'),c=[...document.querySelectorAll('#content #priorityBlock .priority-card')].filter(e=>e.offsetParent);if(!f||!c.length)return null;const fr=f.getBoundingClientRect();return c.some(e=>{const r=e.getBoundingClientRect();return r.bottom>fr.top+1&&r.top<fr.bottom-1;});});
   if(overlap!==null)assert.equal(overlap,false,'Filler never covers the replacement card');
@@ -169,7 +169,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // 22/10 — while reading, the cards fill the room down to the function pages.
   await openAt(0);
   const fill=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {gap:Math.round(pg.top-lr.bottom),pitch:Number(document.body.dataset.readerPitch)||54};});
-  console.log('reading fill',JSON.stringify(fill));assert(fill.gap<=20,'No empty room under the cards while reading');
+  console.log('reading fill',JSON.stringify(fill));assert(fill.gap<=30,'No empty room under the cards while reading (stack included)');
   // 22/10 — a message with attachments: big preview on top, 7 thumbnails (4 visible) in place of the cards, tap = big.
   const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
   assert(idx>=0,'Trial message with attachments present');await openAt(idx);

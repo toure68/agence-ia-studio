@@ -146,9 +146,14 @@ const homeReader=(()=>{
    box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
   const key=c.key+':'+(view.file||0);
   if(box.dataset.key!==key){const sx=box.dataset.card===c.key?box.querySelector('.reader-thumbs')?.scrollLeft||0:0;box.dataset.key=key;box.dataset.card=c.key;
-   box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i,i===(view.file||0))).join('')}</div><span class="reader-files-hint">${c.files.length} pièce${c.files.length>1?'s':''} jointe${c.files.length>1?'s':''}${c.files.length>4?' · glissez →':''}</span>`;
+   box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i,i===(view.file||0))).join('')}</div>`; // the count is in the reader (« N pièces jointes »)
    box.querySelector('.reader-thumbs').scrollLeft=sx;}
   queue.classList.add('has-files');box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';box.style.height='';
+  // Measured after drawing: if the thumbnails would reach the function pages, drop as many cards as needed.
+  const pg=document.querySelector('#content .home-pages');
+  if(pg){const over=box.getBoundingClientRect().bottom-(pg.getBoundingClientRect().top-4);
+   if(over>0){const p=pitch(),g=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6,n=Math.max(0,Math.round((list.offsetHeight+g)/p)-Math.ceil(over/p));
+    list.style.height=Math.max(0,n*p-g)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';}}
  }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
@@ -211,8 +216,8 @@ const homeReader=(()=>{
    // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
    let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;
     // A message with attachments keeps the cards and puts its thumbnails under them: one row of 4 + names.
-    const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+40;}
-   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+    const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+30;}
+   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }

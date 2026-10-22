@@ -34,13 +34,13 @@ html.home-ios .home-grid-tile .module-icon{--tile-accent:var(--home-muted);color
 html.home-ios .reference-home .home-modules-heading .column-chooser:not([hidden]){position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:14px;border:1px solid #ffffff26;border-radius:20px;background:rgba(14,19,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 14px 40px #0008}
 
 /* Small cards: height set by home-pages.js to fill the room (44–60px) + 6px gap, up to 5 (2 fewer while reading). */
-html.home-ios .reader-list{gap:var(--reader-gap,8px)}
+html.home-ios .reader-list{gap:var(--reader-gap,9px)}
 html.home-ios .reader-list.has-more{-webkit-mask-image:none;mask-image:none}
-html.home-ios .reader-item{flex-basis:var(--reader-card-h,52px);height:var(--reader-card-h,52px);border-radius:20px;gap:12px;padding:0 12px 0 10px}
-html.home-ios .reader-item .module-icon{width:34px;height:34px;flex-basis:34px;border-radius:50%}
+html.home-ios .reader-item{flex-basis:var(--reader-card-h,60px);height:var(--reader-card-h,60px);border-radius:24px;gap:12px;padding:0 12px}
+html.home-ios .reader-item .module-icon{width:38px;height:38px;flex-basis:38px;border-radius:50%}
 html.home-ios .reader-item .module-icon svg{width:17px;height:17px}
-html.home-ios .reader-item-copy strong{font-size:13.5px}
-html.home-ios .reader-item-copy small{font-size:11.5px}
+html.home-ios .reader-item-copy strong{font-size:14.5px;font-weight:600}
+html.home-ios .reader-item-copy small{font-size:12px;margin-top:4px}
 html.home-ios .reader-bar{padding-bottom:5px}
 html.home-ios .home-reader{margin-bottom:8px}
 
@@ -112,9 +112,15 @@ html.home-ios .home-page .module-card.is-reading{position:relative}
 html.home-ios .home-page .module-card.is-reading .module-tile{outline:2px solid #4ADE80;outline-offset:-2px}
 html.home-ios .home-page .module-card.is-reading::after{content:"En lecture";position:absolute;right:8px;bottom:7px;font-size:9.5px;font-weight:800;color:#4ADE80;pointer-events:none}
 
-/* 22/10 : notification icons as on the reference capture — a round tinted badge in the colour of the state. */
-html.home-ios .reader-item .module-icon{border:0!important;box-shadow:none!important;background:#ffffff14!important;color:#C9D2DC!important}
-html.home-ios .reader-item.state-warning .module-icon{background:#E2B04A2E!important;color:#E2B04A!important}
-html.home-ios .reader-item.state-danger .module-icon{background:#F2616B2E!important;color:#F2616B!important}
-html.home-ios .reader-item.state-info .module-icon{background:#60A5FA2E!important;color:#60A5FA!important}
-html.home-ios .reader-item.state-success .module-icon{background:#4ADE802E!important;color:#4ADE80!important}
+/* 22/10 : notification cards exactly as the « Façon iPhone » mock-up — liquid glass without lines, round tinted icon,
+   pill « ESSAI » tag, state word in the colour of the state (gold, rose, blue, green). */
+html.home-ios .reference-home .reader-item{border:0!important;background:rgba(255,255,255,.075)!important;-webkit-backdrop-filter:blur(28px) saturate(170%);backdrop-filter:blur(28px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 .5px rgba(255,255,255,.14),0 10px 30px -10px rgba(0,0,0,.45)!important;font-family:-apple-system,"SF Pro Text",BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+html.home-ios .reader-item{--c:#94A3B8}
+html.home-ios .reader-item.state-warning{--c:#E3B867}
+html.home-ios .reader-item.state-danger{--c:#FB7185}
+html.home-ios .reader-item.state-info{--c:#60A5FA}
+html.home-ios .reader-item.state-success{--c:#34D399}
+html.home-ios .reader-item .module-icon{border:0!important;box-shadow:none!important;background:color-mix(in srgb,var(--c) 22%,transparent)!important;color:var(--c)!important}
+html.home-ios .reader-item .module-icon svg{width:18px;height:18px}
+html.home-ios .reader-item .reader-state{color:var(--c)!important;font-weight:600;letter-spacing:.03em}
+html.home-ios .reader-item .reader-tag{border-radius:999px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#C4B5FD;background:rgba(167,139,250,.16);margin-right:8px}
