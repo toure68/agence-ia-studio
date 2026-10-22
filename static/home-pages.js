@@ -96,7 +96,9 @@ const homePages=(()=>{
   // The cards fill the room exactly (21/10): as many as fit at 44px or more (at most 5), each one sized so the
   // space left above the function pages is only the margin (the 7px stack hangs there). Height 44–60px + 6px gap.
   free-=2;
-  const room=free+6;
+  // Measured on screen when possible (22/10): from the top of the cards box to the function pages, minus the
+  // stack's room — so the cards always fill the space whatever the phone, the fonts or the status bar.
+  let room=free+6;{const lt=list?.getBoundingClientRect().top,pg=home.querySelector('.home-pages');if(lt&&pg){const m=pg.getBoundingClientRect().top-lt-10;if(m>0)room=m;}}
   // Cards as on the « Façon iPhone » mock-up (22/10): 60px high (38px round icon + 11px padding), 9px apart; as many as fit (no 5-card limit), and the
   // little room left is shared between the gaps (8–16px) so nothing stays empty under the cards.
   const cardH=60;let slots=Math.max(2,Math.min(9,Math.floor((room+2)/(cardH+9))));
