@@ -130,7 +130,6 @@ html.home-ios .home-reader.is-image{padding-bottom:0}
 .reader-stage-doc .reader-file-kind{width:72px;height:90px;font-size:18px}
 .reader-thumb.is-on img,.reader-thumb.is-on .reader-file-kind{border:2px solid #fff}
 .reader-thumb{opacity:1}
-.reader-files.has-on .reader-thumb:not(.is-on){opacity:.6}
 
 /* 22/10: closing grip at the bottom middle of the reader (tap or swipe up = close). */
 html.home-ios .home-reader{position:relative;padding-bottom:22px}
