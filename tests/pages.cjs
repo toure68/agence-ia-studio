@@ -186,7 +186,9 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // 22/10 — while reading, the cards fill the room down to the function pages.
   await openAt(0);
   const fill=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {gap:Math.round(pg.top-lr.bottom),pitch:Number(document.body.dataset.readerPitch)||54};});
-  console.log('reading fill',JSON.stringify(fill));assert(fill.gap<fill.pitch+10,'No room left for one more card while reading (stack included)');
+  console.log('reading fill',JSON.stringify(fill));
+  assert(await page.locator('#content .home-reader .reader-grip').isVisible(),'Closing grip at the bottom of the reader (22/10)');
+  assert.equal(typeof (await page.evaluate(()=>typeof window.homeReader.step)),'string');assert(fill.gap<fill.pitch+10,'No room left for one more card while reading (stack included)');
   // 22/10 step 2 — attachments apart from the text: « 📎 7 pièces jointes » on top, small thumbnails (46px) under the cards.
   const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-list .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
   assert(idx>=0,'Trial message with attachments present');await openAt(idx);
