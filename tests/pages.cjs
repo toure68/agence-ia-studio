@@ -185,13 +185,13 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await openAt(0);
   const fill=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {gap:Math.round(pg.top-lr.bottom),pitch:Number(document.body.dataset.readerPitch)||54};});
   console.log('reading fill',JSON.stringify(fill));assert(fill.gap<fill.pitch+10,'No room left for one more card while reading (stack included)');
-  // 22/10 — a message with attachments: big preview on top, 7 thumbnails (4 visible) in place of the cards, tap = big.
+  // 22/10 step 2 — attachments apart from the text: « 📎 7 pièces jointes » on top, small thumbnails (46px) under the cards.
   const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-list .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
   assert(idx>=0,'Trial message with attachments present');await openAt(idx);
   const att=await page.evaluate(()=>{const box=document.querySelector('#content .reader-files'),th=[...box.querySelectorAll('.reader-thumb')],bw=box.getBoundingClientRect();
-   return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,big:!!document.querySelector('#content .home-reader .reader-file.is-image img'),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
+   return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,h:Math.round(th[0].getBoundingClientRect().height),noBig:!document.querySelector('#content .home-reader .reader-body img'),count:/📎 7 pièces jointes/.test(document.querySelector('#content .home-reader').innerText),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
   console.log('attachments',JSON.stringify(att));
-  assert.equal(att.thumbs,7);assert.equal(att.visible,4,'4 thumbnails visible');assert(att.big,'Attachment shown in the reader');assert.equal(att.list,'visible','Cards stay');
+  assert.equal(att.thumbs,7);assert(att.visible>=6,'Small thumbnails, most visible');assert(att.h<=48,'Thumbnails as small as an action button');assert(att.noBig&&att.count,'Files apart from the text, count on top');assert.equal(att.list,'visible','Cards stay');
   // Under the cards, above the function pages; the message reads like an e-mail (22/10).
   const place=await page.evaluate(()=>{const l=document.querySelector('#content .reader-list').getBoundingClientRect(),b=document.querySelector('#content .reader-files').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect(),r=document.querySelector('#content .home-reader').innerText;return {under:Math.round(b.top-l.bottom),above:Math.round(pg.top-b.bottom),mail:/De\s/.test(r)&&/Objet/.test(r)&&/Claire Lefèvre/.test(r)};});
   console.log('attachments place',JSON.stringify(place));assert(place.under>=0&&place.above>=0,'Thumbnails between the cards and the functions');assert(place.mail,'E-mail header and text');
@@ -199,8 +199,14 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const row=await page.evaluate(()=>{const pg=document.querySelector('#content .home-page'),cols=Number(document.querySelector('#content .home-pages').dataset.columns)||4;const cells=[...pg.children].slice(cols,cols*2);return {mods:cells.map(e=>e.dataset.module),reading:cells.map(e=>e.classList.contains('is-reading')),want:window.homeReader.readingModules(cols)};});
   console.log('reading row',JSON.stringify(row));assert.equal(row.mods[0],row.want[0]);assert.equal(row.reading[0],true,'Marked « en lecture »');assert.deepEqual(row.mods.slice(0,row.want.length),row.want,'Functions of the next messages, in order');
   await page.screenshot({path:out+'/89-lecteur-pieces-jointes.png'});
-  await page.locator('#content .reader-thumb[data-file="5"]').click();await page.waitForTimeout(400);
-  assert.match(await page.locator('#content .home-reader .reader-file figcaption').textContent(),/Devis_D-2041\.pdf/,'Tapped thumbnail shown big');
+  // Tap = full-screen viewer: the file big, no buttons on top, mini carousel; another mini changes the file; Escape closes.
+  await page.locator('#content .reader-thumb[data-file="0"]').click();await page.locator('.img-viewer').waitFor();
+  const iv=await page.evaluate(()=>{const v=document.querySelector('.img-viewer').getBoundingClientRect(),img=document.querySelector('.img-viewer .iv-img')?.getBoundingClientRect();return {w:Math.round(v.width),h:Math.round(v.height),img:img?Math.round(img.width):0,minis:document.querySelectorAll('.img-viewer .iv-mini').length,buttons:[...document.querySelectorAll('.img-viewer button')].filter(b=>!b.classList.contains('iv-mini')&&!b.classList.contains('sr-only')).length};});
+  console.log('viewer',JSON.stringify(iv));assert(iv.w>=389&&iv.minis===7&&iv.buttons===0&&iv.img>200,'Full-screen viewer, big image, 7 minis, no buttons '+JSON.stringify(iv));
+  await page.screenshot({path:out+'/90-visionneuse.png'});
+  await page.locator('.img-viewer .iv-mini[data-i="5"]').click();
+  assert.match(await page.locator('.img-viewer .iv-doc').textContent(),/Devis_D-2041\.pdf/,'Mini changes the file (PDF shown)');
+  await page.keyboard.press('Escape');assert.equal(await page.locator('.img-viewer').count(),0,'Viewer closed');
   await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(800);
   assert.equal(await page.locator('#content .reader-files').count(),0,'Thumbnails gone back home');
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','off');}catch(e){}});

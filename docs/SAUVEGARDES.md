@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT VISIONNEUSE** | `sauvegarde/avant-visionneuse` (main du 22/10 18 h, v115) | Pièce jointe choisie affichée en grand sous le texte, vignettes carrées (4 visibles) avec leur nom. |
 | **RETOUR AVANT CHAT DYNAMIQUE** | `sauvegarde/avant-chat-dynamique` (main du 22/10 17 h 45, v114) | Fenêtre de l'Assistant de taille fixe (du haut des fonctions à la barre), avec titre, cadre de saisie et bouton « Fermer » en bas. |
 | **RETOUR AVANT FENÊTRE ASSISTANT** | `sauvegarde/avant-fenetre-assistant` (main du 22/10 17 h 10, v113) | La barre de l'Assistant ouvre le panneau habituel (feuille presque plein écran). |
 | **RETOUR AVANT BARRE ASSISTANT** | `sauvegarde/avant-barre-assistant` (main du 22/10 16 h 30, v112) | Barre « ✦ Assistant IA · Poser une question » à 12 px du bas, points centrés entre fonctions et barre. |
