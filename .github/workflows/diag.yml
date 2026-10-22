@@ -23,4 +23,4 @@ jobs:
       - run: |
           python -m uvicorn app:app --host 127.0.0.1 --port 8123 > /tmp/s.log 2>&1 &
           for a in $(seq 1 30); do curl -fsS http://127.0.0.1:8123/health && break; sleep 1; done
-      - run: node tests/diag_zone.cjs
+      - run: node tests/diag_zone.cjs 2>&1 | grep -E 'READING|AFTER|FILES|GRIP|PAGEERROR' | sed 's/^/::notice::/'
