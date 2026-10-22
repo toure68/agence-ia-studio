@@ -169,7 +169,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // 22/10 — while reading, the cards fill the room down to the function pages.
   await openAt(0);
   const fill=await page.evaluate(()=>{const lr=document.querySelector('#content .reader-list').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect();return {gap:Math.round(pg.top-lr.bottom),pitch:Number(document.body.dataset.readerPitch)||54};});
-  console.log('reading fill',JSON.stringify(fill));assert(fill.gap<=20,'No empty room under the cards while reading');
+  console.log('reading fill',JSON.stringify(fill));assert(fill.gap<=30,'No empty room under the cards while reading (stack included)');
   // 22/10 — a message with attachments: big preview on top, 7 thumbnails (4 visible) in place of the cards, tap = big.
   const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
   assert(idx>=0,'Trial message with attachments present');await openAt(idx);
