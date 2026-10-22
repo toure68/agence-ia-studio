@@ -37,13 +37,19 @@ const homePages=(()=>{
   return [...new Set([...action,...visible,...all])];
  }
  let reserve=false;
- function setReserve(on){on=!!on;if(on===reserve)return;reserve=on;const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace&&typeof updateHomeGrid==='function'){box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);if(typeof observeHomeGrids==='function')observeHomeGrids();window.homeActions?.place();}} // sizes set at once: the grid never jumps
+ function setReserve(on,force){on=!!on;if(on===reserve&&!force)return;reserve=on;const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace&&typeof updateHomeGrid==='function'){box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);if(typeof observeHomeGrids==='function')observeHomeGrids();window.homeActions?.place();}} // sizes set at once: the grid never jumps
  function pagesMarkup(base,workspace,state){
   const {cols:COLS,rows:ROWS}=layout(),PER=COLS*ROWS;
   const ws={...workspace,columns:COLS,rows:10,dynamic:false,visible:orderedKeys(workspace,state)};
   const html=base(ws,state);homeLayout.workspace=workspace; // the real layout stays the saved one
   const box=document.createElement('div');box.innerHTML=html;
-  const cards=[...box.querySelector('.module-grid').children].map(c=>c.outerHTML),pages=[];
+  // While reading (22/10): the first function row shows the function of the message being read (marked) then
+  // the functions of the next messages, each once, in the same order; the other functions follow unchanged.
+  let els=[...box.querySelector('.module-grid').children];
+  if(reserve&&ROWS>1&&window.homeReader?.readingModules){const want=window.homeReader.readingModules(COLS);
+   const picked=want.map(k=>els.find(e=>e.dataset.module===k)).filter(Boolean);els=[...picked,...els.filter(e=>!picked.includes(e))];
+   if(picked[0])picked[0].classList.add('is-reading');}
+  const cards=els.map(c=>c.outerHTML),pages=[];
   // Last square: the grid réglage (columns and rows), right after the functions.
   cards.push(`<article class="module-card home-grid-card" data-module="grille"><button type="button" class="module-tile home-grid-tile" data-grid-tile aria-label="Régler la grille : colonnes et rangées" title="Colonnes et rangées">${COLS===4?`<span class="module-face"><span class="module-icon" aria-hidden="true">${GRID_ICON}</span></span><span class="module-copy"><strong>Grille</strong></span>`:`<span class="module-icon" aria-hidden="true">${GRID_ICON}</span><span class="widget-copy"><span class="module-copy"><strong>Grille</strong></span></span>`}</button></article>`);
   // While reading (21/10): the first row of every page is kept free for the action buttons and the functions
@@ -248,7 +254,7 @@ const homeActions=(()=>{
    row.addEventListener('click',e=>{const b=e.target.closest('[data-action-run]');if(!b||b.disabled)return;current?.[Number(b.dataset.actionRun)]?.run();});}
   row.classList.toggle('is-many',list.length>4);
   row.innerHTML=list.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind==='main'||b.kind==='danger'||b.kind==='done'?b.kind:'second'}" data-action-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''}>${esc(b.label)}</button>`).join('');
-  home.classList.add('actions-in-grid');homePages.setReserve(true);
+  home.classList.add('actions-in-grid');homePages.setReserve(true,true);
   place();requestAnimationFrame(place);
   return list.length;
  }

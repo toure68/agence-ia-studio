@@ -20,6 +20,7 @@ window.readerSamples=[
   raw:'Avis d’appel public à la concurrence. La commune de Tours lance une consultation pour la rénovation intérieure de l’école Ronsard. Montant estimé : 45 000 € HT. Visite du site obligatoire. Pièces à fournir : DC1, DC2, mémoire technique, attestations fiscales et sociales. Critères : prix 40 %, valeur technique 60 %. Date limite de remise des offres : 3 novembre, 12 h.',
   actions:[{l:'Répondre',t:'p',d:'Réponse au marché en préparation'},{l:'Plus tard',t:'s',d:'Rappel demain matin'},{l:'Ignorer',t:'d',d:'Marché ignoré'}]},
  {key:'essai-17',module:'activities',source:'E-mail',time:'9:05',state:'warning',state_label:'Pièces jointes',title:'Photos du chantier Lefèvre',
+  from:'Claire Lefèvre <claire.lefevre@exemple.fr>',to:'Vous',subject:'Photos et documents avant le démarrage des travaux',date:'Jeudi 22 octobre, 9:05',
   facts:[['Pièces','7'],['De','Mme Lefèvre']],
   body:'Mme Lefèvre envoie 5 photos de l’état actuel, le devis signé et son cahier des charges, avant le démarrage des travaux lundi.',
   raw:'Bonjour, voici les photos de la cuisine, de la salle de bain et de la façade, la fissure du plafond et le plan au sol. Je joins aussi le devis signé et le cahier des charges. Bonne journée, Claire Lefèvre.',

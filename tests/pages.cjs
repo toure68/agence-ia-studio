@@ -176,7 +176,13 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const att=await page.evaluate(()=>{const box=document.querySelector('#content .reader-files'),th=[...box.querySelectorAll('.reader-thumb')],bw=box.getBoundingClientRect();
    return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,big:!!document.querySelector('#content .home-reader .reader-file.is-image img'),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
   console.log('attachments',JSON.stringify(att));
-  assert.equal(att.thumbs,7);assert.equal(att.visible,4,'4 thumbnails visible');assert(att.big,'Big preview on top');assert.equal(att.list,'hidden','Thumbnails replace the cards');
+  assert.equal(att.thumbs,7);assert.equal(att.visible,4,'4 thumbnails visible');assert(att.big,'Attachment shown in the reader');assert.equal(att.list,'visible','Cards stay');
+  // Under the cards, above the function pages; the message reads like an e-mail (22/10).
+  const place=await page.evaluate(()=>{const l=document.querySelector('#content .reader-list').getBoundingClientRect(),b=document.querySelector('#content .reader-files').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect(),r=document.querySelector('#content .home-reader').innerText;return {under:Math.round(b.top-l.bottom),above:Math.round(pg.top-b.bottom),mail:/De\s/.test(r)&&/Objet/.test(r)&&/Claire Lefèvre/.test(r)};});
+  console.log('attachments place',JSON.stringify(place));assert(place.under>=0&&place.above>=0,'Thumbnails between the cards and the functions');assert(place.mail,'E-mail header and text');
+  // First function row = function of the message being read (marked), then the next ones, each once.
+  const row=await page.evaluate(()=>{const pg=document.querySelector('#content .home-page'),cols=Number(document.querySelector('#content .home-pages').dataset.columns)||4;const cells=[...pg.children].slice(cols,cols*2);return {mods:cells.map(e=>e.dataset.module),reading:cells.map(e=>e.classList.contains('is-reading')),want:window.homeReader.readingModules(cols)};});
+  console.log('reading row',JSON.stringify(row));assert.equal(row.mods[0],row.want[0]);assert.equal(row.reading[0],true,'Marked « en lecture »');assert.deepEqual(row.mods.slice(0,row.want.length),row.want,'Functions of the next messages, in order');
   await page.screenshot({path:out+'/89-lecteur-pieces-jointes.png'});
   await page.locator('#content .reader-thumb[data-file="5"]').click();await page.waitForTimeout(400);
   assert.match(await page.locator('#content .home-reader .reader-file figcaption').textContent(),/Devis_D-2041\.pdf/,'Tapped thumbnail shown big');
