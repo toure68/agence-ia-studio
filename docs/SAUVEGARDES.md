@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT ICÔNES IOS** | `sauvegarde/avant-icones-ios` (main du 22/10, v122) | Boutons de fonctions rectangulaires en verre, pictogrammes colorés sur fond sombre. |
 | **RETOUR AVANT CARTES PRÉSERVÉES** | `sauvegarde/avant-cartes-preservees` (main du 22/10, v121) | La zone de confort de 52 px pouvait retirer une notification visible au lieu de réduire le lecteur. |
 | **RETOUR AVANT CARROUSEL TEXTE** | `sauvegarde/avant-carrousel-texte` (main du 22/10, v120) | Miniatures sans vignette Texte, sans flèches de défilement et sans zone libre de 52 px. |
 | **RETOUR AVANT ESPACEMENT LECTEUR** | `sauvegarde/avant-espacement-lecteur` (main du 22/10, v119) | Réserve fixe de 52 px sans pièces jointes ; miniatures positionnées séparément et plafond de cinq cartes. |
