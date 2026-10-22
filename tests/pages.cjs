@@ -175,7 +175,6 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert.equal(await page.evaluate(()=>localStorage.getItem('aia-pages-grid')),JSON.stringify({cols:4,rows:3}),'Applied from the account');
   await page.evaluate(()=>api('/api/me/prefs',{method:'PUT',body:JSON.stringify({grid:{cols:4,rows:2}})}));await page.evaluate(()=>localStorage.setItem('aia-pages-grid',JSON.stringify({cols:4,rows:2})));
   // Trial banks (22/10): the account-menu switch adds them, the dial shows them, the same switch removes them.
-  page.once('dialog',d=>d.accept());
   await page.locator('#content .home-account-slot .account-menu summary').click();
   await page.locator('#accountTrialBanks').waitFor();await page.waitForTimeout(500);
   if(await page.locator('#accountTrialBanks').getAttribute('aria-checked')!=='true'){
