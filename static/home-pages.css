@@ -146,3 +146,5 @@ html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-top:
 #homeTreasury .bank-dial .dial-month.dial-today{flex-direction:column;gap:1px;line-height:1;letter-spacing:.06em}
 #homeTreasury .bank-dial .dial-today small{font-size:9px;font-weight:700}
 #homeTreasury .bank-dial .dial-today b{font-size:20px;font-weight:700;letter-spacing:0;color:var(--home-text,#fff)}
+/* 22/10 (user): same side margins as the native iPhone notification list (about 14px left and right). */
+html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
