@@ -138,6 +138,8 @@ def init_db():
             con.execute('ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 1')
         if 'wallpaper' not in fields:
             con.execute("ALTER TABLE users ADD COLUMN wallpaper TEXT NOT NULL DEFAULT 'nuit'")
+        if 'prefs' not in fields:
+            con.execute("ALTER TABLE users ADD COLUMN prefs TEXT NOT NULL DEFAULT '{}'")
         if not con.execute('SELECT 1 FROM companies').fetchone():
             con.execute('INSERT INTO companies(slug,name,city,headline,color,phone,email,rates,created) VALUES (?,?,?,?,?,?,?,?,?)',
                         ('eclat-proprete','Éclat Propreté','Paris', 'Un espace impeccable, un esprit tranquille.', '#14866e', '', '', json.dumps(SERVICE_META,ensure_ascii=False),utcnow()))
@@ -331,10 +333,14 @@ def get_user(req):
     except (BadSignature, SignatureExpired):
         raise HTTPException(401, 'Session expirée')
     with db() as con:
-        row = con.execute('SELECT id,email,role,company_id,auth_version,wallpaper FROM users WHERE id=?', (data.get('uid'),)).fetchone()
+        row = con.execute('SELECT id,email,role,company_id,auth_version,wallpaper,prefs FROM users WHERE id=?', (data.get('uid'),)).fetchone()
     if not row or row['auth_version'] != data.get('auth_version'):
         raise HTTPException(401, 'Session expirée ou révoquée')
     user = dict(row)
+    try:
+        user['prefs'] = json.loads(user.get('prefs') or '{}')
+    except ValueError:
+        user['prefs'] = {}
     user['csrf'] = data.get('csrf')
     return user
 
@@ -453,6 +459,34 @@ def set_wallpaper(data: WallpaperInput, req: Request):
     with db() as con:
         con.execute('UPDATE users SET wallpaper=? WHERE id=?', (data.wallpaper, user['id']))
     return {'ok': True, 'wallpaper': data.wallpaper}
+
+
+# Home settings kept in the account (22/10), so they follow the user on any phone or address:
+# reader mode, trial messages, function grid. Only these keys and values are accepted.
+def clean_prefs(raw):
+    out = {}
+    for key in ('reader', 'samples'):
+        if raw.get(key) in ('on', 'off'):
+            out[key] = raw[key]
+    grid = raw.get('grid')
+    if isinstance(grid, dict) and grid.get('cols') in (2, 3, 4) and isinstance(grid.get('rows'), int) and 1 <= grid['rows'] <= 3:
+        out['grid'] = {'cols': grid['cols'], 'rows': grid['rows']}
+    return out
+
+
+@app.put('/api/me/prefs')
+async def set_prefs(req: Request):
+    user = require(req, write=True)
+    try:
+        raw = await req.json()
+    except ValueError:
+        raise HTTPException(400, 'Réglages illisibles')
+    if not isinstance(raw, dict):
+        raise HTTPException(400, 'Réglages illisibles')
+    prefs = {**(user.get('prefs') or {}), **clean_prefs(raw)}
+    with db() as con:
+        con.execute('UPDATE users SET prefs=? WHERE id=?', (json.dumps(prefs), user['id']))
+    return {'ok': True, 'prefs': prefs}
 
 
 @app.get('/api/companies')

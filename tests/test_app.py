@@ -196,6 +196,17 @@ def test_wallpaper_is_saved_per_user(env):
     assert client.get('/api/me').json()['wallpaper']=='aurore'
 
 
+def test_home_settings_follow_the_account(env):
+    client=TestClient(env.app)
+    headers=auth(client,'owner@demo.test','correct horse battery staple')
+    assert client.get('/api/me').json()['prefs']=={}
+    assert client.put('/api/me/prefs',json={'samples':'on'}).status_code==403  # CSRF required
+    r=client.put('/api/me/prefs',json={'reader':'on','samples':'on','grid':{'cols':4,'rows':3},'evil':'x'},headers=headers).json()
+    assert r['prefs']=={'reader':'on','samples':'on','grid':{'cols':4,'rows':3}}
+    client.put('/api/me/prefs',json={'samples':'off','grid':{'cols':9,'rows':3}},headers=headers)
+    assert client.get('/api/me').json()['prefs']=={'reader':'on','samples':'off','grid':{'cols':4,'rows':3}}
+
+
 def test_pages_are_revalidated_so_new_versions_show(env):
     client=TestClient(env.app)
     page=client.get('/')
