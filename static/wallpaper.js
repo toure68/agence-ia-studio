@@ -9,6 +9,8 @@
   {id:'ocean',name:'Océan',lum:.16,bg:'radial-gradient(90% 60% at 10% 10%,#3b5bdb 0%,transparent 60%),radial-gradient(80% 60% at 100% 45%,#7c3aed 0%,transparent 60%),radial-gradient(100% 60% at 30% 100%,#0ea5e9 0%,transparent 60%),#0a1030'},
   {id:'couchant',name:'Couchant',lum:.48,bg:'radial-gradient(100% 60% at 80% 0%,#ffb35c 0%,transparent 60%),radial-gradient(110% 70% at 0% 40%,#ff5e62 0%,transparent 65%),radial-gradient(100% 70% at 100% 100%,#8e2de2 0%,transparent 70%),#3a0d3f'},
   {id:'aurore',name:'Aurore',lum:.22,bg:'radial-gradient(70% 45% at 15% 15%,#22d3ee 0%,transparent 60%),radial-gradient(70% 50% at 85% 35%,#4ade80 0%,transparent 60%),radial-gradient(90% 60% at 50% 95%,#a855f7 0%,transparent 65%),#04060c'},
+  // 22/10 : the background of the « Façon iPhone » mock-up.
+  {id:'liquide',name:'Verre liquide',lum:.14,bg:'radial-gradient(ellipse 70% 40% at 15% 10%,rgba(56,189,248,.28),transparent 70%),radial-gradient(ellipse 60% 45% at 90% 45%,rgba(52,211,153,.20),transparent 70%),radial-gradient(ellipse 80% 50% at 40% 100%,rgba(139,92,246,.30),transparent 70%),#05070c'},
   {id:'sable',name:'Sable clair',lum:.82,bg:'radial-gradient(90% 60% at 10% 0%,#ffe8c7 0%,transparent 60%),radial-gradient(90% 70% at 100% 60%,#e9d5ff 0%,transparent 65%),#f6efe6'}
  ];
  const KEY='aia-wallpaper';

@@ -194,6 +194,7 @@ def test_wallpaper_is_saved_per_user(env):
     assert client.put('/api/me/wallpaper',json={'wallpaper':'inconnu'},headers=headers).status_code==400
     assert client.put('/api/me/wallpaper',json={'wallpaper':'aurore'},headers=headers).json()['wallpaper']=='aurore'
     assert client.get('/api/me').json()['wallpaper']=='aurore'
+    assert client.put('/api/me/wallpaper',json={'wallpaper':'liquide'},headers=headers).json()['wallpaper']=='liquide'
 
 
 def test_home_settings_follow_the_account(env):
