@@ -211,8 +211,8 @@ const homeReader=(()=>{
    // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
    let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;
     // A message with attachments keeps the cards and puts its thumbnails under them: one row of 4 + names.
-    const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+40;}
-   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-6)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+    const cur=view.cards[view.focus];if(cur?.files?.length)room-=Math.round((list.clientWidth-24)/4)+50;}
+   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+6)/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
