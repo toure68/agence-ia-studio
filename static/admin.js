@@ -184,6 +184,7 @@ window.addEventListener('hashchange',()=>{const route=readRoute();if(me&&(route.
 
 $('#accountTools').onclick=()=>openTab('tools');
 $('#accountSpeech').onclick=openSpeechSettings;
+$('#accountAi').onclick=()=>{document.querySelectorAll('.account-menu[open]').forEach(m=>m.removeAttribute('open'));if(company?.id)openAssistantConnection(company.id,async()=>{});};
 $('#accountAudit').classList.toggle('hide',!operationsEnabled);
 $('#accountAudit').onclick=()=>openTab('conformity');
 start();
