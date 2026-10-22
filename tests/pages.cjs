@@ -203,14 +203,17 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const row=await page.evaluate(()=>{const pg=document.querySelector('#content .home-page'),cols=Number(document.querySelector('#content .home-pages').dataset.columns)||4;const cells=[...pg.children].slice(cols,cols*2);return {mods:cells.map(e=>e.dataset.module),reading:cells.map(e=>e.classList.contains('is-reading')),want:window.homeReader.readingModules(cols)};});
   console.log('reading row',JSON.stringify(row));assert.equal(row.mods[0],row.want[0]);assert.equal(row.reading[0],true,'Marked « en lecture »');assert.deepEqual(row.mods.slice(0,row.want.length),row.want,'Functions of the next messages, in order');
   await page.screenshot({path:out+'/89-lecteur-pieces-jointes.png'});
-  // Tap = full-screen viewer: the file big, no buttons on top, mini carousel; another mini changes the file; Escape closes.
-  await page.locator('#content .reader-thumb[data-file="0"]').click();await page.locator('.img-viewer').waitFor();
-  const iv=await page.evaluate(()=>{const v=document.querySelector('.img-viewer').getBoundingClientRect(),img=document.querySelector('.img-viewer .iv-img')?.getBoundingClientRect();return {w:Math.round(v.width),h:Math.round(v.height),img:img?Math.round(img.width):0,minis:document.querySelectorAll('.img-viewer .iv-mini').length,buttons:[...document.querySelectorAll('.img-viewer button')].filter(b=>!b.classList.contains('iv-mini')&&!b.classList.contains('sr-only')).length};});
-  console.log('viewer',JSON.stringify(iv));assert(iv.w>=389&&iv.minis===7&&iv.buttons===0&&iv.img>200,'Full-screen viewer, big image, 7 minis, no buttons '+JSON.stringify(iv));
-  await page.screenshot({path:out+'/90-visionneuse.png'});
-  await page.locator('.img-viewer .iv-mini[data-i="5"]').click();
-  assert.match(await page.locator('.img-viewer .iv-doc').textContent(),/Devis_D-2041\.pdf/,'Mini changes the file (PDF shown)');
-  await page.keyboard.press('Escape');assert.equal(await page.locator('.img-viewer').count(),0,'Viewer closed');
+  // Tap = the file shown in the reader itself (image mode): only the image, no text nor buttons; another thumbnail changes it; tapping it again = back to the text.
+  const rh=await page.evaluate(()=>Math.round(document.querySelector('#content .home-reader').getBoundingClientRect().height));
+  await page.locator('#content .reader-thumb[data-file="0"]').click();await page.locator('#content .home-reader.is-image .reader-stage-img').waitFor();
+  const im=await page.evaluate(()=>{const r=document.querySelector('#content .home-reader'),img=r.querySelector('.reader-stage-img').getBoundingClientRect();return {h:Math.round(r.getBoundingClientRect().height),img:Math.round(img.height),text:r.innerText.trim().length,btns:r.querySelectorAll('.reader-btn,[data-reader-speak]').length,on:document.querySelector('#content .reader-thumb.is-on')?.dataset.file,full:document.querySelectorAll('.img-viewer').length};});
+  console.log('image in reader',JSON.stringify(im));assert.equal(im.h,rh,'Reader keeps its size');assert(im.img>60&&im.text===0&&im.btns===0&&im.on==='0'&&im.full===0,'Only the image in the reader '+JSON.stringify(im));
+  await page.screenshot({path:out+'/90-image-dans-lecteur.png'});
+  await page.locator('#content .reader-thumb[data-file="5"]').click();
+  assert.match(await page.locator('#content .home-reader .reader-stage-doc').textContent(),/Devis_D-2041\.pdf/,'Another thumbnail changes the file (PDF shown)');
+  await page.locator('#content .reader-thumb[data-file="5"]').click();
+  assert.equal(await page.locator('#content .home-reader.is-image').count(),0,'Same thumbnail again = back to the text');
+  assert(/Objet/.test(await page.locator('#content .home-reader').innerText()),'Text back');
   await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(800);
   assert.equal(await page.locator('#content .reader-files').count(),0,'Thumbnails gone back home');
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','off');}catch(e){}});
