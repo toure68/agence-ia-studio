@@ -176,7 +176,7 @@ const homePages=(()=>{
   // It starts under the cards box, so it never covers a card nor blocks sliding them (21/10).
   let z=home.querySelector('.home-back-zone');
   const zTop=lr?lr.bottom+(rest?12:4):top,zBottom=pr.top-(rest?12:4);
-  if(reading&&zBottom-zTop>=24){
+  if(reading&&zBottom-zTop>=8){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
     // 22/10 (user): the empty room is also a wide swipe zone — up/down moves between messages like on the cards
     // (no need to aim at the cards nor touch the functions); a simple tap still goes back to the home.
