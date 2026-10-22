@@ -75,6 +75,12 @@ html.home-ios .home-filler.is-reminder .filler-card{flex:0 0 auto;min-height:64p
 html.home-ios .filler-tag{align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7dd3fc;background:#7dd3fc1f;border-radius:6px;padding:1px 6px;margin-bottom:2px}
 /* While reading: the empty room under the cards is a touch zone back to the home (invisible). */
 html.home-ios .home-back-zone{position:absolute;left:0;right:0;z-index:1;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* Files share the queue's flow: a separate strip, with the same breathing room on both sides.
+   reader.js measures this strip before deciding how many full notification cards fit. */
+html.home-ios .reader-files{position:relative;top:auto;margin-top:var(--reader-tail-gap,12px);height:46px}
+html.home-ios .reader-thumbs{flex:none;height:46px;gap:12px}
+html.home-ios .reader-thumb{outline:1px solid #ffffff26;outline-offset:-1px}
+html.home-ios .home-back-zone{touch-action:pan-x}
 
 
 /* 21/10 : the unfolded treasury opens OVER the notification cards (its place keeps the folded height, nothing moves),

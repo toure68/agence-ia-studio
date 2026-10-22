@@ -122,6 +122,8 @@ jobs:
             echo "::error title=reader::$msg"
             exit 1
           fi
+      - name: Verify reader spacing and gestures
+        run: node tests/reader_layout.cjs
       - name: Run node tests/pages.cjs
         run: |
           set -o pipefail

@@ -12,10 +12,8 @@ const homeReader=(()=>{
  // Card pitch (height + gap): 64 + 8 normally; on the iPhone-style home, sized to fill the room (home-pages.js).
  const ios=()=>document.documentElement.classList.contains('home-ios');
  const pitch=()=>ios()?(Number(document.body.dataset.readerPitch)||54):72;
- // Accueil façon iPhone (home-pages.js): as many small cards as fit on the one screen, at most 5.
- // iPhone-style home: 4 small cards with the treasury (3 if the screen is too short — home-pages.js sets
- // body[data-reader-slots]), 2 fewer while reading; the rest waits in the stack under the functions.
- const cap=()=>ios()?Math.max(1,Math.min(5,Number(document.body.dataset.readerSlots)||4)):MAX;
+ // iPhone home: up to six cards (home-pages.js measures the screen); the reader reflows the queue below.
+ const cap=()=>ios()?Math.max(1,Math.min(6,Number(document.body.dataset.readerSlots)||4)):MAX;
  const enabled=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  const doneKey=()=>'aia-reader-done-'+(company?.id||0)+'-'+new Date().toISOString().slice(0,10);
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
@@ -137,8 +135,7 @@ const homeReader=(()=>{
   const inner=f.type==='image'?`<img src="${clean(f.src)}" alt="">`:`<span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span>`;
   return `<button type="button" class="reader-thumb" data-file="${i}" aria-label="Voir en grand : ${clean(f.name)}">${inner}</button>`;
  }
- // Thumbnails carousel laid over the cards box (4 visible, swipe sideways for the others); a vertical swipe on it
- // still moves to the next / previous message.
+ // Thumbnails stay in the queue flow, below the cards; a vertical swipe still changes message.
  function syncFiles(){
   const host=view.host,queue=host?.querySelector('.reader-queue'),list=host?.querySelector('.reader-list');if(!queue||!list)return;
   const c=view.focus>=0?view.cards[view.focus]:null;let box=queue.querySelector('.reader-files');
@@ -151,12 +148,7 @@ const homeReader=(()=>{
   if(box.dataset.card!==c.key){box.dataset.card=c.key;
    box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div>`;} // the count is in the reader (« 📎 N pièces jointes »)
   box.querySelectorAll('[data-file]').forEach(t=>{const on=Number(t.dataset.file)===view.file;t.classList.toggle('is-on',on);t.setAttribute('aria-pressed',String(on));});box.classList.toggle('has-on',view.file>=0);
-  queue.classList.add('has-files');box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';box.style.height='';
-  // Measured after drawing: if the thumbnails would reach the function pages, drop as many cards as needed.
-  const pg=document.querySelector('#content .home-pages');
-  if(pg){const over=box.getBoundingClientRect().bottom-(pg.getBoundingClientRect().top-4);
-   if(over>0){const p=pitch(),g=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6,n=Math.max(0,Math.round((list.offsetHeight+g)/p)-Math.ceil(over/p));
-    list.style.height=Math.max(0,n*p-g)+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';}}
+  queue.classList.add('has-files');
  }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
@@ -207,8 +199,8 @@ const homeReader=(()=>{
   card.querySelector('[data-draft]')?.focus({preventScroll:true});
   if(card.querySelector('.reader-body'))wireRail(card);
   host.querySelectorAll('.reader-list .reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
-  fitList();
   syncFiles();
+  fitList();
   hint();
  }
  // The reader may be taller than the treasury (to show 3–4 lines of text, or while editing): the list gets
@@ -221,10 +213,27 @@ const homeReader=(()=>{
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
   if(ios()){const reading=view.focus>=0&&card&&!card.hidden;
-   // While reading (22/10): as many cards as fit between the reader and the function pages (no empty room).
-   let room=0;if(reading){const pg=document.querySelector('#content .home-pages'),lt=list.getBoundingClientRect().top;if(pg)room=pg.getBoundingClientRect().top-lt-8;
-    room-=46+6;} // 22/10: always keep this room under the cards — swipe/tap zone, and the thumbnails' place when the message has files
-   const n=card?.classList.contains('is-editing')?0:reading?Math.max(1,room>0?Math.floor((room+(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))/pitch()):cap()-2):Math.min(view.cards.length,cap());list.style.height=Math.max(0,n*pitch()-(parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||6))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+   const gap=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||9;
+   let n=Math.min(view.cards.length,cap());
+   if(reading){
+    const pg=document.querySelector('#content .home-pages'),files=view.host.querySelector('.reader-files'),queue=list.parentElement;
+    const editing=card.classList.contains('is-editing');
+    if(!editing)card.style.height=readerHeight()+'px'; // start from the same base, never accumulate spare pixels
+    if(pg){
+     // One shared layout: whole cards, the waiting-stack edge, optional files, and the same 12px gaps.
+     // No empty attachment slot for a message without files. Spare pixels improve the text/image reader.
+     const stack=view.cards.length>1?9:0,space=12;
+     const tail=stack+space+(files?files.getBoundingClientRect().height+space:0);
+     let baseHeight=readerHeight(),room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
+     // A compact phone must still expose a card to scroll; let the reader yield room instead of hiding the queue.
+     if(!editing&&room<tail+pitch()-gap){baseHeight=Math.max(180,baseHeight-(tail+pitch()-gap-room));card.style.height=baseHeight+'px';room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);}
+     n=editing?0:Math.max(0,Math.floor((room-tail+gap)/pitch()));
+     const height=n? n*pitch()-gap:0;
+     if(!editing)card.style.height=(baseHeight+Math.max(0,room-tail-height))+'px';
+     queue.style.setProperty('--reader-tail-gap',(stack+space)+'px');
+    }
+   }
+   list.style.height=Math.max(0,n*pitch()-(n?gap:0))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
@@ -298,6 +307,7 @@ const homeReader=(()=>{
   for(let i=view.focus;i<view.cards.length&&out.length<max;i++){const c=view.cards[i];if(c._done&&i!==view.focus)continue;const k=moduleOf(c);if(!out.includes(k))out.push(k);}
   return out;
  }
- return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader,showFile,fileShown:()=>view.file};
+ function reflow(){if(view.focus>=0){fitList();requestAnimationFrame(()=>window.homePages?.stack());}}
+ return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
 })();
 window.homeReader=homeReader;
