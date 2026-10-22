@@ -74,10 +74,10 @@ const homePages=(()=>{
  function fit(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
   // Counted with the treasury shown; while reading, the reader's extra height comes out of the list (reader.js).
-  if(home.classList.contains('reader-active'))return;
   // 10px kept under the home for its floating frame (21/10).
   const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top-10);
   home.style.setProperty('--home-ios-height',h+'px');
+  if(home.classList.contains('reader-active')){window.homeReader?.reflow();return;}
   const block=home.querySelector('#priorityBlock'),list=block?.querySelector('.reader-list');
   // Folded treasury height, kept (also across openings): the reader and the unfolded treasury use it (21/10).
   const tre=home.querySelector('#homeTreasury .home-treasury');
@@ -175,16 +175,16 @@ const homePages=(()=>{
   // While reading, the whole empty room under the cards is a touch zone back to the home (treasury + cards).
   // It starts under the cards box, so it never covers a card nor blocks sliding them (21/10).
   let z=home.querySelector('.home-back-zone');
-  const zTop=lr?lr.bottom+(rest?12:4):top,zBottom=pr.top-(rest?12:4);
+  const zTop=lr?lr.bottom+(rest?9:0):top,zBottom=pr.top;
   if(reading&&zBottom-zTop>=8){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
     // 22/10 (user): the empty room is also a wide swipe zone — up/down moves between messages like on the cards
     // (no need to aim at the cards nor touch the functions); a simple tap still goes back to the home.
-    let y0=null,x0=0,moved=false;
+    let y0=null,x0=0,moved=false,suppressUntil=0;
     z.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;moved=false;},{passive:true});
     z.addEventListener('touchmove',e=>{if(y0!==null&&Math.abs(e.touches[0].clientY-y0)>10){moved=true;e.preventDefault();}},{passive:false});
-    z.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx))window.homeReader?.step(dy<0?1:-1);},{passive:true});
-    z.onclick=()=>{if(moved){moved=false;return;}home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});};}
+    z.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(moved||Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+500;if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx))window.homeReader?.step(dy<0?1:-1);},{passive:true});
+    z.onclick=()=>{if(Date.now()<suppressUntil)return;home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});};}
    z.style.top=(zTop-hr.top)+'px';z.style.height=(zBottom-zTop)+'px';
   }else z?.remove();
   if(room>=64&&!reading){
@@ -238,7 +238,7 @@ const homePages=(()=>{
  install();
  addEventListener('resize',()=>requestAnimationFrame(fit));
  document.addEventListener('DOMContentLoaded',()=>{const c=document.querySelector('#content');if(c)new MutationObserver(sync).observe(c,{childList:true});});
- return {on,sync,fit,orderedKeys,layout,setReserve};
+ return {on,sync,fit,orderedKeys,layout,setReserve,stack};
 })();
 window.homePages=homePages;
 
