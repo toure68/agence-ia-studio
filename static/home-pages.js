@@ -107,6 +107,8 @@ const homePages=(()=>{
   document.body.style.setProperty('--reader-gap',gap+'px');
   // 22/10 (user): the Assistant bar sits at the very bottom, like Claude's reply bar; moved down visually only, the grid keeps its place.
   {const t=home.querySelector('.home-topbar');if(t){const r=t.getBoundingClientRect(),m=new DOMMatrix(getComputedStyle(t).transform).m42||0;document.body.style.setProperty('--dock-under',Math.max(0,Math.round(innerHeight-(r.bottom-m)))+'px');}}
+  // 22/10 step 2 (user): the Assistant window opens over the functions, right above the bar (nothing is pushed).
+  {const t=home.querySelector('.home-topbar'),pg=home.querySelector('.home-pages');if(t&&pg){const dt=t.getBoundingClientRect().top,pt=pg.getBoundingClientRect().top;document.body.style.setProperty('--sheet-bottom',Math.round(innerHeight-dt+8)+'px');document.body.style.setProperty('--sheet-top',Math.round(Math.max(60,Math.min(pt-8,dt-8-380)))+'px');}}
   const b=document.body;
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
  }

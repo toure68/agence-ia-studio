@@ -162,3 +162,8 @@ html.home-ios .reference-home .home-topbar .assistant-dock .dock-mic{width:34px;
 html.home-ios .reference-home .home-topbar .assistant-dock .dock-mic svg{width:18px;height:18px}
 html.home-ios .reference-home .home-topbar .assistant-dock .dock-voice{width:34px;height:34px;border-radius:50%;background:#fff;color:#0b0e14}
 html.home-ios .reference-home .home-topbar .assistant-dock .dock-voice svg{width:18px;height:18px;stroke-width:2.4}
+/* 22/10 step 2 (user): on the iPhone home, the Assistant window unfolds from the bar over the functions (laid over, nothing moves). */
+html.home-ios .context-layer:has(#contextPanel[data-module="assistant"]){background:rgba(5,7,10,.28);-webkit-backdrop-filter:none;backdrop-filter:none;padding:0}
+html.home-ios #contextPanel[data-module="assistant"]{position:fixed;left:14px;right:14px;top:var(--sheet-top,40dvh);bottom:var(--sheet-bottom,90px);width:auto;height:auto;max-height:none;border-radius:28px;transform-origin:50% 100%;animation:dock-sheet-up .22s ease-out}
+@keyframes dock-sheet-up{from{opacity:0;transform:translateY(30px) scaleY(.7)}to{opacity:1;transform:none}}
+html.home-ios body.kb-open #contextPanel[data-module="assistant"]{top:0;bottom:0;left:0;right:0}

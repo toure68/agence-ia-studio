@@ -130,6 +130,11 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    return {h:Math.round(d.height),gap:Math.round(d.top-pg.bottom),above:dot?Math.round(dot.top-pg.bottom):null,below:dot?Math.round(d.top-dot.bottom):null,under:Math.round(innerHeight-d.bottom)};});
   console.log('bottom',JSON.stringify(bottom));assert(bottom.h>=43&&bottom.h<=46,'Assistant 44px');assert(bottom.under>=6&&bottom.under<=10,'Assistant at the very bottom (22/10)');
   assert(await page.locator('#assistantDock .dock-voice').isVisible()&&await page.locator('#assistantDock .dock-mic').isVisible()&&await page.locator('#assistantDock .dock-plus').isVisible(),'Claude-like bar: +, micro, voice');
+  await page.locator('#assistantDock').click();await page.locator('#contextPanel').waitFor();await page.waitForTimeout(400);
+  const sheet=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),pg=document.querySelector('.reference-home .home-pages')?.getBoundingClientRect(),t=document.querySelector('.reference-home .home-topbar')?.getBoundingClientRect();return {module:document.querySelector('#contextPanel').dataset.module,top:Math.round(p.top),bottom:Math.round(p.bottom),pagesTop:pg?Math.round(pg.top):null,barTop:t?Math.round(t.top):null};});
+  console.log('assistant sheet',JSON.stringify(sheet));
+  if(sheet.barTop)assert(sheet.bottom<=sheet.barTop&&sheet.bottom>=sheet.barTop-14&&sheet.top<=sheet.pagesTop,'Assistant window over the functions, right above the bar '+JSON.stringify(sheet));
+  await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});
   // 21/10 step 1 — reader actions in the first row of the function grid (trial messages, nothing sent).
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','on');}catch(e){}});
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .reader-list .reader-item').first().waitFor();await page.waitForTimeout(800);
