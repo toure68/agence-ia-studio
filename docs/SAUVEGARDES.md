@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT IMAGE DANS LE LECTEUR** | `sauvegarde/avant-image-dans-lecteur` (main du 22/10 18 h 30, v118) | Un appui sur une miniature ouvrait la visionneuse en plein écran (fond noir, mini-carrousel en bas). |
 | **RETOUR AVANT ZONE GLISSER** | `sauvegarde/avant-zone-glisser` (main du 22/10 18 h 20, v117) | Espace vide sous les cartes : un simple appui revient à l'accueil, pas de glissement ni de poignée de fermeture. |
 | **RETOUR AVANT CHAT CLAVIER** | `sauvegarde/avant-chat-clavier` (main du 22/10 18 h 05, v116) | Fenêtre de discussion avec en-tête (titre, haut-parleur, ×, Connecter l'IA), plein écran avec le clavier. |
 | **RETOUR AVANT VISIONNEUSE** | `sauvegarde/avant-visionneuse` (main du 22/10 18 h, v115) | Pièce jointe choisie affichée en grand sous le texte, vignettes carrées (4 visibles) avec leur nom. |

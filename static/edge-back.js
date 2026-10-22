@@ -6,7 +6,7 @@
  const enabled=()=>window.__edgeBackForce===true||navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
  let start=null,hint=null;
  function back(){
-  if(window.imageViewer?.isOpen()){imageViewer.close();return;}
+  if(window.homeReader?.fileShown()>=0){homeReader.showFile(-1);return;}
   if(document.querySelector('#modalLayer:not(.hide) .modal')){closeModal();return;}
   const dock=document.querySelector('#dockBack');
   if(dock&&dock.getClientRects().length){dock.click();return;}

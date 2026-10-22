@@ -20,7 +20,7 @@ const homeReader=(()=>{
  const doneKey=()=>'aia-reader-done-'+(company?.id||0)+'-'+new Date().toISOString().slice(0,10);
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
  const markDone=key=>{const s=doneSet();s.add(key);try{sessionStorage.setItem(doneKey(),JSON.stringify([...s]));}catch{}};
- let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false,full:false,editing:null,draft:{}};
+ let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false,full:false,editing:null,draft:{},file:-1};
  // Messages d'essai (reader-samples.js): off by default, switch in the account menu, buttons simulated.
  const SAMPLES='aia-reader-samples';
  const samplesOn=()=>{try{return localStorage.getItem(SAMPLES)==='on';}catch{return false;}};
@@ -105,6 +105,9 @@ const homeReader=(()=>{
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
   const pos=view.focus+1,total=view.cards.length;
   const spk=`<button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button>`;
+  // 22/10 (user): a tapped thumbnail turns the reader itself into an image reader — only the file, nothing else.
+  const f=view.file>=0?c.files?.[view.file]:null;
+  if(f)return `<div class="reader-stage" data-reader-stage>${f.type==='image'?`<img class="reader-stage-img" src="${clean(f.src)}" alt="${clean(f.name)}">`:`<div class="reader-stage-doc"${f.src?' data-open="1"':''}><span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span><strong>${clean(f.name)}</strong>${f.pages?`<span>${f.pages} pages</span>`:''}${f.src?'<span>Touchez pour ouvrir</span>':''}</div>`}</div>`;
   // iPhone (22/10, user): no tool row; the card sits at the very top and carries the speaker.
   return `${ios()?'':`<div class="reader-head"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-state state-${p.state}">${clean(p.label)}</span><span class="reader-pos">${pos}/${total}</span><span class="reader-tools"><button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button><button type="button" class="reader-icon" data-reader-open aria-label="Ouvrir le détail" title="Ouvrir le détail"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="reader-icon" data-reader-hide aria-label="Masquer ce message" title="Masquer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button type="button" class="reader-icon" data-reader-back aria-label="Revenir à la trésorerie" title="Trésorerie"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>`}
   ${ios()?`<div class="reader-card">${small(c,view.focus).replace(/ data-reader-item="\d+"/,'').replace(/^<button type="button"/,'<div').replace(/<\/button>$/,spk+'</div>')}</div>`:''}
@@ -120,7 +123,7 @@ const homeReader=(()=>{
  }
  function bodyMarkup(c,cp){
   // Attachments (22/10, step 2): files are kept apart from the text — only « 📎 N pièces jointes » on top;
-  // small thumbnails under the cards open the full-screen viewer (static/image-viewer.js).
+  // a tap on a small thumbnail under the cards shows that file in the reader itself (image mode, view.file).
   if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const n=c.files.length;
    const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
    // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
@@ -141,11 +144,13 @@ const homeReader=(()=>{
   const c=view.focus>=0?view.cards[view.focus]:null;let box=queue.querySelector('.reader-files');
   if(!c||!c.files?.length||!ios()){box?.remove();queue.classList.remove('has-files');return;}
   if(!box){box=document.createElement('div');box.className='reader-files';box.setAttribute('role','group');box.setAttribute('aria-label','Pièces jointes');queue.append(box);
-   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]'),cur=view.focus>=0?view.cards[view.focus]:null;if(b&&cur?.files?.length)window.imageViewer?.open(cur.files,Number(b.dataset.file));});
+   // Tap a thumbnail = that file in the reader; tap the one already shown = back to the text.
+   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]'),cur=view.focus>=0?view.cards[view.focus]:null;if(!b||!cur?.files?.length)return;const i=Number(b.dataset.file);showFile(view.file===i?-1:i);});
    let y0=null,x0=0;box.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;},{passive:true});
    box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
   if(box.dataset.card!==c.key){box.dataset.card=c.key;
    box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div>`;} // the count is in the reader (« 📎 N pièces jointes »)
+  box.querySelectorAll('[data-file]').forEach(t=>{const on=Number(t.dataset.file)===view.file;t.classList.toggle('is-on',on);t.setAttribute('aria-pressed',String(on));});box.classList.toggle('has-on',view.file>=0);
   queue.classList.add('has-files');box.style.top=(list.offsetTop+list.offsetHeight+6)+'px';box.style.height='';
   // Measured after drawing: if the thumbnails would reach the function pages, drop as many cards as needed.
   const pg=document.querySelector('#content .home-pages');
@@ -175,10 +180,11 @@ const homeReader=(()=>{
   if(view.focus<0){view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
-  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;}view.keepKey=c.key;
+  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;view.file=-1;}view.keepKey=c.key;
+  if(view.file>=0&&!c.files?.[view.file])view.file=-1;
   const editing=view.editing===c.key;
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
-  card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'');
+  card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'')+(view.file>=0?' is-image':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
   // 22/10 (user): a small closing grip at the bottom middle of the reader (retractable container): tap or swipe up = close.
   if(ios()){const g=document.createElement('button');g.type='button';g.className='reader-grip';g.setAttribute('aria-label','Fermer le lecteur');g.onclick=closeReader;
@@ -194,11 +200,12 @@ const homeReader=(()=>{
   (card.querySelector('[data-reader-open]')||{}).onclick=()=>openAction(c);
   (card.querySelector('[data-reader-hide]')||{}).onclick=()=>c.sample?sampleDone(c,'Masqué'):dismiss(c);
   (card.querySelector('[data-reader-back]')||{}).onclick=()=>host.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
+  wireStage(card,c);
   const speak=card.querySelector('[data-reader-speak]'),cp=copy(c);
-  speak.onclick=()=>{if(typeof readAloud==='function')readAloud([presentation(c).label,cp.title,(sign(c)?.s==='−'?'à payer ':sign(c)?'à recevoir ':'')+cp.amount,cp.detail].filter(Boolean).join('. '),speak);};
+  if(speak)speak.onclick=()=>{if(typeof readAloud==='function')readAloud([presentation(c).label,cp.title,(sign(c)?.s==='−'?'à payer ':sign(c)?'à recevoir ':'')+cp.amount,cp.detail].filter(Boolean).join('. '),speak);};
   card.querySelectorAll('[data-draft]').forEach(f=>f.oninput=()=>{view.draft[f.dataset.draft]=f.value;});
   card.querySelector('[data-draft]')?.focus({preventScroll:true});
-  wireRail(card);
+  if(card.querySelector('.reader-body'))wireRail(card);
   host.querySelectorAll('.reader-list .reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
   fitList();
   syncFiles();
@@ -226,6 +233,16 @@ const homeReader=(()=>{
   const el=view.host?.querySelector('.reader-hint');if(!el)return;
   const n=view.cards.length,below=n-(view.focus+1)-cap();
   el.textContent=view.focus>=n-1?'Dernier message · ↓ Glissez pour revoir':(below>0?`${below} autre${below>1?'s':''} en dessous · `:'')+'↑ Glissez pour lire';
+ }
+ // Image mode: swipe sideways = next / previous file (same order as the thumbnails); a PDF with a link opens on tap.
+ function showFile(i){view.file=i;showReader();}
+ function wireStage(card,c){
+  const st=card.querySelector('[data-reader-stage]');if(!st)return;
+  st.addEventListener('click',e=>{const f=c.files?.[view.file];if(e.target.closest('[data-open]')&&f?.src)window.open(f.src,'_blank','noopener');});
+  let x0=null,y0=0;
+  st.addEventListener('touchstart',e=>{if(e.touches.length!==1){x0=null;return;}x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
+  st.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+   if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3){const n=c.files.length;showFile((view.file+(dx<0?1:-1)+n)%n);}},{passive:true});
  }
  function goTo(i){view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});}
  function closeReader(){view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});}
@@ -282,6 +299,6 @@ const homeReader=(()=>{
   for(let i=view.focus;i<view.cards.length&&out.length<max;i++){const c=view.cards[i];if(c._done&&i!==view.focus)continue;const k=moduleOf(c);if(!out.includes(k))out.push(k);}
   return out;
  }
- return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader};
+ return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader,showFile,fileShown:()=>view.file};
 })();
 window.homeReader=homeReader;
