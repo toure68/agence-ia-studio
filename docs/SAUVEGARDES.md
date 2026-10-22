@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT DATE DANS LE CADRAN** | `sauvegarde/avant-date-cadran` (main du 22/10 15 h 30, v110) | Date dans une étiquette au-dessus de la trésorerie, anneau avec le mois seul. |
 | **RETOUR AVANT SANS BORDURE** | `sauvegarde/avant-sans-bordure` (main du 22/10 15 h 15, v109) | Cadre de l'app avec son trait (contour à 8 px) et son ombre, juste sous l'île. |
 | **RETOUR AVANT HAUT ÉCRAN** | `sauvegarde/avant-haut-ecran` (main du 22/10 13 h 40, v108) | Cadre de l'app à 12 px + max(28 px, zone de l'île − 2 px) du haut. |
 | **RETOUR AVANT SIX CARTES** | `sauvegarde/avant-six-cartes` (main du 22/10 12 h 45, v107) | Cartes 60 px réparties sur toute la place (écart 9–26 px), lecteur avec rangée d'outils (n/N, haut-parleur, ⤢, ×, ⌃) au-dessus de la carte, cadre à 14 px sous la zone de l'île. |

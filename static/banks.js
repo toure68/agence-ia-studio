@@ -1,4 +1,8 @@
 'use strict';
+// 22/10 (user): today's date sits inside the treasury dial (day + month) instead of a tab above the card.
+function dialDate(month,m){const t=bankToday();if((m||t.slice(0,7))!==t.slice(0,7))return `<span class="dial-month">${clean(month)}</span>`;
+ const wd=new Intl.DateTimeFormat('fr-FR',{weekday:'short',timeZone:'Europe/Paris'}).format(new Date(t+'T12:00:00Z'));
+ return `<span class="dial-month dial-today"><small>${clean(wd)}</small><b>${Number(t.slice(8,10))}</b><small>${clean(month)}</small></span>`;}
 async function bankTry(action){try{return await action();}catch(error){notify(error.message);}}
 function bankSigned(amount,currency){return (amount<0?'−':'+')+' '+quoteMoney(Math.abs(amount),currency);}
 function bankAmountClass(amount){return amount<0?'bank-negative':amount>0?'bank-positive':'';}
@@ -133,7 +137,7 @@ function bankHomeMarkup(treasury){
  const max=Math.max(inMinor,outMinor,1),share=v=>Math.round(Math.min(1,v/max)*92);
  const arc=(cls,r,v)=>`<circle class="dial-arc ${cls}${v?'':' is-empty'}" cx="42" cy="42" r="${r}" pathLength="100" style="--dial:${100-share(v)}"/>`;
  const month=new Intl.DateTimeFormat('fr-FR',{month:'short',timeZone:'Europe/Paris'}).format(new Date((treasury.month||bankToday().slice(0,7))+'-15T12:00:00Z'));
- const ring=`<div class="dial-ring-wrap" aria-hidden="true"><svg class="dial-ring" viewBox="0 0 84 84"><circle class="dial-track" cx="42" cy="42" r="37"/>${arc('dial-arc-in',37,inMinor)}<circle class="dial-track dial-track-inner" cx="42" cy="42" r="27"/>${arc('dial-arc-out',27,outMinor)}</svg><span class="dial-month">${clean(month)}</span></div>`;
+ const ring=`<div class="dial-ring-wrap" aria-hidden="true"><svg class="dial-ring" viewBox="0 0 84 84"><circle class="dial-track" cx="42" cy="42" r="37"/>${arc('dial-arc-in',37,inMinor)}<circle class="dial-track dial-track-inner" cx="42" cy="42" r="27"/>${arc('dial-arc-out',27,outMinor)}</svg>${dialDate(month,treasury.month)}</div>`;
  let status;
  if(bank)status=bank.shortfall_minor>0?'<span class="dial-status is-alert"><i class="dial-pulse" aria-hidden="true"></i><span>Alerte</span></span>':'<span class="dial-status is-ok"><i class="dial-pulse" aria-hidden="true"></i><span>À jour</span></span>';
  else if(alerts.length){const a=alerts[0];status=`<button type="button" class="dial-status is-alert bank-global-alert" data-bank-pill="${a.id}" aria-label="Alerte : ${clean(a.name)} à ${clean(bankSigned(a.available_minor,a.currency))}${a.next_due?', prélèvement '+bankShortDate(a.next_due):''}"><i class="dial-pulse" aria-hidden="true"></i><span>${clean(bankDialShort(a.name))}${a.next_due?' · '+bankShortDate(a.next_due):''}${alerts.length>1?' +'+(alerts.length-1):''}</span></button>`;}

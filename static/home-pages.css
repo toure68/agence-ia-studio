@@ -140,3 +140,9 @@ html.home-ios .home-reader[data-date]::before{display:none}
    « RETOUR AVANT SANS BORDURE » brings the frame back. */
 html.home-ios #content>.reference-home,html.home-ios #content>.reference-home.reader-active{outline:0;box-shadow:none}
 html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-top:max(8px,calc(env(safe-area-inset-top,0px) - 12px))}
+/* 22/10 (user): the date is inside the treasury dial, no tab above the card; the treasury comes right under the Dynamic Island. */
+html.home-ios #homeTreasury[data-date]::before{display:none}
+html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-top:max(8px,calc(env(safe-area-inset-top,0px) - 16px))}
+#homeTreasury .bank-dial .dial-month.dial-today{flex-direction:column;gap:1px;line-height:1;letter-spacing:.06em}
+#homeTreasury .bank-dial .dial-today small{font-size:9px;font-weight:700}
+#homeTreasury .bank-dial .dial-today b{font-size:20px;font-weight:700;letter-spacing:0;color:var(--home-text,#fff)}
