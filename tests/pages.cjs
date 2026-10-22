@@ -192,10 +192,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // 22/10 step 2 — attachments apart from the text: « 📎 7 pièces jointes » on top, small thumbnails (46px) under the cards.
   const idx=await page.evaluate(()=>[...document.querySelectorAll('#content .reader-list .reader-item')].findIndex(e=>/Photos du chantier/.test(e.textContent)));
   assert(idx>=0,'Trial message with attachments present');await openAt(idx);
-  const att=await page.evaluate(()=>{const box=document.querySelector('#content .reader-files'),th=[...box.querySelectorAll('.reader-thumb')],bw=box.getBoundingClientRect();
+  const att=await page.evaluate(()=>{const box=document.querySelector('#content .reader-files'),th=[...box.querySelectorAll('.reader-thumbs .reader-thumb')],bw=box.getBoundingClientRect();
    return {thumbs:th.length,visible:th.filter(t=>{const r=t.getBoundingClientRect();return r.left>=bw.left-1&&r.right<=bw.right+1;}).length,h:Math.round(th[0].getBoundingClientRect().height),noBig:!document.querySelector('#content .home-reader .reader-body img'),count:/📎 7 pièces jointes/.test(document.querySelector('#content .home-reader').innerText),list:getComputedStyle(document.querySelector('#content .reader-list')).visibility};});
   console.log('attachments',JSON.stringify(att));
-  assert.equal(att.thumbs,7);assert(att.visible>=6,'Small thumbnails, most visible');assert(att.h<=48,'Thumbnails as small as an action button');assert(att.noBig&&att.count,'Files apart from the text, count on top');assert.equal(att.list,'visible','Cards stay');
+  assert.equal(att.thumbs,7);assert(att.visible>=5,'Small thumbnails, most visible');assert(att.h<=48,'Thumbnails as small as an action button');assert(att.noBig&&att.count,'Files apart from the text, count on top');assert.equal(att.list,'visible','Cards stay');
   // Under the cards, above the function pages; the message reads like an e-mail (22/10).
   const place=await page.evaluate(()=>{const l=document.querySelector('#content .reader-list').getBoundingClientRect(),b=document.querySelector('#content .reader-files').getBoundingClientRect(),pg=document.querySelector('#content .home-pages').getBoundingClientRect(),r=document.querySelector('#content .home-reader').innerText;return {under:Math.round(b.top-l.bottom),above:Math.round(pg.top-b.bottom),mail:/De\s/.test(r)&&/Objet/.test(r)&&/Claire Lefèvre/.test(r)};});
   console.log('attachments place',JSON.stringify(place));assert(place.under>=0&&place.above>=0,'Thumbnails between the cards and the functions');assert(place.mail,'E-mail header and text');

@@ -175,7 +175,8 @@ const homePages=(()=>{
   // While reading, the whole empty room under the cards is a touch zone back to the home (treasury + cards).
   // It starts under the cards box, so it never covers a card nor blocks sliding them (21/10).
   let z=home.querySelector('.home-back-zone');
-  const zTop=lr?lr.bottom+(rest?9:0):top,zBottom=pr.top;
+  const files=home.querySelector('.reader-files');
+  const zTop=files?files.getBoundingClientRect().bottom+12:lr?lr.bottom+(rest?9:0):top,zBottom=pr.top;
   if(reading&&zBottom-zTop>=8){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
     // 22/10 (user): the empty room is also a wide swipe zone — up/down moves between messages like on the cards

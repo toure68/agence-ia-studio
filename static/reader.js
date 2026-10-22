@@ -135,19 +135,34 @@ const homeReader=(()=>{
   const inner=f.type==='image'?`<img src="${clean(f.src)}" alt="">`:`<span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span>`;
   return `<button type="button" class="reader-thumb" data-file="${i}" aria-label="Voir en grand : ${clean(f.name)}">${inner}</button>`;
  }
+ function fileOverflow(box){
+  const strip=box?.querySelector('.reader-thumbs');if(!strip)return;
+  const left=strip.scrollLeft>2,right=strip.scrollWidth-strip.clientWidth-strip.scrollLeft>2;
+  box.classList.toggle('can-prev',left);box.classList.toggle('can-next',right);
+  for(const [key,on] of [['prev',left],['next',right]]){const button=box.querySelector(`[data-files-${key}]`);button.hidden=!on;}
+ }
  // Thumbnails stay in the queue flow, below the cards; a vertical swipe still changes message.
  function syncFiles(){
   const host=view.host,queue=host?.querySelector('.reader-queue'),list=host?.querySelector('.reader-list');if(!queue||!list)return;
   const c=view.focus>=0?view.cards[view.focus]:null;let box=queue.querySelector('.reader-files');
   if(!c||!c.files?.length||!ios()){box?.remove();queue.classList.remove('has-files');return;}
   if(!box){box=document.createElement('div');box.className='reader-files';box.setAttribute('role','group');box.setAttribute('aria-label','Pièces jointes');queue.append(box);
-   // Tap a thumbnail = that file in the reader; tap the one already shown = back to the text.
-   box.addEventListener('click',e=>{const b=e.target.closest('[data-file]'),cur=view.focus>=0?view.cards[view.focus]:null;if(!b||!cur?.files?.length)return;const i=Number(b.dataset.file);showFile(view.file===i?-1:i);});
+   // Text stays pinned next to the images, even when the carousel is scrolled to its end.
+   box.addEventListener('click',e=>{
+    const strip=box.querySelector('.reader-thumbs');
+    if(e.target.closest('[data-files-prev],[data-files-next]')){strip.scrollBy({left:(e.target.closest('[data-files-next]')?1:-1)*Math.max(58,strip.clientWidth-58),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});return;}
+    const b=e.target.closest('[data-file]'),cur=view.focus>=0?view.cards[view.focus]:null;if(!b||!cur?.files?.length)return;const i=Number(b.dataset.file);showFile(i<0||view.file===i?-1:i);
+   });
    let y0=null,x0=0;box.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;},{passive:true});
    box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
   if(box.dataset.card!==c.key){box.dataset.card=c.key;
-   box.innerHTML=`<div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div>`;} // the count is in the reader (« 📎 N pièces jointes »)
-  box.querySelectorAll('[data-file]').forEach(t=>{const on=Number(t.dataset.file)===view.file;t.classList.toggle('is-on',on);t.setAttribute('aria-pressed',String(on));});box.classList.toggle('has-on',view.file>=0);
+   box.innerHTML=`<div class="reader-file-row"><button type="button" class="reader-thumb reader-text-thumb" data-file="-1" aria-label="Afficher le texte du message"><span aria-hidden="true">📝</span><span>Texte</span></button><div class="reader-file-window"><div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div><button type="button" class="reader-scroll is-prev" data-files-prev aria-label="Images précédentes" hidden>‹</button><button type="button" class="reader-scroll is-next" data-files-next aria-label="Images suivantes" hidden>›</button></div></div>`;
+   box.querySelector('.reader-thumbs').addEventListener('scroll',()=>fileOverflow(box),{passive:true});
+   box.dataset.file='';
+  } // the count is in the reader (« 📎 N pièces jointes »)
+  box.querySelectorAll('[data-file]').forEach(t=>{const on=Number(t.dataset.file)===view.file;t.classList.toggle('is-on',on);t.setAttribute('aria-pressed',String(on));});
+  if(box.dataset.file!==String(view.file)){box.dataset.file=String(view.file);if(view.file>=0){const strip=box.querySelector('.reader-thumbs'),thumb=strip.querySelector(`[data-file="${view.file}"]`);if(thumb){const tr=thumb.getBoundingClientRect(),sr=strip.getBoundingClientRect();if(tr.left<sr.left||tr.right>sr.right)strip.scrollLeft+=tr.left<sr.left?tr.left-sr.left:tr.right-sr.right;}}}
+  fileOverflow(box);requestAnimationFrame(()=>fileOverflow(box));
   queue.classList.add('has-files');
  }
  function syncRail(card){
@@ -169,7 +184,7 @@ const homeReader=(()=>{
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
   if(view.focus<0&&doneCards.length&&!view.busy){doneCards.length=0;view.keepKey=null;setTimeout(()=>renderPriorities().catch(()=>{}),0);}
-  if(view.focus<0){view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
+  if(view.focus<0){view.file=-1;view.keepKey=null;view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
   const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;view.file=-1;}view.keepKey=c.key;
@@ -220,10 +235,10 @@ const homeReader=(()=>{
     const editing=card.classList.contains('is-editing');
     if(!editing)card.style.height=readerHeight()+'px'; // start from the same base, never accumulate spare pixels
     if(pg){
-     // One shared layout: whole cards, the waiting-stack edge, optional files, and the same 12px gaps.
+     // Whole cards, stack edge, optional files with 12px gaps, then a clear 52px gesture zone.
      // No empty attachment slot for a message without files. Spare pixels improve the text/image reader.
      const stack=view.cards.length>1?9:0,space=12;
-     const tail=stack+space+(files?files.getBoundingClientRect().height+space:0);
+     const tail=stack+52+(files?space+files.getBoundingClientRect().height+space:0);
      let baseHeight=readerHeight(),room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
      // A compact phone must still expose a card to scroll; let the reader yield room instead of hiding the queue.
      if(!editing&&room<tail+pitch()-gap){baseHeight=Math.max(180,baseHeight-(tail+pitch()-gap-room));card.style.height=baseHeight+'px';room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);}
@@ -307,7 +322,7 @@ const homeReader=(()=>{
   for(let i=view.focus;i<view.cards.length&&out.length<max;i++){const c=view.cards[i];if(c._done&&i!==view.focus)continue;const k=moduleOf(c);if(!out.includes(k))out.push(k);}
   return out;
  }
- function reflow(){if(view.focus>=0){fitList();requestAnimationFrame(()=>window.homePages?.stack());}}
+ function reflow(){if(view.focus>=0){fitList();fileOverflow(view.host?.querySelector('.reader-files'));requestAnimationFrame(()=>window.homePages?.stack());}}
  return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
 })();
 window.homeReader=homeReader;
