@@ -72,9 +72,9 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert.equal(await page.locator('#accountReader').getAttribute('aria-checked'),'false');
   await page.evaluate(()=>document.querySelector('#accountReader').click());
   await page.locator('.reader-item').first().waitFor();
-  // Messages d'essai: 16 simulated messages on top, marked « Essai », a button counts them as done, nothing saved.
+  // Messages d'essai: 17 simulated messages on top, marked « Essai », a button counts them as done, nothing saved.
   await page.evaluate(()=>document.querySelector('#accountReaderSamples').click());
-  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===16);
+  await page.waitForFunction(()=>document.querySelectorAll('.reader-item .reader-tag').length===17);
   // Money colour code in the small cards: + green when it comes in, − red when it goes out.
   const money=await page.evaluate(()=>{const get=t=>{const it=[...document.querySelectorAll('.reader-item')].find(e=>e.innerText.includes(t))?.querySelector('.reader-money');return it?{text:it.textContent,cls:it.className,color:getComputedStyle(it).color}:null;};return {inn:get('Bâtiplus SARL'),out:get('Matériaux Durand')};});
   assert.ok(money.inn&&money.inn.text.startsWith('+')&&money.inn.cls.includes('is-in'),'incoming amount in green: '+JSON.stringify(money));
