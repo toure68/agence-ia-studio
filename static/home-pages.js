@@ -97,10 +97,10 @@ const homePages=(()=>{
   // space left above the function pages is only the margin (the 7px stack hangs there). Height 44–60px + 6px gap.
   free-=2;
   const room=free+6;
-  // Cards as on the reference capture (22/10): 52px high, 8px apart; as many as fit (no 5-card limit), and the
+  // Cards as on the « Façon iPhone » mock-up (22/10): 60px high (38px round icon + 11px padding), 9px apart; as many as fit (no 5-card limit), and the
   // little room left is shared between the gaps (8–16px) so nothing stays empty under the cards.
-  const cardH=52;let slots=Math.max(2,Math.min(9,Math.floor((room+2)/(cardH+8))));
-  const gap=Math.max(8,Math.min(16,Math.floor((room+2-slots*cardH)/slots))),step=String(cardH+gap);
+  const cardH=60;let slots=Math.max(2,Math.min(9,Math.floor((room+2)/(cardH+9))));
+  const gap=Math.max(9,Math.min(26,Math.floor((room+2-slots*cardH)/slots))),step=String(cardH+gap);
   document.body.style.setProperty('--reader-gap',gap+'px');
   const b=document.body;
   if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
