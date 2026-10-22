@@ -1,6 +1,6 @@
 /* Accueil façon iPhone (home-pages.js, user request 2026-10-20). Everything is scoped to html.home-ios. */
 html.home-ios:has(#content>.reference-home .home-pages),html.home-ios body:has(#content>.reference-home .home-pages){overflow:hidden;overscroll-behavior-y:none}
-html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-bottom:0}
+html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-bottom:0;padding-top:0}
 html.home-ios #content>.reference-home{box-sizing:border-box;height:var(--home-ios-height,100dvh);display:flex;flex-direction:column;overflow:hidden}
 html.home-ios .reference-home>*{flex:none}
 
@@ -103,7 +103,7 @@ html.home-ios .reference-home .home-account-slot{order:-1;display:flex}
 html.home-ios .home-account-slot .account-menu summary{width:44px;height:44px}
 html.home-ios .home-account-slot .account-panel{top:auto;bottom:52px;left:0;right:auto;max-height:70dvh;overflow-y:auto}
 /* 21/10 : elegant floating frame around the app (from the treasury/reader down to the Assistant), stronger while reading. */
-html.home-ios #content>.reference-home{margin-top:max(28px,calc(env(safe-area-inset-top,0px) - 2px)) /* 22/10: frame line just under the Dynamic Island */;padding-top:12px;border-radius:30px;outline:1px solid rgba(255,255,255,.14);outline-offset:8px;box-shadow:0 0 0 8px rgba(255,255,255,.015),0 26px 60px -18px rgba(0,0,0,.75);transition:outline-color .3s,box-shadow .3s}
+html.home-ios #content>.reference-home{margin-top:max(16px,calc(env(safe-area-inset-top,0px) - 2px)) /* 22/10: frame line just under the Dynamic Island */;padding-top:12px;border-radius:30px;outline:1px solid rgba(255,255,255,.14);outline-offset:8px;box-shadow:0 0 0 8px rgba(255,255,255,.015),0 26px 60px -18px rgba(0,0,0,.75);transition:outline-color .3s,box-shadow .3s}
 html.home-ios #content>.reference-home.reader-active{outline-color:rgba(255,255,255,.28);box-shadow:0 0 0 8px rgba(255,255,255,.035),0 34px 80px -14px rgba(0,0,0,.9),0 0 36px rgba(74,222,128,.10)}
 @media (prefers-reduced-motion:reduce){html.home-ios #content>.reference-home{transition:none}}
 

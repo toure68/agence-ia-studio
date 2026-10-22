@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT HAUT ÉCRAN** | `sauvegarde/avant-haut-ecran` (main du 22/10 13 h 40, v108) | Cadre de l'app à 12 px + max(28 px, zone de l'île − 2 px) du haut. |
 | **RETOUR AVANT SIX CARTES** | `sauvegarde/avant-six-cartes` (main du 22/10 12 h 45, v107) | Cartes 60 px réparties sur toute la place (écart 9–26 px), lecteur avec rangée d'outils (n/N, haut-parleur, ⤢, ×, ⌃) au-dessus de la carte, cadre à 14 px sous la zone de l'île. |
 | **RETOUR AVANT LECTEUR CARTE** | `sauvegarde/avant-lecteur-carte` (main du 22/10 11 h 30) | Lecteur avec en-tête : état en couleur, titre en gros, montant à droite, puce de source. |
 | **RETOUR AVANT CARTES FAÇON IPHONE** | `sauvegarde/avant-cartes-iphone` (main du 22/10 10 h 15) | Cartes 52 px avec icône ronde, avant la copie exacte de la maquette « Façon iPhone ». |
