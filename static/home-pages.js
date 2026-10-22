@@ -178,7 +178,13 @@ const homePages=(()=>{
   const zTop=lr?lr.bottom+(rest?12:4):top,zBottom=pr.top-(rest?12:4);
   if(reading&&zBottom-zTop>=24){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
-    z.onclick=()=>home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});}
+    // 22/10 (user): the empty room is also a wide swipe zone — up/down moves between messages like on the cards
+    // (no need to aim at the cards nor touch the functions); a simple tap still goes back to the home.
+    let y0=null,x0=0,moved=false;
+    z.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;moved=false;},{passive:true});
+    z.addEventListener('touchmove',e=>{if(y0!==null&&Math.abs(e.touches[0].clientY-y0)>10){moved=true;e.preventDefault();}},{passive:false});
+    z.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx))window.homeReader?.step(dy<0?1:-1);},{passive:true});
+    z.onclick=()=>{if(moved){moved=false;return;}home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});};}
    z.style.top=(zTop-hr.top)+'px';z.style.height=(zBottom-zTop)+'px';
   }else z?.remove();
   if(room>=64&&!reading){

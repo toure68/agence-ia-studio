@@ -180,6 +180,9 @@ const homeReader=(()=>{
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
+  // 22/10 (user): a small closing grip at the bottom middle of the reader (retractable container): tap or swipe up = close.
+  if(ios()){const g=document.createElement('button');g.type='button';g.className='reader-grip';g.setAttribute('aria-label','Fermer le lecteur');g.onclick=closeReader;
+   let gy=null;g.addEventListener('touchstart',e=>{gy=e.touches[0].clientY;},{passive:true});g.addEventListener('touchend',e=>{if(gy!==null&&gy-e.changedTouches[0].clientY>25)closeReader();gy=null;},{passive:true});card.append(g);}
   if(typeof homeTop!=='undefined')card.dataset.date=homeTop.dateLabel();
   card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
   const btns=buttons(c);
@@ -225,6 +228,8 @@ const homeReader=(()=>{
   el.textContent=view.focus>=n-1?'Dernier message · ↓ Glissez pour revoir':(below>0?`${below} autre${below>1?'s':''} en dessous · `:'')+'↑ Glissez pour lire';
  }
  function goTo(i){view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});}
+ function closeReader(){view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});}
+ function step(d){if(view.focus+d<-1||view.focus+d>=view.cards.length)return;if(view.focus+d<0)closeReader();else goTo(view.focus+d);}
 
  function render(host,cards,actual,cid){
   view.host=host;view.cid=cid;
@@ -277,6 +282,6 @@ const homeReader=(()=>{
   for(let i=view.focus;i<view.cards.length&&out.length<max;i++){const c=view.cards[i];if(c._done&&i!==view.focus)continue;const k=moduleOf(c);if(!out.includes(k))out.push(k);}
   return out;
  }
- return {enabled,render,setEnabled,setSamples,readingModules};
+ return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader};
 })();
 window.homeReader=homeReader;
