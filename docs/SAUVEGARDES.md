@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTURE E-MAIL** | `sauvegarde/avant-lecture-email` (4c49ac8) | Le 22/10/2026 vers 9 h 40 : vignettes à la place des cartes, photo en grand sans en-tête d'e-mail, rangée de fonctions inchangée pendant la lecture. |
 | **RETOUR AVANT PIÈCES JOINTES** | `sauvegarde/avant-pieces-jointes` (0056d7b) | Le 22/10/2026 vers 7 h : en lecture, nombre de cartes fixe (espace vide possible), pas de pièces jointes dans le lecteur. |
 | **RETOUR AVANT BANQUES D’ESSAI** | `sauvegarde/avant-banques-essai` (7b093e6) | Le 22/10/2026 vers 6 h : pas de bouton « Banques d’essai » dans le menu du bonhomme. |
 | **RETOUR AVANT CINQ RÉGLAGES** | `sauvegarde/avant-cinq-reglages` (74254a3) | Le 21/10/2026 vers 9 h 30 : réglages en icônes en haut, boutons d'action à droite avec ligne de séparation, fonctions de la 1re rangée masquées pendant la lecture, pas de cadre. |
