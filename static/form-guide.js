@@ -45,7 +45,7 @@
   box.querySelectorAll('.fg-current').forEach(e=>e.classList.remove('fg-current'));
   if(field)wrap(field)?.classList.add('fg-current');
  }
- function reveal(el){requestAnimationFrame(()=>el.scrollIntoView({block:'center',inline:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));}
+ function reveal(el){if(window.universalSheets?.reveal(el))return;requestAnimationFrame(()=>el.scrollIntoView({block:'center',inline:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));}
  function next(box,from){
   const fields=fieldsOf(box),i=fields.indexOf(from);
   const target=fields.slice(i+1).find(f=>!filled(f))||fields.find(f=>f!==from&&!filled(f));

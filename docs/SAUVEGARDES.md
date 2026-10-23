@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT PANNEAUX UNIVERSELS** | `sauvegarde/avant-panneaux-universels-v140` (v139) | Fenêtres de fonction plein écran, formulaires et retours distincts. |
 | **RETOUR AVANT ASSISTANT CLAVIER SUPERPOSÉ** | `sauvegarde/avant-assistant-clavier-superpose-v139` (v138) | Assistant ouvert sans focus immédiat, déplacement lors du clavier. |
 | **RETOUR AVANT MINIATURE TEXTE DOCUMENT** | `sauvegarde/avant-miniature-texte-document-v138` (v137) | Petit pictogramme Texte sur fond noir. |
 | **RETOUR AVANT CARROUSEL SIX CENTRÉ** | `sauvegarde/avant-carrousel-six-centre-v137` (v136) | Miniatures proches des notifications, nombre visible variable. |

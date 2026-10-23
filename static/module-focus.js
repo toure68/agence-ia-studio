@@ -131,6 +131,7 @@ document.addEventListener('click',e=>{
 // below it. Tapping another app switches window; closing the window goes back to the home grid.
 // `open` opens something else than the function's full view in that window (e.g. one action).
 function moduleFocusWindow(key,open){
+ if(window.universalSheets?.enabled()){if(open)open();else openTab(key,{companyId:['company-edit','team'].includes(key)?company.id:null});return true;}
  if(!moduleFocusOpen(key))return false;
  const frame=document.querySelector('#moduleFocus');
  const r=frame.getBoundingClientRect();
@@ -271,6 +272,7 @@ function moduleDockKeyboard(){
  document.body.classList.toggle('kb-open',kb);
  const on=document.body.classList.contains('dock-to-focus')&&kb;
  document.body.classList.toggle('dock-keyboard',on);
+ if(kb&&window.universalSheets?.reveal(active))return;
  if(kb&&!active.closest('#contextPanel[data-module="assistant"]'))requestAnimationFrame(()=>active.scrollIntoView({block:'center',inline:'nearest'}));
 }
 window.visualViewport?.addEventListener('resize',moduleDockKeyboard,{passive:true});

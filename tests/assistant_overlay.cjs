@@ -2,11 +2,11 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {chromium}=require('playwright');
 (async()=>{
- const b=await chromium.launch({executablePath:process.env.HOME_TEST_CHROME,headless:true,args:['--no-sandbox','--disable-gpu']});
+ const b=await chromium.launch({...(process.env.HOME_TEST_CHROME?{executablePath:process.env.HOME_TEST_CHROME}:process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{}),headless:true,args:['--no-sandbox','--disable-gpu']});
  try{for(const [width,height] of [[375,667],[390,844],[430,932]]){
   const p=await b.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.addInitScript(()=>{localStorage.setItem('aia-reader-samples','on');window.fakeViewport={height:innerHeight,offsetTop:0,width:innerWidth,offsetLeft:0};for(const key of ['height','offsetTop','width','offsetLeft'])Object.defineProperty(visualViewport,key,{get:()=>window.fakeViewport[key]});window.assistantScrolls=0;const original=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(...args){if(this.id==='assistantMessage')window.assistantScrolls++;return original.apply(this,args)};});
-  await p.goto('http://127.0.0.1:8123/demo');await p.locator('.reader-item').first().waitFor();await p.waitForTimeout(700);await p.locator('.reader-item').first().click();await p.waitForTimeout(400);
+  await p.goto('http://127.0.0.1:8123/demo');await p.locator('.reader-item').first().waitFor();await p.evaluate(()=>{fakeViewport.height=innerHeight;fakeViewport.width=innerWidth;visualViewport.dispatchEvent(new Event('resize'))});await p.waitForTimeout(700);await p.locator('.reader-item').first().click();await p.waitForTimeout(400);
   const background=()=>p.evaluate(()=>['.reference-home','.home-reader','.reader-list','.home-pages','.home-topbar'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return [s,...[r.x,r.y,r.width,r.height].map(v=>Math.round(v*10)/10)]}));
   const before=await background();await p.locator('#assistantDock').click();await p.locator('.assistant-collapse').waitFor();await p.waitForTimeout(350);
   assert.equal(await p.evaluate(()=>document.activeElement.id),'assistantMessage','First tap focuses composer');assert.deepEqual(await background(),before,'Opening overlay never reflows cockpit');
