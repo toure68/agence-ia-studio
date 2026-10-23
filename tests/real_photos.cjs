@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
   await page.goto('http://127.0.0.1:8123/');await page.locator('#loginEmail').fill(process.env.ADMIN_EMAIL||'ui-owner@example.test');await page.locator('#loginPassword').fill(process.env.ADMIN_PASSWORD||'local-ui-smoke-test-only');await page.getByRole('button',{name:'Se connecter'}).click();await page.locator('.home-pages').waitFor();
   await page.evaluate(()=>homeReader.setSamples(true));await page.waitForTimeout(500);
   const index=await page.evaluate(()=>[...document.querySelectorAll('.reader-list .reader-item')].findIndex(e=>e.textContent.includes('Vos 7 photos du casque')));assert(index>=0);
-  await page.evaluate(i=>document.querySelector('.reader-list').scrollTo({top:(i+1)*Number(document.body.dataset.readerPitch)}),index);await page.waitForTimeout(500);
+  await page.locator('.reader-list [data-reader-item]').nth(index).click();await page.waitForTimeout(500);
   assert.equal(await page.locator('.reader-thumbs .reader-thumb').count(),7);assert.equal(await page.locator('.home-reader.is-image').count(),0,'text initially');
   await page.locator('.reader-thumbs img').evaluateAll(imgs=>Promise.all(imgs.map(i=>i.decode())));
   assert(await page.locator('[data-files-next]').isVisible(),'carousel has overflow indicator');
@@ -25,7 +25,7 @@ const {chromium}=require('playwright');
   }
   await page.locator('.reader-text-thumb').click();assert.equal(await page.locator('.home-reader.is-image').count(),0,'Text restores message');assert.match(await page.locator('.reader-body').innerText(),/sept photos/);
   assert(Math.abs(await page.locator('.home-pages').evaluate(e=>e.getBoundingClientRect().top)-grid)<1,'functions stay put');
-  const zone=await page.locator('.home-back-zone').evaluate(e=>e.getBoundingClientRect().height);assert(Math.abs(zone-52)<1);
+  const zone=await page.locator('.home-back-zone').evaluate(e=>e.getBoundingClientRect().height);assert(Math.abs(zone-12)<1);
   const glyphs=await page.locator('.home-page .module-icon svg[data-icon]').evaluateAll(svg=>svg.map(e=>{const b=e.getBBox(),v=e.viewBox.baseVal;return {key:e.dataset.icon,padding:Math.min(b.x-v.x,b.y-v.y,v.x+v.width-b.x-b.width,v.y+v.height-b.y-b.height),fill:Math.max(b.width/v.width,b.height/v.height),ratio:e.getBoundingClientRect().width/e.parentElement.getBoundingClientRect().width};}));
   for(const g of glyphs){assert(g.padding>=1,'stroke margin '+JSON.stringify(g));assert(g.fill>=.78,'maximized glyph '+JSON.stringify(g));assert(g.ratio>=.80,'larger glyph '+JSON.stringify(g));}
   assert.deepEqual(errors,[]);console.log('real photos and glyphs OK',size);await page.close();

@@ -82,7 +82,7 @@ html.home-ios .reader-thumbs{flex:none;height:46px;gap:12px}
 html.home-ios .reader-thumb{outline:1px solid #ffffff26;outline-offset:-1px}
 html.home-ios .home-back-zone{touch-action:pan-x}
 /* Text remains available while the image strip scrolls. Short strips center as one group. */
-html.home-ios .reader-file-row{display:flex;align-self:center;align-items:center;gap:12px;width:max-content;max-width:100%;height:46px}
+html.home-ios .reader-file-row{display:flex;align-self:center;align-items:center;gap:12px;width:fit-content;max-width:100%;height:46px}
 html.home-ios .reader-file-window{position:relative;flex:0 1 auto;min-width:0;height:46px}
 html.home-ios .reader-file-window .reader-thumbs{max-width:100%}
 html.home-ios .reader-text-thumb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--home-text,#fff);background:#ffffff0c;font:inherit;font-size:10px;line-height:1.15}
@@ -258,3 +258,12 @@ html.home-ios .reference-home .home-page.module-grid[data-columns]>.module-card:
 html.home-ios .reference-home .home-page .module-card.is-reading .module-tile{outline:0}
 html.home-ios .reference-home .home-page .module-card.is-reading .module-icon{outline:2px solid #4ADE80;outline-offset:2px}
 html.home-ios .reference-home .home-page .module-card.is-reading::after{content:none}
+
+/* Compact icon mode: equal horizontal/vertical spacing, with as many usable
+   squares as the available width permits. Explicit 2/3-column choices remain. */
+html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not([data-columns="3"]){
+ grid-template-columns:repeat(var(--page-cols,4),minmax(0,1fr));column-gap:9px;row-gap:9px;
+}
+html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not([data-columns="3"])>.module-card{
+ height:var(--function-cell,52px)!important;--ios-icon:calc(var(--function-cell,52px) - 4px);
+}

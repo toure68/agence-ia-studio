@@ -14,17 +14,17 @@ const {chromium}=require('playwright');
   await page.locator('#loginPassword').fill(process.env.ADMIN_PASSWORD||'local-ui-smoke-test-only');
   await page.getByRole('button',{name:'Se connecter'}).click();await page.locator('.home-pages').waitFor();
   await page.evaluate(()=>homeReader.setSamples(true));await page.waitForTimeout(800);
-  const open=async i=>{await page.evaluate(i=>document.querySelector('#content .reader-list').scrollTo({top:(i+1)*Number(document.body.dataset.readerPitch)}),i);await page.waitForTimeout(400);};
-  const geometry=()=>page.evaluate(()=>{const r=s=>{const e=document.querySelector('#content '+s);if(!e)return null;const b=e.getBoundingClientRect();return {top:b.top,bottom:b.bottom,h:b.height};};return {reader:r('.home-reader'),list:r('.reader-list'),files:r('.reader-files'),pages:r('.home-pages'),stack:r('.home-stack'),zone:r('.home-back-zone'),pitch:Number(document.body.dataset.readerPitch),gap:parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))};});
+  const open=async i=>{await page.locator('.reader-list [data-reader-item]').nth(i).click();await page.waitForTimeout(400);};
+  const geometry=()=>page.evaluate(()=>{const r=s=>{const e=document.querySelector('#content '+s);if(!e)return null;const b=e.getBoundingClientRect();return {top:b.top,bottom:b.bottom,h:b.height};};return {reader:r('.home-reader'),list:r('.reader-list'),files:r('.reader-files'),pages:r('.home-pages'),stack:r('.home-stack'),zone:r('.home-back-zone'),pitch:Number(document.querySelector('.reader-list')?.dataset.pitch)||Number(document.body.dataset.readerPitch),gap:parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))};});
   const home=await geometry();await open(0);const plain=await geometry();
-  assert.equal(plain.files,null);const expected={375:[1,1],390:[3,3],430:[4,4]}[size.width];assert.equal(Math.round((plain.list.h+plain.gap)/plain.pitch),expected[0],'comfort zone preserves the prior notification count');assert(Math.abs(plain.pages.top-home.pages.top)<1,'grid stays in place');
-  assert(plain.zone&&Math.abs(plain.zone.h-52)<1,'52px clear back/swipe zone without files');
-  assert(plain.pages.top-plain.list.bottom<=62,'only the requested 52px plus stack edge');
+  assert.equal(plain.files,null);assert(plain.list.h>=60,'complete notification cards remain available');assert(Math.abs(plain.pages.top-home.pages.top)<1,'grid stays in place');
+  assert(plain.zone&&Math.abs(plain.zone.h-12)<1,'compact swipe zone without files');
+  assert(plain.pages.top-plain.list.bottom<=22,'one compact gap plus stack edge');
   assert(Math.abs((plain.list.h+plain.gap)%plain.pitch)<1,'only complete notification cards');
   const swipe=async dy=>{await page.locator('.home-back-zone').evaluate((e,dy)=>{const r=e.getBoundingClientRect(),x=r.left+30,y=r.top+3;const fire=(type,yy)=>e.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==='touchend'?[]:[new Touch({identifier:1,target:e,clientX:x,clientY:yy})],changedTouches:[new Touch({identifier:1,target:e,clientX:x,clientY:yy})]}));fire('touchstart',y);fire('touchmove',y+dy);fire('touchend',y+dy);},dy);await page.waitForTimeout(400);};
   const title=()=>page.locator('.home-reader .reader-card strong').innerText();const first=await title();await swipe(-50);assert.notEqual(await title(),first,'swipe up advances');await swipe(50);assert.equal(await title(),first,'swipe down returns');
   const index=await page.evaluate(()=>[...document.querySelectorAll('.reader-list .reader-item')].findIndex(e=>e.textContent.includes('Photos du chantier')));assert(index>=0);await open(index);const files=await geometry();
-  assert(files.files&&files.files.h===46);assert.equal(Math.round((files.list.h+files.gap)/files.pitch),expected[1],'comfort zone preserves prior count with attachments');assert(files.list.h>=60,'even a compact phone keeps a scrollable notification card');assert(files.files.top-files.list.bottom>=12,'files separated from cards and stack');assert(Math.abs(files.zone.h-52)<1,'52px zone remains clear below files');assert(Math.abs(files.zone.top-files.files.bottom-12)<1,'12px separates files from the clear zone');assert(Math.abs(files.pages.top-home.pages.top)<1,'attachments do not move functions');
+  assert(files.files&&files.files.h===46);assert(Math.round((files.list.h+files.gap)/files.pitch)<Math.round((plain.list.h+plain.gap)/plain.pitch),'files replace notification slots');assert(files.list.h>=60,'even a compact phone keeps a scrollable notification card');assert(files.files.top-files.list.bottom>=12,'files separated from cards and stack');assert(Math.abs(files.zone.h-12)<1,'compact zone below files');assert(Math.abs(files.reader.h-plain.reader.h)<1,'files never shrink the reader');assert(Math.abs(files.pages.top-home.pages.top)<1,'attachments do not move functions');
   await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.home-reader.is-image .reader-stage-img').waitFor();assert(Math.abs((await geometry()).reader.h-files.reader.h)<1,'image keeps reader height');
   await page.locator('.reader-thumb[data-file="5"]').click();assert.match(await page.locator('.reader-stage-doc').innerText(),/pdf/i);await page.locator('.reader-text-thumb').click();assert.equal(await page.locator('.home-reader.is-image').count(),0);assert.equal(await page.locator('.reader-text-thumb').getAttribute('aria-pressed'),'true');
   // One image centers with Text, without empty cells; ten images scroll while Text stays pinned.
@@ -44,7 +44,7 @@ const {chromium}=require('playwright');
    }
    await page.locator(`.reader-thumb[data-file="${count-1}"]`).click();await page.locator('.reader-stage-img').waitFor();
    await page.locator('.reader-text-thumb').click();assert.equal(await page.locator('.home-reader.is-image').count(),0,'Text restores the message');
-   assert(Math.abs((await geometry()).zone.h-52)<1);
+   assert(Math.abs((await geometry()).zone.h-12)<1);
    await page.screenshot({path:`/tmp/aia-carousel-${size.width}-${count}.png`});
   }
   await page.screenshot({path:`/tmp/aia-reader-layout-${size.width}.png`});

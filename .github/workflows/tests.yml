@@ -128,6 +128,8 @@ jobs:
         run: node tests/real_photos.cjs
       - name: Verify reader spacing and gestures
         run: node tests/reader_layout.cjs
+      - name: Compact reader and responsive function icons
+        run: node tests/compact_reader.cjs
       - name: Run node tests/pages.cjs
         run: |
           set -o pipefail
