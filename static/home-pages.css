@@ -167,7 +167,7 @@ html.home-ios .main-body:has(>#content>.reference-home .home-pages){padding-left
 /* 22/10 (user): Assistant bar like Claude's reply bar — at the very bottom (moved down visually, nothing else moves),
    a capsule with + on the left, the question text, a microphone and a white voice button on the right. */
 .assistant-dock .dock-ios{display:none}
-html.home-ios .reference-home .home-topbar{transform:translateY(max(0px,calc(var(--dock-under,0px) - max(8px,calc(env(safe-area-inset-bottom,0px) - 2px)))))}
+html.home-ios .reference-home .home-topbar{transform:translateY(calc(4px + max(0px,calc(var(--dock-under,0px) - max(8px,calc(env(safe-area-inset-bottom,0px) - 2px))))))}
 html.home-ios .reference-home .home-topbar .assistant-dock{display:flex;align-items:center;gap:6px;justify-content:flex-start;padding:6px 6px 6px 8px;border-radius:999px;text-align:left}
 html.home-ios .reference-home .home-topbar .assistant-dock>.assistant-spark,html.home-ios .reference-home .home-topbar .assistant-dock>strong,html.home-ios .reference-home .home-topbar .assistant-dock>.assistant-dock-hint{display:none}
 html.home-ios .reference-home .home-topbar .assistant-dock .dock-ios{display:grid;place-items:center;flex:none}
