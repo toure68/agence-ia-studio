@@ -169,7 +169,7 @@ const homePages=(()=>{
   let el=home.querySelector('.home-stack');
   if(rest){
    if(!el){el=document.createElement('button');el.type='button';el.className='home-stack';home.append(el);
-    el.onclick=()=>{const l=home.querySelector('.reader-list');if(l)l.scrollBy({top:Number(document.body.dataset.readerPitch)||54,behavior:'smooth'});};}
+    el.onclick=()=>window.homeReader?.step(1);}
    el.setAttribute('aria-label',rest+' autre'+(rest>1?'s':'')+' message'+(rest>1?'s':'')+' en attente');
    if(!el.firstChild)el.innerHTML='<i></i><i></i>';
    // Hangs right under the last visible card, like the iPhone notification stack (21/10): widest edge on top,
