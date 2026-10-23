@@ -288,6 +288,11 @@ html.home-ios .reference-home .reader-list[data-pile-motion="1"] .reader-item>*{
 html.home-ios .reference-home .reader-list[data-pile-motion="1"] .reader-end>*{opacity:var(--pile-content,1)}
 
 /* Terminal invitation belongs to the queue flow, never to an overlay above incoming messages. */
-html.home-ios .reader-end{padding-top:0;gap:0;touch-action:pan-x}
+html.home-ios .reader-end{padding-top:0;gap:8px;touch-action:pan-x}
 html.home-ios .reader-end .filler-row{height:60px;min-height:60px;max-height:60px;flex:none;border-radius:24px}
 html.home-ios .home-filler{touch-action:pan-x}
+
+/* The invitation follows the genuine list end, and only occupies complete free room. */
+html.home-ios .reader-invitation{width:100%;flex:none}
+html.home-ios .reader-invitation[hidden]{display:none}
+html.home-ios .reference-home:not(.reader-active) .reader-end-btn{display:none}

@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT INVITATION QUOTIDIEN** | `sauvegarde/avant-invitation-quotidien-v135` (v134) | Invitation à la place de Fin de liste et clic vide avançant au message suivant. |
 | **RETOUR AVANT ZONE NOTIFICATIONS ACTIVE** | `sauvegarde/avant-zone-notifications-active` (v133) | Carte d’idée séparée et espace vide sensible uniquement en lecture. |
 | **RETOUR AVANT PILE IPHONE MAGNÉTIQUE** | `sauvegarde/avant-pile-iphone-magnetique` (v132) | Animation déclenchée après relâchement, sans suivi continu du doigt. |
 | **RETOUR AVANT LECTURE DISCRÈTE** | `sauvegarde/avant-lecture-discrete` (v131) | Barre verte épaisse et animation d’empilement par simple réduction de taille. |

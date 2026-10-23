@@ -115,10 +115,10 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // One single way back at the end of the list: « ✓ Fin de la liste » itself (21/10).
   assert.equal(await page.locator('#content .filler-back').count(),0);
   // The terminal invitation is not a notification and stays in the scrolling queue.
-  const end=page.locator('#content .reader-end [data-filler]');
+  const end=page.locator('#content .reader-end-btn');
   if(await end.count()){
    await page.evaluate(()=>{const list=document.querySelector('#content .reader-list');list.scrollTop=document.querySelectorAll('#content .reader-list .reader-item').length*(Number(list.dataset.pitch)||Number(document.body.dataset.readerPitch));});
-   await page.waitForTimeout(700);assert(await end.isVisible(),'End invitation stays visible');
+   await page.waitForTimeout(700);assert(await end.isVisible(),'Fin de liste stays visible');
    await page.evaluate(()=>homeReader.close());await page.waitForTimeout(500);
   }
   // Compact bottom (21/10): Assistant IA 44px high, dots centred between the functions and the Assistant.
