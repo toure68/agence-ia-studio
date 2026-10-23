@@ -64,7 +64,7 @@ const homeReader=(()=>{
  }
  function editSampleSheet(c){
   const d={amount:c.edit?.amount||c.amount||'',date:c.edit?.date||'',note:''};
-  openModal(`<h2>Modifier · ${clean(c.title)}</h2><form id="readerEditSheet"><label>Montant / quantité<input name="amount" value="${clean(d.amount)}" inputmode="decimal"></label><label>Date<input name="date" value="${clean(d.date)}"></label><label>Message joint<textarea name="note" rows="3"></textarea></label><button type="submit" class="btn primary">Enregistrer et envoyer (essai)</button></form>`);
+  openModal(`<h2>Modifier · ${clean(c.title)}</h2><form id="readerEditSheet" class="stack"><div class="field"><label>Montant / quantité<input name="amount" value="${clean(d.amount)}" inputmode="decimal"></label></div><div class="field"><label>Date<input name="date" value="${clean(d.date)}"></label></div><div class="field"><label>Message joint<textarea name="note" rows="3"></textarea></label></div><button type="submit" class="btn primary">Enregistrer et envoyer (essai)</button></form>`);
   document.querySelector('#readerEditSheet').onsubmit=async e=>{e.preventDefault();view.draft=Object.fromEntries(new FormData(e.target));await universalSheets.complete();sampleDone(c,'Modifié et envoyé'+(view.draft.amount?' · '+view.draft.amount:''));};
  }
  function sampleDone(c,text){
