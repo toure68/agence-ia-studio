@@ -31,6 +31,7 @@ const universalSheets=(()=>{
   // A modal's contents scroll independently, leaving its handle and close control in place.
   if(panel.matches('.modal')){const body=document.createElement('div');body.className='us-scroll';while(panel.firstChild)body.append(panel.firstChild);panel.append(body);}
   const bar=document.createElement('div');bar.className='us-handle';bar.innerHTML='<button type="button" class="us-collapse" aria-label="Fermer et retrouver l’accueil">⌄</button><button type="button" class="us-expand" aria-label="Agrandir le panneau">⤢</button>';
+  const footer=document.createElement('footer');footer.className='us-footer';footer.innerHTML='<button type="button" class="us-close-bottom" aria-label="Fermer et retrouver l’accueil"><span aria-hidden="true">×</span> Fermer</button>';footer.querySelector('button').onclick=()=>complete();panel.append(footer);
   panel.prepend(bar);bar.querySelector('.us-collapse').onclick=()=>complete();bar.querySelector('.us-expand').onclick=()=>snap(panel,panel.dataset.snap==='full'?'half':'full');
   let start=null,suppress=false;
   const down=(x,y)=>{start={x,y};suppress=false;panel.classList.add('us-dragging');};
@@ -50,9 +51,10 @@ const universalSheets=(()=>{
   // These confirmations are the terminal step of a preview, never the preview itself.
   for(const button of panel.querySelectorAll('#confirmBankMovement,#confirmPaidDebit,#confirmCancelDebit,#saveBankLogo,#removeBankLogo'))terminal(button,'onclick');
  }
- function sync(){queued=false;const panels=enabled()?[...document.querySelectorAll('#contextPanel:not([data-module="assistant"]),#modalLayer:not(.hide) .modal')]:[];
+ function sync(){queued=false;const assistant=document.querySelector('#contextPanel[data-module="assistant"].universal-sheet');if(assistant){assistant.classList.remove('universal-sheet');assistant.querySelector(':scope > .us-handle')?.remove();assistant.querySelector(':scope > .us-footer')?.remove();delete assistant.dataset.usWired;delete assistant.dataset.snap;assistant.style.removeProperty('--us-height');assistant.style.removeProperty('--us-bottom');}
+  const panels=enabled()?[...document.querySelectorAll('#contextPanel:not([data-module="assistant"]),#modalLayer:not(.hide) .modal')]:[];
   document.body.classList.toggle('us-open',panels.length>0);
-  for(const panel of panels){panel.classList.add('universal-sheet');wire(panel);layout(panel);forms(panel);}
+  for(const panel of panels){panel.querySelector(':scope > .assistant-collapse')?.remove();panel.classList.add('universal-sheet');wire(panel);layout(panel);forms(panel);}
  }
  function schedule(){if(!queued){queued=true;requestAnimationFrame(sync);}}
  new MutationObserver(records=>{if(records.some(r=>r.type==='childList'||r.attributeName==='data-module'||r.attributeName==='class'&&r.target.id==='modalLayer'))schedule();}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-module']});
