@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTEUR TAILLES STABLES** | `sauvegarde/avant-lecteur-tailles-stables` (v129) | Notifications étirées en lecture, miniatures de 46 px et carte vitrée dans l’en-tête du lecteur. |
 | **RETOUR AVANT LECTEUR PLUS HAUT** | `sauvegarde/avant-lecteur-plus-haut` (v128) | Lecteur compact avant l’ajout d’une hauteur de notification et l’agrandissement des icônes. |
 | **RETOUR AVANT SIX ICÔNES IPHONE** | `sauvegarde/avant-six-icones-iphone` (v127) | Sept icônes possibles sur grand iPhone, sans marge réservée aux contours et compteurs. |
 | **RETOUR AVANT BARRE ASSISTANT 4PX** | `sauvegarde/avant-barre-assistant-4px` (v126) | Barre de l’Assistant et profil avant leur descente de 4 px. |

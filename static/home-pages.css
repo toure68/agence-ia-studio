@@ -141,15 +141,19 @@ html.home-ios .reader-item .module-icon svg{width:18px;height:18px}
 html.home-ios .reader-item .reader-state{color:var(--c)!important;font-weight:600;letter-spacing:.03em}
 html.home-ios .reader-item .reader-tag{border-radius:999px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#C4B5FD;background:rgba(167,139,250,.16);margin-right:8px}
 
-/* 22/10 : in the reader, the top is the very same notification card (same size and style); the rest only holds
-   what the card does not show (details chips, full text). Title, state and amount are not repeated. */
+/* Reader heading: information sits directly on the reader surface, without a small card. */
 html.home-ios .home-reader .reader-title{display:none}
-/* 22/10 (user): no tool row; the card sits at the very top of the reader, a small gap, then the details. The speaker is on the card. */
-html.home-ios .home-reader{padding-top:0;gap:6px}
-html.home-ios .home-reader .reader-card{position:relative;margin:-1px -15px 0}
-html.home-ios .home-reader .reader-card .reader-item{padding-right:56px}
-html.home-ios .home-reader .reader-card [data-reader-speak]{position:absolute;right:11px;top:11px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff}
-html.home-ios .home-reader .reader-card .reader-item{display:flex;width:100%;height:60px;flex:none;cursor:default;scroll-snap-align:none}
+html.home-ios .home-reader{padding-top:8px;gap:6px}
+html.home-ios .home-reader .reader-card{display:flex;align-items:center;gap:10px;flex:none;min-height:44px;margin:0;padding:0;background:none;border:0;box-shadow:none;--c:#94A3B8}
+html.home-ios .home-reader .reader-card.state-warning{--c:#E3B867}
+html.home-ios .home-reader .reader-card.state-danger{--c:#FB7185}
+html.home-ios .home-reader .reader-card.state-info{--c:#60A5FA}
+html.home-ios .home-reader .reader-card.state-success{--c:#34D399}
+html.home-ios .home-reader .reader-card>.module-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:50%;border:0;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c);box-shadow:none}
+html.home-ios .home-reader .reader-card>.module-icon svg{width:18px;height:18px}
+html.home-ios .home-reader .reader-card .reader-state{color:var(--c);font-weight:600}
+html.home-ios .home-reader .reader-card .reader-tag{border-radius:999px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#C4B5FD;background:rgba(167,139,250,.16);margin-right:8px}
+html.home-ios .home-reader .reader-card [data-reader-speak]{flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff}
 /* 22/10 (user): while reading, no date tab — it covered the title of the card at the top. */
 html.home-ios .home-reader[data-date]::before{display:none}
 /* 22/10 (user, to try): no frame line around the app; the content comes right under the Dynamic Island.
@@ -268,3 +272,8 @@ html.home-ios .reference-home .home-pages.module-grid{padding-top:8px;padding-bo
 html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not([data-columns="3"])>.module-card{
  height:var(--function-cell,52px)!important;--ios-icon:var(--function-cell,52px);
 }
+
+/* Files use the spare queue room; notifications and function icons keep their home size. */
+html.home-ios .reader-files,html.home-ios .reader-file-row,html.home-ios .reader-file-window,html.home-ios .reader-thumbs{height:var(--reader-thumb-size,64px)}
+html.home-ios .reader-thumb{flex:0 0 var(--reader-thumb-size,64px);width:var(--reader-thumb-size,64px);height:var(--reader-thumb-size,64px)}
+html.home-ios .reader-thumb img,html.home-ios .reader-thumb .reader-file-kind{width:100%;height:100%}

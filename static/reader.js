@@ -106,9 +106,9 @@ const homeReader=(()=>{
   // 22/10 (user): a tapped thumbnail turns the reader itself into an image reader — only the file, nothing else.
   const f=view.file>=0?c.files?.[view.file]:null;
   if(f)return `<div class="reader-stage" data-reader-stage>${f.type==='image'?`<img class="reader-stage-img" src="${clean(f.src)}" alt="${clean(f.name)}">`:`<div class="reader-stage-doc"${f.src?' data-open="1"':''}><span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span><strong>${clean(f.name)}</strong>${f.pages?`<span>${f.pages} pages</span>`:''}${f.src?'<span>Touchez pour ouvrir</span>':''}</div>`}</div>`;
-  // iPhone (22/10, user): no tool row; the card sits at the very top and carries the speaker.
+  // iPhone: integrate the notification information into the reader, without a nested glass card.
   return `${ios()?'':`<div class="reader-head"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-state state-${p.state}">${clean(p.label)}</span><span class="reader-pos">${pos}/${total}</span><span class="reader-tools"><button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button><button type="button" class="reader-icon" data-reader-open aria-label="Ouvrir le détail" title="Ouvrir le détail"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="reader-icon" data-reader-hide aria-label="Masquer ce message" title="Masquer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button type="button" class="reader-icon" data-reader-back aria-label="Revenir à la trésorerie" title="Trésorerie"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>`}
-  ${ios()?`<div class="reader-card">${small(c,view.focus).replace(/ data-reader-item="\d+"/,'').replace(/^<button type="button"/,'<div').replace(/<\/button>$/,spk+'</div>')}</div>`:''}
+  ${ios()?`<div class="reader-card state-${p.state}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+moneyChip(c,cp.amount):''}${c.source?' · '+clean(c.source):''}${cp.detail?' · '+clean(cp.detail):''}</small></span>${spk}</div>`:''}
   <div class="reader-title"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong>${cp.amount?`<span class="reader-amount ${sg?sg.cls:''}">${sg?sg.s:''}${clean(cp.amount)}${sg?`<small>${sg.word}</small>`:''}</span>`:''}</div>
   ${facts(c)}<div class="reader-body-wrap"><div class="reader-body" tabindex="0">${bodyMarkup(c,cp)}</div><div class="reader-rail" aria-hidden="true"><i></i></div></div>
   <div class="reader-actions">${btns.map((b,i)=>`<button type="button" class="reader-btn is-${b.kind}" data-reader-run="${i}"${b.kind==='done'?' disabled aria-disabled="true"':''}>${clean(b.label)}</button>`).join('')}</div>`;
@@ -243,20 +243,20 @@ const homeReader=(()=>{
     const editing=card.classList.contains('is-editing');
     if(!editing)card.style.height=readerHeight()+'px'; // start from the same base, never accumulate spare pixels
     if(pg){
-     // Files replace queue slots; the reader keeps the same height in text and image mode.
-     // One compact separation only: no cumulative comfort reserve under the thumbnails.
+     // Queue cards retain the home height and pitch. Spare room belongs to the
+     // image carousel, or stays between the queue and the action buttons.
      const stack=view.cards.length>1?9:0,space=16;
-     const fileSpace=files?files.getBoundingClientRect().height+space:0;
-     const tail=stack+space+fileSpace;
      const room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
-     const basePitch=Number(document.body.dataset.readerPitch)||69;
+     const basePitch=Number(document.body.dataset.readerPitch)||69,cardH=basePitch-gap;
+     const thumb=files?Math.min(64,Math.max(46,room-stack-2*space-cardH)):0;
+     const tail=stack+space+(files?thumb+space:0);
      n=editing?0:Math.max(0,Math.min(cap(),Math.floor((room-tail+gap)/basePitch)));
-     const available=Math.max(0,room-tail);
-     // Share the remainder within the complete cards, rather than creating a blank block
-     // or changing the reader's height. Their gaps remain the same.
-     const step=n?(available+gap)/n:basePitch,oldPitch=pitch();
-     list.dataset.pitch=String(step);list.style.setProperty('--reader-card-h',Math.max(0,step-gap)+'px');
-     anchor=Math.abs(step-oldPitch)>.1;
+     const used=Math.max(0,n*basePitch-(n?gap:0));
+     const oldPitch=pitch();
+     list.dataset.pitch=String(basePitch);list.style.setProperty('--reader-card-h',cardH+'px');
+     anchor=Math.abs(basePitch-oldPitch)>.1;
+     if(files)queue.style.setProperty('--reader-thumb-size',Math.max(46,room-used-stack-2*space)+'px');
+     else queue.style.removeProperty('--reader-thumb-size');
      queue.style.setProperty('--reader-tail-gap',(stack+space)+'px');
     }
    }else{delete list.dataset.pitch;list.style.removeProperty('--reader-card-h');}
