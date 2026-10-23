@@ -102,6 +102,9 @@ def init_schema(db):
         ''')
 
 
+    from unified_mail import init_schema as init_unified_schema
+    init_unified_schema(db)
+
 def install(app,db,require,own_company,utcnow,secret,throttle):
     cipher=Fernet(base64.urlsafe_b64encode(hashlib.sha256((secret+':gmail-tokens').encode()).digest()))
     def config():
@@ -119,6 +122,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:own_company(con,cid)
         return user['id']
     def access(a):
+        if a.get('provider')!='gmail':raise HTTPException(409,'Cette boîte utilise la messagerie unifiée.')
         if not a['token']:raise HTTPException(409,'Connectez Gmail.')
         try:refresh=cipher.decrypt(a['token'].encode()).decode()
         except InvalidToken:raise HTTPException(409,'Reconnectez Gmail.')
@@ -135,6 +139,8 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
             return r.json()
         except httpx.HTTPError:raise HTTPException(502,'Réponse Gmail indisponible.')
     def synchronize(uid,cid):
+        with db() as con:
+            if account(con,uid,cid).get('provider')=='nylas':return unified['synchronize'](uid,cid)
         with db() as con:
             a=account(con,uid,cid)
             if not a['token']:raise HTTPException(409,'Connectez Gmail.')
@@ -222,10 +228,11 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         profile=gmail('GET','/profile',tokens['access_token'])
         with db() as con:
             old=account(con,user['id'],cid)
-            if old['email'] and old['email']!=profile['emailAddress']:
+            if old.get('provider')!='gmail' or (old['email'] and old['email']!=profile['emailAddress']):
+                con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=?',(user['id'],cid))
                 con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=?',(user['id'],cid))
                 con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=?',(user['id'],cid))
-            con.execute('UPDATE mail_accounts SET email=?,token=?,cursor=?,error=? WHERE user_id=? AND company_id=?',
+            con.execute("UPDATE mail_accounts SET provider='gmail',grant_hash='',email=?,token=?,cursor=?,error=? WHERE user_id=? AND company_id=?",
               (profile['emailAddress'],cipher.encrypt(tokens['refresh_token'].encode()).decode(),'','',user['id'],cid))
         return RedirectResponse(f'/?mail_company={cid}#/emails',status_code=303)
 
@@ -237,7 +244,8 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         uid=scope(req,cid,True)
         with db() as con:
             a=account(con,uid,cid)
-        if a['token']:
+        if a.get('provider')=='nylas':unified['disconnect'](uid,cid,a)
+        elif a['token']:
             try:httpx.post('https://oauth2.googleapis.com/revoke',data={'token':cipher.decrypt(a['token'].encode()).decode()},timeout=10)
             except (httpx.HTTPError,InvalidToken):pass
         with db() as con:
@@ -251,7 +259,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
     def messages(cid:int,req:Request):
         uid=scope(req,cid)
         with db() as con:
-            return [dict(r) for r in con.execute('SELECT id,sender,subject,received,category,send_status,revision FROM mail_messages WHERE user_id=? AND company_id=? ORDER BY id DESC LIMIT 1000',(uid,cid))]
+            return [dict(r) for r in con.execute('SELECT id,sender,subject,received,category,send_status,revision,provider,unread,archived FROM mail_messages WHERE user_id=? AND company_id=? AND remote_deleted=0 ORDER BY id DESC LIMIT 1000',(uid,cid))]
 
     @app.get('/api/companies/{cid}/mail/messages/{mid}')
     def detail(cid:int,mid:int,req:Request):
@@ -344,11 +352,15 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:con.execute("UPDATE mail_messages SET send_status='sent',sent_id=? WHERE id=?",(result['id'],mid))
         return {'sent':True}
 
+    from unified_mail import install as install_unified
+    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle)
+    app.state.unified_mail=unified
+
     async def worker():
         while True:
             await asyncio.sleep(60)
             with db() as con:
-                accounts=[dict(r) for r in con.execute("SELECT user_id,company_id FROM mail_accounts WHERE automatic=1 AND token<>'' AND last_sync<?",(time.time()-900,))]
+                accounts=[dict(r) for r in con.execute("SELECT user_id,company_id FROM mail_accounts WHERE automatic=1 AND auth_invalid=0 AND token<>'' AND last_sync<?",(time.time()-900,))]
             for a in accounts:
                 try:await asyncio.to_thread(synchronize,a['user_id'],a['company_id'])
                 except Exception:pass

@@ -98,8 +98,11 @@ def module_states(con,cid,user,risks):
     for r in con.execute('SELECT status FROM leads WHERE company_id=?',(cid,)):
         if r['status'] in ('Nouveau','À rappeler'):put('requests','warning','À traiter')
         elif r['status']=='Devis envoyé':put('requests','info','En cours')
-    for r in con.execute('SELECT send_status FROM mail_messages WHERE company_id=? AND user_id=?',(cid,user['id'])):
+    for r in con.execute('SELECT send_status FROM mail_messages WHERE archived=0 AND remote_deleted=0 AND company_id=? AND user_id=?',(cid,user['id'])):
         state,label=('danger','À vérifier') if r['send_status']=='uncertain' else ('warning','À relire') if r['send_status']=='draft' else ('info','Envoi en cours') if r['send_status']=='sending' else ('success','Traités')
+        put('emails',state,label);put('requests',state,label)
+    for r in con.execute("SELECT status FROM mail_compositions WHERE company_id=? AND user_id=? AND (source_id IS NULL OR mode<>'reply') AND status IN ('draft','sending','uncertain')",(cid,user['id'])):
+        state,label=('danger','À vérifier') if r['status']=='uncertain' else ('warning','Brouillon') if r['status']=='draft' else ('info','Envoi en cours')
         put('emails',state,label);put('requests',state,label)
     for task in con.execute('SELECT * FROM calendar_tasks WHERE company_id=?',(cid,)):
         done={r['occurrence'] for r in con.execute('SELECT occurrence FROM task_completions WHERE task_id=?',(task['id'],))}
@@ -245,7 +248,7 @@ def install(app,db,require,own_company,utcnow):
                     label={'draft':'À finaliser','sent':'Envoyé','accepted':'Accepté','declined':'Refusé'}.get(r['status'],r['status'])
                     add(r['reference'],label,'warning' if r['status']=='draft' else 'success' if r['status']=='accepted' else 'neutral',r['total_minor'],currency if len(str(currency))==3 else 'EUR')
             elif key=='emails':
-                for r in con.execute("SELECT subject,sender,send_status FROM mail_messages WHERE company_id=? AND user_id=? ORDER BY received DESC,id DESC LIMIT 3",(cid,user['id'])):
+                for r in con.execute("SELECT subject,sender,send_status FROM mail_messages WHERE archived=0 AND remote_deleted=0 AND company_id=? AND user_id=? ORDER BY received DESC,id DESC LIMIT 3",(cid,user['id'])):
                     add(r['subject'] or '(sans objet)',r['sender'],'warning' if r['send_status']=='draft' else 'neutral')
             elif key=='calendar':
                 upcoming=[]
@@ -276,7 +279,8 @@ def install(app,db,require,own_company,utcnow):
         with db() as con:
             incoming=con.execute("SELECT COUNT(*) FROM leads WHERE company_id=? AND status IN ('Nouveau','À rappeler')",(cid,)).fetchone()[0]
             quotes=con.execute("SELECT COUNT(*) FROM quotations WHERE company_id=? AND status='draft'",(cid,)).fetchone()[0]
-            mails=con.execute("SELECT COUNT(*) FROM mail_messages WHERE company_id=? AND user_id=? AND send_status='draft'",(cid,user['id'])).fetchone()[0]
+            mails=con.execute("SELECT COUNT(*) FROM mail_messages WHERE archived=0 AND remote_deleted=0 AND company_id=? AND user_id=? AND send_status='draft'",(cid,user['id'])).fetchone()[0]
+            mails+=con.execute("SELECT count(*) FROM mail_compositions WHERE company_id=? AND user_id=? AND (source_id IS NULL OR mode<>'reply') AND status IN ('draft','uncertain')",(cid,user['id'])).fetchone()[0]
             prospect=con.execute("SELECT COUNT(*) FROM prospects WHERE stage IN ('Réponse reçue','Intéressé','Accord de principe')").fetchone()[0] if user['role']=='owner' else 0
             agenda=0
             for task in con.execute('SELECT * FROM calendar_tasks WHERE company_id=?',(cid,)):

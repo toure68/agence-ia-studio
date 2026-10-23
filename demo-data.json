@@ -224,7 +224,20 @@
     "connected": false,
     "configured": false
   },
-  "/api/companies/1/mail/messages": [],
+  "/api/companies/1/mail/messages": [
+    {
+      "id": 99001,
+      "provider": "nylas",
+      "subject": "Photos et devis du chantier — exemple",
+      "sender": "Client exemple <client@example.test>",
+      "received": "2026-10-23T09:00:00+00:00",
+      "category": "Clients",
+      "unread": true,
+      "archived": 0,
+      "send_status": "draft",
+      "revision": 0
+    }
+  ],
   "/api/companies/1/cockpit": {
     "badges": {
       "requests": 1,
@@ -1113,5 +1126,64 @@
   "/api/companies/1/module-peek/social": {
     "key": "social",
     "items": []
-  }
+  },
+  "/api/companies/1/mail/unified/status": {
+    "configured": false,
+    "connected": true,
+    "email": "essai@example.test",
+    "provider": "nylas",
+    "error": "",
+    "last_sync": 0,
+    "realtime": false
+  },
+  "/api/companies/1/mail/messages/99001": {
+    "id": 99001,
+    "provider": "nylas",
+    "subject": "Photos et devis du chantier — exemple",
+    "sender": "Client exemple <client@example.test>",
+    "reply_to": "client@example.test",
+    "body": "Bonjour, voici les éléments pour préparer le devis. Pouvez-vous confirmer la réception et votre disponibilité ?\n\nCe message est fictif : aucun envoi réel dans cette démonstration.",
+    "received": "2026-10-23T09:00:00+00:00",
+    "category": "Clients",
+    "unread": true,
+    "archived": 0,
+    "send_status": "draft",
+    "revision": 0,
+    "attachments": [
+      {
+        "id": "trial-file",
+        "filename": "plan-du-chantier.pdf",
+        "content_type": "application/pdf",
+        "size": 20480
+      }
+    ]
+  },
+  "/api/companies/1/mail/unified/messages/99001/thread": {
+    "messages": [
+      {
+        "id": 99001,
+        "provider": "nylas",
+        "subject": "Photos et devis du chantier — exemple",
+        "sender": "Client exemple <client@example.test>",
+        "reply_to": "client@example.test",
+        "body": "Bonjour, voici les éléments pour préparer le devis. Pouvez-vous confirmer la réception et votre disponibilité ?\n\nCe message est fictif : aucun envoi réel dans cette démonstration.",
+        "received": "2026-10-23T09:00:00+00:00",
+        "category": "Clients",
+        "unread": true,
+        "archived": 0,
+        "send_status": "draft",
+        "revision": 0,
+        "attachments": [
+          {
+            "id": "trial-file",
+            "filename": "plan-du-chantier.pdf",
+            "content_type": "application/pdf",
+            "size": 20480
+          }
+        ]
+      }
+    ],
+    "selected": 99001
+  },
+  "/api/companies/1/mail/unified/drafts": []
 }
