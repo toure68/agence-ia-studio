@@ -128,10 +128,10 @@ def install(app, db, require, own_company, utcnow):
                 'Vérifiez dans votre messagerie si le message est parti avant toute nouvelle tentative.' if uncertain else 'Réponse en brouillon à relire. Aucun envoi automatique.',
                 {'type':'email','id':mail['id']},'Ouvrir l’e-mail',0 if uncertain else 3)
 
-        for r in con.execute("SELECT id,subject,status,revision FROM mail_compositions WHERE company_id=? AND user_id=? AND (source_id IS NULL OR mode<>'reply') AND status IN ('draft','uncertain')",(cid,user['id'])):
+        for r in con.execute("SELECT id,subject,status,revision,connection_id FROM mail_compositions WHERE company_id=? AND user_id=? AND (source_id IS NULL OR mode<>'reply') AND status IN ('draft','uncertain')",(cid,user['id'])):
             uncertain=r['status']=='uncertain'
             add('email','composition-'+str(r['id']),str(r['revision'])+r['status'],('Vérifier l’envoi : ' if uncertain else 'Terminer le brouillon : ')+(r['subject'] or 'Sans objet'),
-                'Vérifiez votre dossier Envoyés avant toute nouvelle tentative.' if uncertain else 'Brouillon enregistré, aucun envoi automatique.',{'type':'mail-draft','id':r['id']},'Ouvrir le brouillon',0 if uncertain else 3)
+                'Vérifiez votre dossier Envoyés avant toute nouvelle tentative.' if uncertain else 'Brouillon enregistré, aucun envoi automatique.',{'type':'mail-draft','id':r['id'],'connection_id':r['connection_id']},'Ouvrir le brouillon',0 if uncertain else 3)
 
         if user['role']=='owner':
             from social_routes import pending

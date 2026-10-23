@@ -229,9 +229,9 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:
             old=account(con,user['id'],cid)
             if old.get('provider')!='gmail' or (old['email'] and old['email']!=profile['emailAddress']):
-                con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=?',(user['id'],cid))
-                con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=?',(user['id'],cid))
-                con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=?',(user['id'],cid))
+                con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=0',(user['id'],cid))
+                con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=0',(user['id'],cid))
+                con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=? AND message_id NOT IN (SELECT id FROM mail_messages WHERE connection_id<>0)',(user['id'],cid))
             con.execute("UPDATE mail_accounts SET provider='gmail',grant_hash='',email=?,token=?,cursor=?,error=? WHERE user_id=? AND company_id=?",
               (profile['emailAddress'],cipher.encrypt(tokens['refresh_token'].encode()).decode(),'','',user['id'],cid))
         return RedirectResponse(f'/?mail_company={cid}#/emails',status_code=303)
@@ -251,15 +251,15 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:
             con.execute('DELETE FROM mail_oauth_states WHERE user_id=? AND company_id=?',(uid,cid))
             con.execute('DELETE FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid))
-            con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=?',(uid,cid))
-            con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=?',(uid,cid))
+            con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=0',(uid,cid))
+            con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=? AND message_id NOT IN (SELECT id FROM mail_messages WHERE connection_id<>0)',(uid,cid))
         return {'ok':True}
 
     @app.get('/api/companies/{cid}/mail/messages')
     def messages(cid:int,req:Request):
         uid=scope(req,cid)
         with db() as con:
-            return [dict(r) for r in con.execute('SELECT id,sender,subject,received,category,send_status,revision,provider,unread,archived FROM mail_messages WHERE user_id=? AND company_id=? AND remote_deleted=0 ORDER BY id DESC LIMIT 1000',(uid,cid))]
+            return [dict(r) for r in con.execute('SELECT id,sender,subject,received,category,send_status,revision,provider,unread,archived,connection_id FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=0 AND remote_deleted=0 ORDER BY id DESC LIMIT 1000',(uid,cid))]
 
     @app.get('/api/companies/{cid}/mail/messages/{mid}')
     def detail(cid:int,mid:int,req:Request):

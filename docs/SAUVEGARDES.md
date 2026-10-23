@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT ICÔNES MESSAGERIES** | `sauvegarde/avant-icones-messageries-v145` (v144) | Client e-mail unifié à boîte unique, sans logos de fournisseurs dans les fonctions. |
 | **RETOUR AVANT MESSAGERIE UNIFIÉE** | `sauvegarde/avant-messagerie-unifiee-v144` (v143) | Lecture et réponse Gmail existantes, sans client unifié ni transfert de pièces jointes. |
 | **RETOUR AVANT FERMETURE ACCESSIBLE** | `sauvegarde/avant-fermeture-accessible-v143` (v142) | Fermeture des panneaux en haut uniquement ; clavier et assistant se ferment séparément. |
 | **RETOUR AVANT MARGES FORMULAIRES** | `sauvegarde/avant-marges-formulaires-v142` (v141) | Marges des panneaux supprimées par l’aplatissement des cadres imbriqués. |

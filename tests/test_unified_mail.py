@@ -174,3 +174,66 @@ def test_replacing_a_box_revokes_only_the_unused_old_grant(env,monkeypatch):
     with monkeypatch.context() as cfg:
         cfg.delenv('NYLAS_API_KEY')
         assert not c.get(u+'/status').json()['connected']
+
+
+def test_multiple_boxes_keep_messages_drafts_sends_and_disconnect_separate(env,monkeypatch):
+    c,h,root,u,mid,calls,_=connected(env,monkeypatch)
+    previous=unified_mail.httpx.request
+    def provider(method,url,**kw):
+        if url.endswith('/connect/token'):return httpx.Response(200,json={'grant_id':'second-grant'})
+        if url.endswith('/grants/second-grant'):
+            if method=='DELETE':return httpx.Response(200,json={})
+            return httpx.Response(200,json={'data':{'email':'other@outlook.test','provider':'microsoft'}})
+        return previous(method,url,**kw)
+    monkeypatch.setattr(unified_mail.httpx,'request',provider)
+    conn=c.post(u+'/connect',headers=h,json={'add':True,'service':'outlook','login_hint':'other@outlook.test'});assert conn.status_code==200,conn.text
+    params=parse_qs(urlparse(conn.json()['url']).query)
+    assert params['provider']==['microsoft'] and params['login_hint']==['other@outlook.test']
+    assert c.get('/api/mail/unified/callback',params={'state':params['state'][0],'code':'second'}).status_code==200
+    accounts=c.get(u+'/accounts').json()['accounts'];assert len(accounts)==2
+    extra=next(a for a in accounts if a['id']>0);aid=extra['id'];q={'account_id':aid}
+    assert extra['service']=='outlook' and extra['connected']
+    assert c.post(u+f'/boxes/{aid}/sync',headers=h).status_code==200
+    listing=c.get(u+f'/boxes/{aid}/messages').json();othermid=listing[0]['id'];assert othermid!=mid
+    assert len(c.get(root+'/messages').json())==1
+    assert c.get(u+f'/messages/{othermid}/thread').status_code==404
+    assert c.get(u+f'/messages/{mid}/thread',params=q).status_code==404
+    thread=c.get(u+f'/messages/{othermid}/thread',params=q).json();assert len(thread['messages'])==1 and thread['selected']==othermid
+    payload={'mode':'new','to':'receiver@example.test','subject':'Second box','body':'Isolated draft'}
+    draft=c.put(u+'/drafts',headers=h,params=q,json=payload);assert draft.status_code==200,draft.text
+    did=draft.json()['id'];rev=draft.json()['revision']
+    assert c.get(u+f'/drafts/{did}').status_code==404
+    assert c.post(u+f'/drafts/{did}/send',headers=h,json={'confirmed':True,'revision':rev}).status_code==404
+    assert c.post(u+f'/drafts/{did}/send',headers=h,params=q,json={'confirmed':True,'revision':rev}).status_code==200
+    assert any('/grants/second-grant/messages/send' in url for _,url,_ in calls)
+    # Provider events identify a grant, never every mailbox in the company.
+    event={'id':'second-expired','type':'grant.expired','data':{'object':{'id':'second-grant'}}}
+    raw=json.dumps(event).encode();signature=hmac.new(b'webhook-test-secret',raw,hashlib.sha256).hexdigest()
+    assert c.post('/api/mail/unified/webhook',content=raw,headers={'x-nylas-signature':signature,'content-type':'application/json'}).status_code==200
+    env.app.state.unified_mail['process_events']()
+    assert not c.get(u+'/status',params=q).json()['connected']
+    assert c.get(u+'/status').json()['connected']
+    # Repeated consent updates the same connection rather than creating duplicates.
+    state=parse_qs(urlparse(c.post(u+'/connect',headers=h,json={'add':True,'service':'outlook'}).json()['url']).query)['state'][0]
+    assert c.get('/api/mail/unified/callback',params={'state':state,'code':'second'}).status_code==200
+    assert len(c.get(u+'/accounts').json()['accounts'])==2
+    assert c.get(u+f'/drafts/{did}',params=q).json()['status']=='sent'
+    assert c.get(u+'/status',params={'account_id':99999}).status_code==404
+    assert c.get('/api/companies/2/mail/unified/boxes/'+str(aid)+'/messages').status_code in (403,404)
+    assert c.post(u+f'/boxes/{aid}/disconnect').status_code==403
+    assert c.post(u+f'/boxes/{aid}/disconnect',headers=h).status_code==200
+    assert len(c.get(u+'/accounts').json()['accounts'])==1
+    assert c.get(u+'/status').json()['connected']
+    assert c.get(root+'/messages/'+str(mid)).status_code==200
+    assert c.get(u+f'/drafts/{did}',params=q).status_code==404
+
+
+def test_provider_catalog_and_new_connection_validation(env,monkeypatch):
+    c,h,root,u,mid,_,_=connected(env,monkeypatch)
+    catalog=c.get(u+'/accounts').json();ids={p['id'] for p in catalog['providers']}
+    assert {'gmail','outlook','icloud','yahoo','zoho','orange','sfr','free','ovh','ionos','other'}<=ids
+    assert not any(s in json.dumps(catalog) for s in ['nylas-private-test-key','grant-private-test','token'])
+    assert c.post(u+'/connect',headers=h,json={'add':True,'service':'unknown'}).status_code==422
+    r=c.post(u+'/connect',headers=h,json={'add':True,'service':'other','login_hint':'contact@mycompany.test'})
+    assert parse_qs(urlparse(r.json()['url']).query)['provider']==['generic']
+    assert c.get(u+'/status').json()['connected']

@@ -1185,5 +1185,116 @@
     ],
     "selected": 99001
   },
-  "/api/companies/1/mail/unified/drafts": []
+  "/api/companies/1/mail/unified/drafts": [],
+  "/api/companies/1/mail/unified/accounts": {
+    "configured": false,
+    "providers": [
+      {
+        "id": "gmail",
+        "name": "Gmail / Google Workspace",
+        "short": "Gmail",
+        "provider": "google"
+      },
+      {
+        "id": "outlook",
+        "name": "Outlook / Microsoft 365 / Hotmail",
+        "short": "Outlook",
+        "provider": "microsoft"
+      },
+      {
+        "id": "icloud",
+        "name": "iCloud Mail",
+        "short": "iCloud",
+        "provider": "icloud"
+      },
+      {
+        "id": "yahoo",
+        "name": "Yahoo Mail",
+        "short": "Yahoo",
+        "provider": "yahoo"
+      },
+      {
+        "id": "zoho",
+        "name": "Zoho Mail",
+        "short": "Zoho",
+        "provider": "zoho"
+      },
+      {
+        "id": "orange",
+        "name": "Orange / Wanadoo",
+        "short": "Orange",
+        "provider": "generic"
+      },
+      {
+        "id": "sfr",
+        "name": "SFR / Neuf",
+        "short": "SFR",
+        "provider": "generic"
+      },
+      {
+        "id": "free",
+        "name": "Free / Zimbra",
+        "short": "Free",
+        "provider": "generic"
+      },
+      {
+        "id": "laposte",
+        "name": "La Poste.net",
+        "short": "La Poste",
+        "provider": "generic"
+      },
+      {
+        "id": "ovh",
+        "name": "OVHcloud",
+        "short": "OVHcloud",
+        "provider": "generic"
+      },
+      {
+        "id": "ionos",
+        "name": "IONOS",
+        "short": "IONOS",
+        "provider": "generic"
+      },
+      {
+        "id": "gmx",
+        "name": "GMX",
+        "short": "GMX",
+        "provider": "gmx"
+      },
+      {
+        "id": "aol",
+        "name": "AOL Mail",
+        "short": "AOL",
+        "provider": "aol"
+      },
+      {
+        "id": "fastmail",
+        "name": "Fastmail",
+        "short": "Fastmail",
+        "provider": "fastmail"
+      },
+      {
+        "id": "infomaniak",
+        "name": "Infomaniak / kMail",
+        "short": "kMail",
+        "provider": "generic"
+      },
+      {
+        "id": "other",
+        "name": "Autre messagerie professionnelle",
+        "short": "Autre messagerie",
+        "provider": "generic"
+      }
+    ],
+    "accounts": [
+      {
+        "id": 0,
+        "email": "dirigeant@example.test",
+        "service": "gmail",
+        "connected": true,
+        "legacy": false,
+        "error": false
+      }
+    ]
+  }
 }
