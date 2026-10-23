@@ -59,6 +59,37 @@ def test_received_mail_notification_metadata(env,monkeypatch):
     assert not any(x['action'].get('type')=='email' and x['action'].get('id')==mid for x in c.get('/api/companies/1/priorities').json())
 
 
+def test_legacy_gmail_reader_reply_and_forward(env,monkeypatch):
+    from test_office import owner,connect_mail
+    from email import policy
+    from email.parser import BytesParser
+    c,h=owner(env);root,calls=connect_mail(c,h,monkeypatch);u=root+'/unified'
+    assert c.post(root+'/sync',headers=h).status_code==200
+    mid=c.get(root+'/messages').json()[0]['id']
+    card=next(x for x in c.get('/api/companies/1/priorities').json() if x['action'].get('type')=='email')
+    assert card['mail_received'] and card['mail_service']=='gmail' and card['source']=='Gmail'
+    assert card['home_detail']=='Facture client' and 'raw' not in card
+    payload={'mode':'reply','source_id':mid,'to':'client@example.test','subject':'Re: Facture client','body':'Bonjour, voici notre réponse.','files':[{'name':'note.txt','data':base64.b64encode(b'abc').decode(),'content_type':'text/plain'}]}
+    d=c.put(u+'/drafts',headers=h,json=payload);assert d.status_code==200,d.text
+    path=u+f'/drafts/{d.json()["id"]}/send'
+    assert not any(url.endswith('/messages/send') for _,url,_ in calls)
+    assert c.post(path,headers=h,json={'revision':1}).status_code==422
+    assert c.post(path,headers=h,json={'revision':1,'confirmed':True}).status_code==200
+    assert c.post(path,headers=h,json={'revision':1,'confirmed':True}).status_code==409
+    sent=next(kw['json'] for _,url,kw in calls if url.endswith('/messages/send'))
+    mail=BytesParser(policy=policy.default).parsebytes(base64.urlsafe_b64decode(sent['raw']))
+    assert sent['threadId']=='thread-1' and mail['To']=='client@example.test'
+    assert mail['In-Reply-To']=='<test@example.test>' and list(mail.iter_attachments())[0].get_filename()=='note.txt'
+    # The shared send guard also blocks a fresh composition after a reply was sent.
+    assert c.put(u+'/drafts',headers=h,json=payload).status_code==409
+    forward={**payload,'mode':'forward','to':'other@example.test','subject':'Tr: Facture client','files':[]}
+    d=c.put(u+'/drafts',headers=h,json=forward).json()
+    assert c.post(u+f'/drafts/{d["id"]}/send',headers=h,json={'revision':1,'confirmed':True}).status_code==200
+    sent=[kw['json'] for _,url,kw in calls if url.endswith('/messages/send')][-1]
+    mail=BytesParser(policy=policy.default).parsebytes(base64.urlsafe_b64decode(sent['raw']))
+    assert 'threadId' not in sent and mail['To']=='other@example.test' and 'In-Reply-To' not in mail
+
+
 def test_unified_oauth_sync_attachment_and_scoping(env,monkeypatch):
     c,h,root,u,mid,calls,_=connected(env,monkeypatch)
     status=c.get(u+'/status').json();assert status['connected'] and status['configured'] and status['realtime']

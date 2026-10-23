@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTEUR GMAIL COMPLET** | `sauvegarde/avant-lecteur-gmail-complet-v148` (v147) | Lecture rapide limitée aux messages Nylas ; ancienne connexion Gmail avec rappel générique et icône E-mails. |
 | **RETOUR AVANT E-MAILS DANS LE LECTEUR** | `sauvegarde/avant-emails-lecteur-v147` (v146) | Notifications e-mail limitées au rappel de brouillon, sans lecture ni réponse directe dans le lecteur. |
 | **RETOUR AVANT GRIS MESSAGERIES** | `sauvegarde/avant-gris-messageries-v146` (v145) | Icônes et comptes multiples, avant correction du gris inactif et du signe plus. |
 | **RETOUR AVANT ICÔNES MESSAGERIES** | `sauvegarde/avant-icones-messageries-v145` (v144) | Client e-mail unifié à boîte unique, sans logos de fournisseurs dans les fonctions. |

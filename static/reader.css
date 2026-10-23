@@ -68,6 +68,8 @@ body[data-wall] .reference-home .reader-item{background:linear-gradient(135deg,#
 .reader-item.is-read{opacity:.35}
 .reader-item .module-icon{width:36px;height:36px;flex:0 0 36px;border-radius:11px}
 .reader-item .module-icon svg{width:19px;height:19px}
+.reader-item .reader-mail-brand,.reader-card .reader-mail-brand,.reader-head .reader-mail-brand{padding:0;background:transparent;border:0;box-shadow:none;overflow:hidden}
+.reader-item .reader-mail-brand svg,.reader-card .reader-mail-brand svg,.reader-head .reader-mail-brand svg{width:100%;height:100%;max-width:none;max-height:none;stroke:none;filter:none}
 .reader-item-copy{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .reader-item-copy strong{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reader-item-copy small{font-size:12px;color:var(--home-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -138,3 +140,8 @@ html.home-ios .home-reader{position:relative;padding-bottom:22px}
 .reader-grip{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:64px;height:20px;padding:0;border:0;background:transparent;cursor:pointer;z-index:3;-webkit-tap-highlight-color:transparent}
 .reader-grip::before{content:"";position:absolute;left:50%;top:50%;width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
 html.home-ios .home-back-zone{touch-action:none}
+/* Mail brands retain their real colored square in every reader location. */
+html.home-ios .reader-item .module-icon.reader-mail-brand,
+html.home-ios .home-reader .reader-card>.module-icon.reader-mail-brand{padding:0!important;background:transparent!important;border-radius:26%;border:0!important;box-shadow:none!important;overflow:hidden}
+html.home-ios .reader-item .module-icon.reader-mail-brand svg,
+html.home-ios .home-reader .reader-card>.module-icon.reader-mail-brand svg{width:100%!important;height:100%!important;stroke:none;filter:none}

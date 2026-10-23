@@ -53,6 +53,7 @@ const mailClient=(()=>{
   try{const cid=company.id,message=await notificationMessage(card);if(company.id!==cid)return;
    selectAccount(card.action.connection_id||0);
    if(mode==='thread')return await openTab('email',{recordId:message.id});
+   if(mode==='actions')return actions(message);
    await composer(message,mode);
   }catch(error){notify(error.message);}
  }
@@ -118,7 +119,7 @@ const mailClient=(()=>{
   if(d.status&&d.status!=='draft'){error.textContent=d.status==='sent'?'Message envoyé.':'Envoi engagé ou non confirmé : vérifiez votre dossier Envoyés. Aucun renvoi automatique.';form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);}
  }
  function actions(m){const panel=modal(`<h2>Actions sur l’e-mail</h2><div class="stack">${button('mailMarkRead',m.unread?'Marquer comme lu':'Marquer comme non lu')}${button('mailArchive','Archiver')}${button('mailMove','Déplacer dans un dossier')}</div><p class="sub" role="status" id="mailActionStatus"></p>`);
-  const act=async payload=>{try{await mailApi(unified()+`/messages/${m.id}/action`,{method:'POST',body:JSON.stringify(payload)});closeModal();if(tab==='email')await thread(await mailApi(base()+`/messages/${m.id}`));notify('E-mail mis à jour.');}catch(e){panel.querySelector('#mailActionStatus').textContent=e.message;}};
+  const act=async payload=>{try{await mailApi(unified()+`/messages/${m.id}/action`,{method:'POST',body:JSON.stringify(payload)});closeModal();if(tab==='email')await thread(await mailApi(base()+`/messages/${m.id}`));notify('E-mail mis à jour.');if(tab==='dashboard')renderPriorities().catch(()=>{});}catch(e){panel.querySelector('#mailActionStatus').textContent=e.message;}};
   $('#mailMarkRead').onclick=()=>act({action:m.unread?'read':'unread'});$('#mailArchive').onclick=()=>act({action:'archive'});$('#mailMove').onclick=async()=>{try{const folders=await mailApi(unified()+'/folders');const box=panel.querySelector('.stack');box.innerHTML='<label class="field">Dossier<select id="mailTargetFolder">'+folders.map(f=>`<option value="${clean(f.id)}">${clean(f.name)}</option>`).join('')+'</select></label>'+button('mailConfirmMove','Déplacer');box.querySelector('#mailConfirmMove').onclick=()=>act({action:'move',folder_id:box.querySelector('select').value});}catch(e){$('#mailActionStatus').textContent=e.message;}};
  }
  async function openFile(m,index){

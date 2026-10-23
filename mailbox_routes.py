@@ -353,7 +353,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         return {'sent':True}
 
     from unified_mail import install as install_unified
-    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle)
+    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle,{'access':access,'request':gmail})
     app.state.unified_mail=unified
 
     async def worker():
