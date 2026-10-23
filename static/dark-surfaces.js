@@ -29,7 +29,7 @@
  // Nested boxes: in a window, a card inside a card inside a card makes every level narrower. Any framed
  // block (border, background or shadow, with side padding) that spans most of the window is flattened into
  // a plain section with a separator, so every window keeps the full width of the first one.
- const flatSkip='.btn,.badge,[class*="chip"],[class*="pill"],[class*="tag"],.field,label,a,button,[role=button],[tabindex],table,thead,tbody,tr,td,th,.fg-progress,.box-flat';
+ const flatSkip='.us-scroll,.context-scroll,.us-handle,.btn,.badge,[class*="chip"],[class*="pill"],[class*="tag"],.field,label,a,button,[role=button],[tabindex],table,thead,tbody,tr,td,th,.fg-progress,.box-flat';
  function framed(cs){
   const bg=rgb(cs.backgroundColor),border=['Left','Right','Top','Bottom'].some(k=>parseFloat(cs['border'+k+'Width'])>0&&cs['border'+k+'Style']!=='none');
   return border||(bg&&bg.a>0.02)||(cs.boxShadow&&cs.boxShadow!=='none')||/gradient/.test(cs.backgroundImage);

@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({...(process.env.HOME_TEST_CHROME?{executablePath:process.env.HOME_TEST_CHROME}:process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{}),headless:true,args:['--no-sandbox','--disable-gpu']});
+ try{for(const [width,height] of [[375,667],[390,844],[430,932]]){
+  const p=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion:'reduce'});p.setDefaultTimeout(15000);const errors=[];p.on('pageerror',e=>errors.push(e.message));
+  await p.addInitScript(()=>{window.fakeViewport={height:innerHeight,offsetTop:0};for(const key of ['height','offsetTop'])Object.defineProperty(visualViewport,key,{get:()=>fakeViewport[key]});});
+  await p.goto('http://127.0.0.1:8123/');await p.locator('#loginEmail').fill(process.env.ADMIN_EMAIL);await p.locator('#loginPassword').fill(process.env.ADMIN_PASSWORD);await p.getByRole('button',{name:'Se connecter'}).click();await p.locator('.home-pages').waitFor();await p.evaluate(()=>{fakeViewport.height=innerHeight;visualViewport.dispatchEvent(new Event('resize'))});
+  const audit=async label=>{await p.waitForTimeout(180);await p.evaluate(()=>{darkSurfacesScan();formGuidePrepare();});await p.waitForTimeout(80);const d=await p.evaluate(()=>{const panel=universalSheets.active(),sc=panel.querySelector('.us-scroll,.context-scroll'),r=panel.getBoundingClientRect(),s=getComputedStyle(sc);return {flat:sc.classList.contains('box-flat'),padding:[parseFloat(s.paddingLeft),parseFloat(s.paddingRight)],bad:[...panel.querySelectorAll('input,textarea,select,button.fg-primary,h1,h2')].filter(e=>!e.closest('.us-handle')).map(e=>({el:e.id||e.name||e.tagName,r:e.getBoundingClientRect()})).filter(e=>e.r.width&&e.r.height&&(e.r.left<r.left+12||e.r.right>r.right-12)).map(e=>({el:e.el,left:e.r.left-r.left,right:r.right-e.r.right})),overflow:sc.scrollWidth-sc.clientWidth}});assert(!d.flat,label+' structural wrapper must not flatten');assert(d.padding.every(n=>n>=18),label+' side padding');assert.deepEqual(d.bad,[],label+' gutters '+JSON.stringify(d));assert(d.overflow<=1,label+' no horizontal overflow');};
+  const close=async()=>{await p.evaluate(async()=>{await universalSheets.complete();await navigationQueue;fakeViewport.height=innerHeight;visualViewport.dispatchEvent(new Event('resize'))});};
+  const cases=[['consigne',()=>p.evaluate(()=>openCommand('task')),'#commandText'],['client',()=>p.evaluate(()=>openTab('client-new')),'#clientForm input'],['devis',()=>p.evaluate(()=>openTab('quote-new')),'#quotationForm input']];
+  if(width===390)cases.push(...['activity-new','prospect-new','company-new','company-edit','team','task-new','scanner','module-library','ai-usage'].map(key=>[key,()=>p.evaluate(key=>openTab(key),key),'input,textarea,select']),['banque',()=>p.evaluate(()=>openBankEditor()),'#bankEditor input'],['voix',()=>p.evaluate(()=>openSpeechSettings()),'#speechSettingsForm select']);
+  for(const [name,open,selector] of cases){await open();await p.locator('.universal-sheet').last().waitFor();await audit(name+' half '+width);
+   await p.locator('.us-expand').last().click();await audit(name+' full '+width);
+   const field=p.locator('.universal-sheet').last().locator(selector).filter({visible:true}).first();if(await field.count())await field.focus();
+   await p.evaluate(()=>{fakeViewport.height=innerHeight-290;visualViewport.dispatchEvent(new Event('resize'));moduleDockKeyboard()});await audit(name+' keyboard '+width);
+   if(name==='consigne'){fs.mkdirSync('/tmp/form-spacing',{recursive:true});await p.screenshot({path:`/tmp/form-spacing/command-${width}.png`});const button=await p.locator('#previewCommand').boundingBox(),panel=await p.locator('.universal-sheet').last().boundingBox();assert(button.y+button.height<=panel.y+panel.height-10,'Prepare is not clipped');}
+   await close();
+  }
+  assert.deepEqual(errors,[]);console.log('Form gutters OK',width,cases.length,'forms × half/full/keyboard');await p.close();
+ }}finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
