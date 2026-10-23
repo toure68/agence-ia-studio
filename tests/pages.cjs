@@ -7,7 +7,7 @@ const fs=require('node:fs');
 const {chromium}=require('playwright');
 const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
 (async()=>{
- const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
+ const browser=await chromium.launch({headless:true,...(process.env.HOME_TEST_CHROME?{executablePath:process.env.HOME_TEST_CHROME,args:['--no-sandbox','--disable-dev-shm-usage']}:process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
  await page.addInitScript(()=>{try{localStorage.removeItem('aia-pages');localStorage.setItem('aia-reader','on');localStorage.removeItem('aia-treasury-open');}catch(e){}});
  page.on('pageerror',e=>errors.push(e.message));
@@ -42,7 +42,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   // Function pages: 4 columns × 2 rows, dots, swipe sideways; no « Réserve de fonctions ».
   const pages=await page.locator('.home-page').count(),dots=await page.locator('.home-page-dot').count();
   assert.ok(pages>=2&&dots===pages,'several pages with their dots');
-  for(const p of await page.locator('.home-page').all()){assert.ok(await p.locator('[data-module]').count()<=8);assert.equal(await p.getAttribute('data-columns'),'4');}
+  for(const p of await page.locator('.home-page').all()){assert.ok(await p.locator('[data-module]').count()<=12);assert.equal(await p.getAttribute('data-columns'),'6');}
   assert.equal(await page.locator('.module-reserve-launch,#homeReserve').count(),0,'no reserve button');
   const withActions=await page.evaluate(()=>[...document.querySelectorAll('.home-pages [data-module]')].filter(c=>c.querySelector('.module-count')).map(c=>c.closest('.home-page').dataset.page));
   assert.ok(withActions.length>0&&withActions.slice(0,8).every(p=>p==='0'),'functions with an action are on the first page '+JSON.stringify(withActions));
@@ -75,7 +75,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('#homeColumnChooser [data-set-columns="3"]').click();
   await page.waitForFunction(()=>document.querySelector('.home-pages')?.dataset.layout==='3x2');
   await page.locator('#homeColumnChooser [data-set-columns="4"]').click();
-  await page.waitForFunction(()=>document.querySelector('.home-pages')?.dataset.layout==='4x2');
+  await page.waitForFunction(()=>document.querySelector('.home-pages')?.dataset.layout==='6x2');
   await page.keyboard.press('Escape');
   await page.locator('.home-pages').evaluate(el=>el.scrollTo({left:0}));
   // A function opens as its window with the function strip at the bottom.
@@ -130,10 +130,11 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
    return {h:Math.round(d.height),gap:Math.round(d.top-pg.bottom),above:dot?Math.round(dot.top-pg.bottom):null,below:dot?Math.round(d.top-dot.bottom):null,under:Math.round(innerHeight-d.bottom)};});
   console.log('bottom',JSON.stringify(bottom));assert(bottom.h>=43&&bottom.h<=50,'Assistant bar 44–50px (Claude-like capsule)');assert(bottom.under>=6&&bottom.under<=10,'Assistant at the very bottom (22/10)');
   assert(await page.locator('#assistantDock .dock-voice').isVisible()&&await page.locator('#assistantDock .dock-mic').isVisible()&&await page.locator('#assistantDock .dock-plus').isVisible(),'Claude-like bar: +, micro, voice');
+  const dockTop=await page.locator('#assistantDock').evaluate(e=>Math.round(e.getBoundingClientRect().top));
   await page.locator('#assistantDock').click();await page.locator('#contextPanel').waitFor();await page.waitForTimeout(400);
-  const sheet=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),pg=document.querySelector('.reference-home .home-pages')?.getBoundingClientRect(),t=document.querySelector('.reference-home .home-topbar')?.getBoundingClientRect();return {module:document.querySelector('#contextPanel').dataset.module,top:Math.round(p.top),bottom:Math.round(p.bottom),pagesTop:pg?Math.round(pg.top):null,barTop:t?Math.round(t.top):null};});
+  const sheet=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),pg=document.querySelector('.reference-home .home-pages')?.getBoundingClientRect(),t=document.querySelector('#assistantDock')?.getBoundingClientRect();return {module:document.querySelector('#contextPanel').dataset.module,top:Math.round(p.top),bottom:Math.round(p.bottom),pagesTop:pg?Math.round(pg.top):null,barTop:t?Math.round(t.top):null};});
   console.log('assistant sheet',JSON.stringify(sheet));
-  if(sheet.barTop)assert(sheet.bottom<=sheet.barTop&&sheet.bottom>=sheet.barTop-14,'Assistant window right above the bar '+JSON.stringify(sheet));
+  assert(sheet.bottom<=dockTop&&sheet.bottom>=dockTop-14,'Assistant window right above its opening bar '+JSON.stringify({...sheet,dockTop}));
   // 22/10 step 3: chat behaviour — no bottom close button, the window grows upwards with the messages and stays on the screen.
   assert(!(await page.locator('#contextPanel .context-footer').isVisible()),'No form-like bottom button in the Assistant window');
   assert(!(await page.locator('#contextPanel .context-header').isVisible())&&!(await page.locator('#chatConnect').isVisible()),'No header (title, speaker, Connecter) in the Assistant window');
@@ -143,17 +144,17 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   assert(grow.top<grow.topBefore-40&&grow.top>=8&&grow.bottom===grow.bottomBefore,'Assistant window grows upwards with the conversation '+JSON.stringify(grow));
   assert(grow.formBottom<=grow.bottom&&grow.scrolls,'Message field stays visible, messages scroll '+JSON.stringify(grow));
   assert(grow.userRight<=24,'User messages are bubbles on the right '+JSON.stringify(grow));
-  await page.locator('#closeContext').click();await page.locator('#contextPanel').waitFor({state:'detached'});
+  await page.keyboard.press('Escape');await page.locator('#contextPanel').waitFor({state:'detached'});
   // 21/10 step 1 — reader actions in the first row of the function grid (trial messages, nothing sent).
   await page.evaluate(()=>{try{localStorage.setItem('aia-reader-samples','on');}catch(e){}});
   await page.reload({waitUntil:'networkidle'});await page.locator('#content .reader-list .reader-item').first().waitFor();await page.waitForTimeout(800);
   const rowBefore=await page.evaluate(()=>[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>e.dataset.module));
-  const openAt=async i=>{await page.evaluate(i=>{const l=document.querySelector('#content .reader-list');l.scrollTo({top:(i+1)*(Number(document.body.dataset.readerPitch)||54)});},i);await page.waitForTimeout(900);};
+  const openAt=async i=>{await page.locator('#content .reader-list [data-reader-item]').nth(i).click();await page.waitForTimeout(900);};
   const state=()=>page.evaluate(()=>{const row=document.querySelector('#content .home-action-row'),card=document.querySelector('#content .home-reader');
    const inCard=[...card.querySelectorAll('[data-reader-run]')].filter(b=>!b.hidden&&b.offsetParent).length;
    const first=[...document.querySelector('#content .home-page').children].slice(0,4).map(e=>getComputedStyle(e).visibility);
    const r=row?.getBoundingClientRect(),t=document.querySelector('#content .home-page').children[0].getBoundingClientRect();
-   return {labels:row?[...row.querySelectorAll('[data-action-run]')].map(b=>b.textContent.trim()):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[4]||document.body).visibility};});
+   return {labels:row?[...row.querySelectorAll('[data-action-run]')].map(b=>b.textContent.trim()):null,title:card.querySelector('.reader-title strong')?.textContent,inCard,first,over:r?Math.abs(r.top-t.top)<2:false,second:getComputedStyle(document.querySelector('#content .home-page').children[6]||document.body).visibility};});
   const nFn=await page.evaluate(()=>document.querySelectorAll('#content .home-pages [data-go]').length);
   await openAt(0);const a1=await state();
   assert.equal(await page.evaluate(()=>document.querySelectorAll('#content .home-pages [data-go]').length),nFn,'No function hidden while reading: they move to the next pages');console.log('actions 1',JSON.stringify(a1));

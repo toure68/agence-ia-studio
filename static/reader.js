@@ -11,7 +11,7 @@ const homeReader=(()=>{
  const KEY='aia-reader',MAX=5,MIN_H=300;
  // Card pitch (height + gap): 64 + 8 normally; on the iPhone-style home, sized to fill the room (home-pages.js).
  const ios=()=>document.documentElement.classList.contains('home-ios');
- const pitch=()=>ios()?(Number(document.body.dataset.readerPitch)||54):72;
+ const pitch=()=>ios()?(Number(view.host?.querySelector('.reader-list')?.dataset.pitch)||Number(document.body.dataset.readerPitch)||54):72;
  // iPhone home: up to six cards (home-pages.js measures the screen); the reader reflows the queue below.
  const cap=()=>ios()?Math.max(1,Math.min(6,Number(document.body.dataset.readerSlots)||4)):MAX;
  const enabled=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
@@ -222,38 +222,38 @@ const homeReader=(()=>{
  // shorter by the same amount, so the function grid below never moves.
  // iPhone-style home: the reader takes the place of the treasury and of two small cards, so 2 stay visible and
  // nothing below moves; elsewhere it is at least 300px and the list gives up the difference.
- function readerHeight(){return ios()?(view.treasuryH||0)+(cap()-Math.max(1,cap()-2))*pitch():Math.max(view.treasuryH||0,MIN_H);}
+ function readerHeight(){return ios()?Math.max(180,Math.min(260,innerHeight*.34,(view.treasuryH||0)+(cap()-Math.max(1,cap()-2))*(Number(document.body.dataset.readerPitch)||69))):Math.max(view.treasuryH||0,MIN_H);}
  // While reading, the box keeps its size (21/10) down to the last message: the end of the list is never cut.
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
   if(ios()){const reading=view.focus>=0&&card&&!card.hidden;
    const gap=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||9;
-   let n=Math.min(view.cards.length,cap());
+   let n=Math.min(view.cards.length,cap()),anchor=false;
    if(reading){
     const pg=document.querySelector('#content .home-pages'),files=view.host.querySelector('.reader-files'),queue=list.parentElement;
     const editing=card.classList.contains('is-editing');
     if(!editing)card.style.height=readerHeight()+'px'; // start from the same base, never accumulate spare pixels
     if(pg){
-     // Whole cards, stack edge, optional files with 12px gaps, then a clear 52px gesture zone.
-     // No empty attachment slot for a message without files. Spare pixels improve the text/image reader.
+     // Files replace queue slots; the reader keeps the same height in text and image mode.
+     // One compact separation only: no cumulative comfort reserve under the thumbnails.
      const stack=view.cards.length>1?9:0,space=12;
      const fileSpace=files?files.getBoundingClientRect().height+space:0;
-     const previousTail=stack+space;
-     const tail=stack+52+(files?space+fileSpace:0);
-     let baseHeight=readerHeight(),room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
-     // Preserve the notification capacity from before the comfort zone was added (v120).
-     // The reader yields room for files AND the 52px: opening images must not replace a notification.
-     const keep=Math.max(1,Math.floor((room-previousTail+gap)/pitch()));
-     const needed=tail+keep*pitch()-gap;
-     if(!editing&&room<needed){baseHeight=Math.max(180,baseHeight-(needed-room));card.style.height=baseHeight+'px';room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);}
-     n=editing?0:Math.max(0,Math.floor((room-tail+gap)/pitch()));
-     const height=n? n*pitch()-gap:0;
-     if(!editing)card.style.height=(baseHeight+Math.max(0,room-tail-height))+'px';
+     const tail=stack+space+fileSpace;
+     const room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
+     const basePitch=Number(document.body.dataset.readerPitch)||69;
+     n=editing?0:Math.max(0,Math.min(cap(),Math.floor((room-tail+gap)/basePitch)));
+     const available=Math.max(0,room-tail);
+     // Share the remainder within the complete cards, rather than creating a blank block
+     // or changing the reader's height. Their gaps remain the same.
+     const step=n?(available+gap)/n:basePitch,oldPitch=pitch();
+     list.dataset.pitch=String(step);list.style.setProperty('--reader-card-h',Math.max(0,step-gap)+'px');
+     anchor=Math.abs(step-oldPitch)>.1;
      queue.style.setProperty('--reader-tail-gap',(stack+space)+'px');
     }
-   }
-   list.style.height=Math.max(0,n*pitch()-(n?gap:0))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;return;} // the end block matches the box, so sliding back from the last card works at once
+   }else{delete list.dataset.pitch;list.style.removeProperty('--reader-card-h');}
+   list.style.height=Math.max(0,n*pitch()-(n?gap:0))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;
+   if(anchor)list.scrollTop=(view.focus+1)*pitch();return;} // the end block matches the box, so sliding back from the last card works at once
   const extra=view.focus>=0&&card&&!card.hidden?Math.max(0,card.offsetHeight-(view.treasuryH||0)):0;
   list.style.height=Math.max(Math.min(base,pitch()-8),base-extra)+'px';
  }
@@ -272,8 +272,14 @@ const homeReader=(()=>{
   st.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3){const n=c.files.length;showFile((view.file+(dx<0?1:-1)+n)%n);}},{passive:true});
  }
- function goTo(i){view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});}
- function closeReader(){view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});}
+ function goTo(i){
+  if(ios()){view.focus=i;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'instant'});return;}
+  view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});
+ }
+ function closeReader(){
+  if(ios()){view.focus=-1;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'instant'});return;}
+  view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
+ }
  function step(d){if(view.focus+d<-1||view.focus+d>=view.cards.length)return;if(view.focus+d<0)closeReader();else goTo(view.focus+d);}
 
  function render(host,cards,actual,cid){
@@ -290,7 +296,7 @@ const homeReader=(()=>{
   host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button></div></div></div>`;
   const list=host.querySelector('.reader-list');
   // The whole end block (button and the empty room under it) goes back to the home (21/10).
-  host.querySelector('.reader-end').onclick=()=>list.scrollTo({top:0,behavior:'smooth'});
+  host.querySelector('.reader-end').onclick=closeReader;
   host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
   // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
   let focus=-1;

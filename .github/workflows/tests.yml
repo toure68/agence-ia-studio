@@ -37,6 +37,7 @@ jobs:
       ADMIN_EMAIL: ui-owner@example.test
       ADMIN_PASSWORD: local-ui-smoke-test-only
       SESSION_SECRET: local-ui-smoke-secret-for-automated-tests-only
+      UI_AUTH_STATE_PATH: /tmp/agence-ui-session.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -128,6 +129,8 @@ jobs:
         run: node tests/real_photos.cjs
       - name: Verify reader spacing and gestures
         run: node tests/reader_layout.cjs
+      - name: Compact reader and responsive function icons
+        run: node tests/compact_reader.cjs
       - name: Run node tests/pages.cjs
         run: |
           set -o pipefail

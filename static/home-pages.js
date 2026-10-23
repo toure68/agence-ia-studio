@@ -14,14 +14,18 @@ const homePages=(()=>{
  // Columns and rows come from the grid réglage (« Grille » icon at the end of the functions): 4 × 2 by default.
  // Kept on this phone (aia-pages-grid) so the home keeps 4 × 2 until the user picks something else here.
  const GRID_KEY='aia-pages-grid';
- const layout=()=>{let v=null;try{v=JSON.parse(localStorage.getItem(GRID_KEY)||'null');}catch{}const cols=[2,3,4].includes(v?.cols)?v.cols:4,rows=Number.isInteger(v?.rows)?Math.min(3,Math.max(1,v.rows)):2;return {cols,rows};};
+ const layout=()=>{let v=null;try{v=JSON.parse(localStorage.getItem(GRID_KEY)||'null');}catch{}
+  const saved=[2,3,4].includes(v?.cols)?v.cols:4,home=document.querySelector('#content .reference-home');
+  const width=home?.clientWidth||Math.min(880,innerWidth-28);
+  const cols=saved===4?Math.max(4,Math.min(12,Math.floor((width+9)/57))):saved;
+  const rows=Number.isInteger(v?.rows)?Math.min(3,Math.max(1,v.rows)):2;return {cols,rows};};
  // A choice in the grid panel (columns square or rows −/+) is kept for this home and applied at once.
  document.addEventListener('click',e=>{
   const pick=e.target.closest('#homeColumnChooser [data-set-columns],#homeColumnChooser [data-rows-step]');if(!pick||!on())return;
-  const cur=layout();let {cols,rows}=cur;
+  const cur=layout();let {cols,rows}=cur;cols=Math.min(4,cols);
   if(pick.dataset.setColumns)cols=Number(pick.dataset.setColumns);else rows=Math.min(3,Math.max(1,rows+Number(pick.dataset.rowsStep)));
   try{localStorage.setItem(GRID_KEY,JSON.stringify({cols,rows}));}catch{}
-  setTimeout(()=>{const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===cols)));
+  setTimeout(()=>{const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===Math.min(4,cols))));
    const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace){page=0;box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);}},0);
  },true);
  const GRID_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
@@ -40,7 +44,7 @@ const homePages=(()=>{
  function setReserve(on,force){on=!!on;if(on===reserve&&!force)return;reserve=on;const box=document.querySelector('#content .home-pages');if(box&&homeLayout.workspace&&typeof updateHomeGrid==='function'){box.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);if(typeof observeHomeGrids==='function')observeHomeGrids();window.homeActions?.place();}} // sizes set at once: the grid never jumps
  function pagesMarkup(base,workspace,state){
   const {cols:COLS,rows:ROWS}=layout(),PER=COLS*ROWS;
-  const ws={...workspace,columns:COLS,rows:10,dynamic:false,visible:orderedKeys(workspace,state)};
+  const ws={...workspace,columns:Math.min(4,COLS),rows:10,dynamic:false,visible:orderedKeys(workspace,state)};
   const html=base(ws,state);homeLayout.workspace=workspace; // the real layout stays the saved one
   const box=document.createElement('div');box.innerHTML=html;
   // While reading (22/10): the first function row shows the function of the message being read (marked) then
@@ -57,13 +61,16 @@ const homePages=(()=>{
   if(reserve&&ROWS>1){const per=COLS*(ROWS-1),slot='<article class="module-card home-slot-reserved" aria-hidden="true"></article>'.repeat(COLS);for(let i=0;i<cards.length;i+=per)pages.push([slot,...cards.slice(i,i+per)]);}
   else for(let i=0;i<cards.length;i+=PER)pages.push(cards.slice(i,i+PER));
   const at=Math.min(page,Math.max(0,pages.length-1));
-  return `<div class="module-grid home-pages" data-columns="${COLS}" data-layout="${COLS}x${ROWS}" aria-label="Fonctions, balayez pour la page suivante">${pages.map((p,i)=>`<nav class="module-grid home-page" data-columns="${COLS}" data-page="${i}" aria-label="Fonctions, page ${i+1} sur ${pages.length}">${p.join('')}</nav>`).join('')}</div><div class="home-page-dots" role="tablist" aria-label="Pages de fonctions">${pages.map((_,i)=>`<button type="button" role="tab" class="home-page-dot" data-page-dot="${i}" aria-label="Page ${i+1}" aria-selected="${i===at}"></button>`).join('')}</div>`;
+  const width=document.querySelector('#content .reference-home')?.clientWidth||Math.min(880,innerWidth-28),cell=Math.min(72,(width-9*(COLS-1))/COLS);
+  return `<div class="module-grid home-pages" style="--page-cols:${COLS};--function-cell:${cell}px" data-columns="${COLS}" data-layout="${COLS}x${ROWS}" aria-label="Fonctions, balayez pour la page suivante">${pages.map((p,i)=>`<nav class="module-grid home-page" data-columns="${COLS}" data-page="${i}" aria-label="Fonctions, page ${i+1} sur ${pages.length}">${p.join('')}</nav>`).join('')}</div><div class="home-page-dots" role="tablist" aria-label="Pages de fonctions">${pages.map((_,i)=>`<button type="button" role="tab" class="home-page-dot" data-page-dot="${i}" aria-label="Page ${i+1}" aria-selected="${i===at}"></button>`).join('')}</div>`;
  }
  function wirePages(){
   const box=document.querySelector('.home-pages');if(!box||box.dataset.wired)return;box.dataset.wired='1';
+  const auto=document.querySelector('#homeColumnChooser [data-set-columns="4"]');
+  if(auto){auto.setAttribute('aria-label','Colonnes automatiques');auto.title='Nombre d’icônes adapté à la largeur';const label=auto.querySelector('span');if(label)label.textContent='Auto';}
   const dots=[...document.querySelectorAll('.home-page-dot')];
   box.addEventListener('click',e=>{if(!e.target.closest('[data-grid-tile]'))return;e.preventDefault();e.stopPropagation();
-   const t=document.querySelector('#content [data-columns-toggle]');if(t)setTimeout(()=>{if(t.getAttribute('aria-expanded')!=='true')t.click();const {cols,rows}=layout();const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===cols)));},0);},true);
+   const t=document.querySelector('#content [data-columns-toggle]');if(t)setTimeout(()=>{if(t.getAttribute('aria-expanded')!=='true')t.click();const {cols,rows}=layout();const v=document.querySelector('#homeRowsValue');if(v)v.textContent=String(rows);document.querySelectorAll('#homeColumnChooser [data-set-columns]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.setColumns)===Math.min(4,cols))));},0);},true);
   requestAnimationFrame(()=>{box.scrollLeft=page*box.clientWidth;});
   let raf=0;box.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
    page=Math.round(box.scrollLeft/Math.max(1,box.clientWidth));dots.forEach((d,i)=>d.setAttribute('aria-selected',String(i===page)));});},{passive:true});
@@ -73,6 +80,11 @@ const homePages=(()=>{
  // One screen: the cards list gets the room left once everything else is laid out.
  function fit(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
+  const pages=home.querySelector('.home-pages'),dims=layout();
+  const cell=Math.min(72,(home.clientWidth-9*(dims.cols-1))/dims.cols);
+  if(pages&&homeLayout.workspace&&(pages.dataset.layout!==`${dims.cols}x${dims.rows}`||Math.abs(parseFloat(pages.style.getPropertyValue('--function-cell'))-cell)>.5)){
+   pages.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);return;
+  }
   // Counted with the treasury shown; while reading, the reader's extra height comes out of the list (reader.js).
   // 10px kept under the home for its floating frame (21/10).
   const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top-10);
@@ -176,7 +188,7 @@ const homePages=(()=>{
   // It starts under the cards box, so it never covers a card nor blocks sliding them (21/10).
   let z=home.querySelector('.home-back-zone');
   const files=home.querySelector('.reader-files');
-  const zTop=files?files.getBoundingClientRect().bottom+12:lr?lr.bottom+(rest?9:0):top,zBottom=pr.top;
+  const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom+(rest?9:0):top,zBottom=pr.top;
   if(reading&&zBottom-zTop>=8){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
     // 22/10 (user): the empty room is also a wide swipe zone — up/down moves between messages like on the cards
@@ -185,7 +197,7 @@ const homePages=(()=>{
     z.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;moved=false;},{passive:true});
     z.addEventListener('touchmove',e=>{if(y0!==null&&Math.abs(e.touches[0].clientY-y0)>10){moved=true;e.preventDefault();}},{passive:false});
     z.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(moved||Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+500;if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx))window.homeReader?.step(dy<0?1:-1);},{passive:true});
-    z.onclick=()=>{if(Date.now()<suppressUntil)return;home.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});};}
+    z.onclick=()=>{if(Date.now()<suppressUntil)return;window.homeReader?.close();};}
    z.style.top=(zTop-hr.top)+'px';z.style.height=(zBottom-zTop)+'px';
   }else z?.remove();
   if(room>=64&&!reading){
