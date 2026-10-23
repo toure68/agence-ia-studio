@@ -131,6 +131,8 @@ jobs:
         run: node tests/reader_layout.cjs
       - name: Compact reader and responsive function icons
         run: node tests/compact_reader.cjs
+      - name: Reader single-finger scroll and discreet indicator
+        run: node tests/reader_scroll.cjs
       - name: Run node tests/pages.cjs
         run: |
           set -o pipefail

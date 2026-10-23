@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTURE DISCRÈTE** | `sauvegarde/avant-lecture-discrete` (v131) | Barre verte épaisse et animation d’empilement par simple réduction de taille. |
 | **RETOUR AVANT NOTIFICATIONS PILE** | `sauvegarde/avant-notifications-pile` (v130) | Grandes miniatures et défilement natif pouvant laisser les notifications partiellement coupées. |
 | **RETOUR AVANT LECTEUR TAILLES STABLES** | `sauvegarde/avant-lecteur-tailles-stables` (v129) | Notifications étirées en lecture, miniatures de 46 px et carte vitrée dans l’en-tête du lecteur. |
 | **RETOUR AVANT LECTEUR PLUS HAUT** | `sauvegarde/avant-lecteur-plus-haut` (v128) | Lecteur compact avant l’ajout d’une hauteur de notification et l’agrandissement des icônes. |

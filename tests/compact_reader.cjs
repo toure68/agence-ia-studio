@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {chromium}=require('playwright');
 (async()=>{
- const browser=await chromium.launch({...(process.env.HOME_TEST_CHROME?{executablePath:process.env.HOME_TEST_CHROME}:process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{}),args:['--no-sandbox','--disable-dev-shm-usage'],headless:true});
+ const browser=await chromium.launch({...(process.env.HOME_TEST_CHROME?{executablePath:process.env.HOME_TEST_CHROME}:process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{}),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu'],headless:true});
  const results=[];fs.mkdirSync('/tmp/compact-reader',{recursive:true});
  for(const [width,height] of [[390,844],[430,932],[375,667],[768,1024]]){
   const p=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
@@ -45,11 +45,14 @@ const {chromium}=require('playwright');
    const first=el.scrollTop,box=el.getBoundingClientRect(),x=box.left+30,y=box.top+35;
    const fire=(type,yy)=>el.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==='touchend'?[]:[new Touch({identifier:1,target:el,clientX:x,clientY:yy})],changedTouches:[new Touch({identifier:1,target:el,clientX:x,clientY:yy})]}));
    fire('touchstart',y);fire('touchmove',y-60);fire('touchend',y-60);
+   const animations=[...el.querySelectorAll('.reader-item')].flatMap(e=>e.getAnimations());
+   const moving=animations.some(a=>a.effect.getKeyframes().some(k=>/translateY\((?!0px)[^)]+\)/.test(k.transform||'')));
    let partial=0;
    for(let i=0;i<20;i++){await new Promise(requestAnimationFrame);const b=el.getBoundingClientRect();for(const item of el.querySelectorAll('.reader-item')){const r=item.getBoundingClientRect();if(r.bottom>b.top+1&&r.top<b.bottom-1&&(r.top<b.top-1||r.bottom>b.bottom+1))partial++;}}
-   return {first,after:el.scrollTop,partial,pitch:Number(el.dataset.pitch)};
+   return {first,after:el.scrollTop,partial,moving,pitch:Number(el.dataset.pitch)};
   });
   assert(Math.abs(motion.after-motion.first-motion.pitch)<1,'Swipe advances exactly one card');
+  if(files.cards>1)assert(motion.moving,'Whole cards slide from the neighbouring stack slot');
   assert.equal(motion.partial,0,'No card is clipped through the black edge during the animation');
   assert.deepEqual(errors,[]);results.push({width,height,text,files,image});await p.close();
  }
