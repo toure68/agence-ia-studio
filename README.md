@@ -1,0 +1,21 @@
+Captures 2026-10-23T17:59:20.906Z
+
+- 01-accueil.png
+- 03-action-depliee-ou-ouverte.png
+- 10-fenetre-emails.png
+- 11-fenetre-leads.png
+- 12-fenetre-activities.png
+- 13-fenetre-clients.png
+- 14-fenetre-calendar.png
+- 15-formulaire-nouvelle-tache.png
+- 16-fenetre-companies.png
+- 40-fenetre-sur-le-cadre.png
+- 41-formulaire-client.png
+- 42-formulaire-avec-clavier.png
+- 43-assistant.png
+- 44-assistant-menu-plus.png
+- 45-toutes-les-actions.png
+- 50-accueil-fond-aurore.png
+- 51-accueil-fond-sable.png
+- 52-accueil-fond-nuit.png
+- 53-fenetre-fond-aurore.png
