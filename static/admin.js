@@ -16,6 +16,10 @@ function finishForm(parent){
 }
 let navigationQueue=Promise.resolve();
 function openTab(next,options={}){
+ // Mount and focus during the tap itself: iPhone will not open its keyboard after queued work.
+ if(next==='assistant'&&me&&!contextState&&document.documentElement.classList.contains('home-ios')&&$('#content .reference-home .module-grid')&&$('#assistantChat')){
+  prepareContext(next);$('#contextPanel').dataset.module='assistant';renderAssistantPanel();$('#assistantMessage')?.focus({preventScroll:true});
+ }
  const navigation=navigationQueue.catch(()=>{}).then(()=>renderTab(next,options));
  navigationQueue=navigation;
  return navigation;
@@ -39,7 +43,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    companyId=companyId||company?.id;
    if(!companies.some(c=>c.id===companyId))next='dashboard';
  }
- stopReading();cleanupAssistant(false);parkAssistant();
+ stopReading();cleanupAssistant(false);if(next!=='assistant'||!$('#contextPanel #assistantChat'))parkAssistant();
  closeModal();
  if(contextState&&contextState.cid!==company.id){restoreCockpit();$('#content').replaceChildren();}
  const cockpitUrl=contextState?.homeUrl||history.state?.aiaHomeUrl||location.href;
@@ -67,7 +71,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
  if($('#contextTitle'))$('#contextTitle').textContent=labels[next];
  if($('#contextPanel'))$('#contextPanel').dataset.module=next;
  $('#moduleBack').classList.toggle('hide',next==='dashboard');
- $('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
+ if(next!=='assistant'||!$('#content #assistantChat'))$('#content').innerHTML='<p class="sub" role="status">Chargement…</p>';
  const renderHost=$('#content');
  try{
    if(next==='dashboard')await dashboard();
@@ -118,7 +122,7 @@ async function renderTab(next,{updateHistory=true,replaceHistory=false,taskId=nu
    else if(next==='priority-example')await renderPriorityExample(recordId);
    await trackModuleUse(next);
    if(!renderHost.isConnected||renderHost!==$('#content'))return;
-   if($('#contextPanel')){$('#contextPanel .context-scroll').scrollTop=0;$('#contextPanel').focus({preventScroll:true});}else window.scrollTo(0,0);
+   if($('#contextPanel')){$('#contextPanel .context-scroll').scrollTop=0;if(next!=='assistant'||!document.documentElement.classList.contains('home-ios'))$('#contextPanel').focus({preventScroll:true});}else window.scrollTo(0,0);
  }catch(err){if(renderHost.isConnected&&renderHost===$('#content'))renderHost.innerHTML='<div class="msg err">'+clean(err.message)+'</div>';}
 }
 function readRoute(){

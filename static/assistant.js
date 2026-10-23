@@ -15,9 +15,19 @@ function parkAssistant(){
 }
 function renderAssistantPanel(){
  const host=$('#assistantChat');if(!host)throw Error('Assistant indisponible. Rouvrez votre accueil.');
- $('#content').replaceChildren(host);$('#assistantDock')?.setAttribute('aria-expanded','true');
- if(document.documentElement.classList.contains('home-ios')){const m=host.querySelector('#assistantMessage');m.rows=1;m.placeholder='Demander à l’Assistant IA';assistantKb();}
+ if(host.parentElement!==$('#content'))$('#content').replaceChildren(host);$('#assistantDock')?.setAttribute('aria-expanded','true');
+ if(document.documentElement.classList.contains('home-ios')){const m=host.querySelector('#assistantMessage');m.rows=1;m.placeholder='Demander à l’Assistant IA';assistantCollapse();assistantKb();}
  requestAnimationFrame(()=>{assistantGrow(host.querySelector('#assistantMessage'));const log=host.querySelector('#chatTurns');if(log)log.scrollTop=log.scrollHeight;});
+}
+// Compact close target above the composer; the same handle accepts a downward swipe.
+function assistantCollapse(){
+ const panel=$('#contextPanel');if(!panel||panel.querySelector('.assistant-collapse'))return;
+ const button=document.createElement('button');button.type='button';button.className='assistant-collapse';button.setAttribute('aria-label','Replier l’assistant');button.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+ const close=()=>{panel.querySelector('#assistantMessage')?.blur();closeContext();};button.onclick=close;
+ let start=null;button.addEventListener('touchstart',e=>{start=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;},{passive:true});
+ button.addEventListener('touchmove',e=>{if(start&&e.touches[0].clientY-start.y>8)e.preventDefault();},{passive:false});
+ button.addEventListener('touchend',e=>{if(!start)return;const t=e.changedTouches[0],dy=t.clientY-start.y,dx=t.clientX-start.x;start=null;if(dy>55&&dy>Math.abs(dx)*1.5){e.preventDefault();close();}},{passive:false});
+ button.addEventListener('touchcancel',()=>{start=null;});panel.prepend(button);
 }
 // iPhone home (22/10 step 3): the message field grows with the text, like a chat, instead of a fixed box.
 function assistantGrow(input){if(!input||!document.documentElement.classList.contains('home-ios'))return;input.style.height='auto';input.style.height=Math.min(input.scrollHeight,150)+'px';}

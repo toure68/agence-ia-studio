@@ -130,7 +130,7 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   await page.locator('#assistantDock').click();await page.locator('#contextPanel').waitFor();await page.waitForTimeout(400);
   const sheet=await page.evaluate(()=>{const p=document.querySelector('#contextPanel').getBoundingClientRect(),pg=document.querySelector('.reference-home .home-pages')?.getBoundingClientRect(),t=document.querySelector('#assistantDock')?.getBoundingClientRect();return {module:document.querySelector('#contextPanel').dataset.module,top:Math.round(p.top),bottom:Math.round(p.bottom),pagesTop:pg?Math.round(pg.top):null,barTop:t?Math.round(t.top):null};});
   console.log('assistant sheet',JSON.stringify(sheet));
-  assert(sheet.bottom<=dockTop&&sheet.bottom>=dockTop-14,'Assistant window right above its opening bar '+JSON.stringify({...sheet,dockTop}));
+  assert(Math.abs(sheet.bottom-(844-8))<=2,'Assistant overlay stays at the bottom of the visible screen '+JSON.stringify(sheet));
   // 22/10 step 3: chat behaviour — no bottom close button, the window grows upwards with the messages and stays on the screen.
   assert(!(await page.locator('#contextPanel .context-footer').isVisible()),'No form-like bottom button in the Assistant window');
   assert(!(await page.locator('#contextPanel .context-header').isVisible())&&!(await page.locator('#chatConnect').isVisible()),'No header (title, speaker, Connecter) in the Assistant window');
