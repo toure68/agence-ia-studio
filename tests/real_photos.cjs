@@ -25,7 +25,7 @@ const openSessionPage=require('./ui_session.cjs');
   }
   await page.locator('.reader-text-thumb').click();assert.equal(await page.locator('.home-reader.is-image').count(),0,'Text restores message');assert.match(await page.locator('.reader-body').innerText(),/sept photos/);
   assert(Math.abs(await page.locator('.home-pages').evaluate(e=>e.getBoundingClientRect().top)-grid)<1,'functions stay put');
-  const zone=await page.locator('.home-back-zone').evaluate(e=>e.getBoundingClientRect().height);assert(Math.abs(zone-12)<1);
+  const zone=await page.locator('.home-back-zone').evaluate(e=>e.getBoundingClientRect().height);assert(Math.abs(zone-16)<1);
   const glyphs=await page.locator('.home-page .module-icon svg[data-icon]').evaluateAll(svg=>svg.map(e=>{const b=e.getBBox(),v=e.viewBox.baseVal;return {key:e.dataset.icon,padding:Math.min(b.x-v.x,b.y-v.y,v.x+v.width-b.x-b.width,v.y+v.height-b.y-b.height),fill:Math.max(b.width/v.width,b.height/v.height),ratio:e.getBoundingClientRect().width/e.parentElement.getBoundingClientRect().width};}));
   for(const g of glyphs){assert(g.padding>=1,'stroke margin '+JSON.stringify(g));assert(g.fill>=.78,'maximized glyph '+JSON.stringify(g));assert(g.ratio>=.80,'larger glyph '+JSON.stringify(g));}
   assert.deepEqual(errors,[]);console.log('real photos and glyphs OK',size);await page.close();

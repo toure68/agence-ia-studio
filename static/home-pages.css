@@ -264,7 +264,7 @@ html.home-ios .reference-home .home-page .module-card.is-reading::after{content:
 html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not([data-columns="3"]){
  grid-template-columns:repeat(var(--page-cols,4),minmax(0,1fr));column-gap:9px;row-gap:9px;padding-left:28px;padding-right:28px;
 }
-html.home-ios .reference-home .home-pages.module-grid{padding-bottom:4px}
+html.home-ios .reference-home .home-pages.module-grid{padding-top:8px;padding-bottom:4px}
 html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not([data-columns="3"])>.module-card{
- height:var(--function-cell,52px)!important;--ios-icon:calc(var(--function-cell,52px) - 4px);
+ height:var(--function-cell,52px)!important;--ios-icon:var(--function-cell,52px);
 }
