@@ -220,9 +220,17 @@ const homeReader=(()=>{
  }
  // The reader may be taller than the treasury (to show 3–4 lines of text, or while editing): the list gets
  // shorter by the same amount, so the function grid below never moves.
- // iPhone-style home: the reader takes the place of the treasury and of two small cards, so 2 stay visible and
- // nothing below moves; elsewhere it is at least 300px and the list gives up the difference.
- function readerHeight(){return ios()?Math.max(180,Math.min(260,innerHeight*.34,(view.treasuryH||0)+(cap()-Math.max(1,cap()-2))*(Number(document.body.dataset.readerPitch)||69))):Math.max(view.treasuryH||0,MIN_H);}
+ // Give the reader one extra notification row. Short screens still keep a complete
+ // queue card and room for attachments; this limit is identical for text and images.
+ function readerHeight(){
+  if(!ios())return Math.max(view.treasuryH||0,MIN_H);
+  const step=Number(document.body.dataset.readerPitch)||69;
+  const base=Math.max(180,Math.min(260,innerHeight*.34,(view.treasuryH||0)+(cap()-Math.max(1,cap()-2))*step));
+  const card=view.host?.querySelector('.home-reader'),bar=view.host?.querySelector('.reader-bar'),pg=document.querySelector('#content .home-pages');
+  const reserve=8+(bar?.getBoundingClientRect().height||26)+(step-9)+9+32+46+2;
+  const limit=card&&pg?pg.getBoundingClientRect().top-card.getBoundingClientRect().top-reserve:Infinity;
+  return Math.max(180,Math.min(base+step,limit));
+ }
  // While reading, the box keeps its size (21/10) down to the last message: the end of the list is never cut.
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
@@ -237,7 +245,7 @@ const homeReader=(()=>{
     if(pg){
      // Files replace queue slots; the reader keeps the same height in text and image mode.
      // One compact separation only: no cumulative comfort reserve under the thumbnails.
-     const stack=view.cards.length>1?9:0,space=12;
+     const stack=view.cards.length>1?9:0,space=16;
      const fileSpace=files?files.getBoundingClientRect().height+space:0;
      const tail=stack+space+fileSpace;
      const room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
