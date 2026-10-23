@@ -54,6 +54,7 @@ const homePages=(()=>{
    const picked=want.map(k=>els.find(e=>e.dataset.module===k)).filter(Boolean);els=[...picked,...els.filter(e=>!picked.includes(e))];
    if(picked[0])picked[0].classList.add('is-reading');}
   const cards=els.map(c=>c.outerHTML),pages=[];
+  if(window.mailConnections){mailConnections.refresh();cards.push(...mailConnections.tiles());}
   // Last square: the grid réglage (columns and rows), right after the functions.
   cards.push(`<article class="module-card home-grid-card" data-module="grille"><button type="button" class="module-tile home-grid-tile" data-grid-tile aria-label="Régler la grille : colonnes et rangées" title="Colonnes et rangées">${COLS===4?`<span class="module-face"><span class="module-icon" aria-hidden="true">${GRID_ICON}</span></span><span class="module-copy"><strong>Grille</strong></span>`:`<span class="module-icon" aria-hidden="true">${GRID_ICON}</span><span class="widget-copy"><span class="module-copy"><strong>Grille</strong></span></span>`}</button></article>`);
   // While reading (21/10): the first row of every page is kept free for the action buttons and the functions

@@ -1,0 +1,10 @@
+/* Provider buttons occupy the same cells as the existing functions. */
+.home-pages .mail-provider-tile{position:relative;background:none;border:0;color:inherit;width:100%;height:100%;cursor:pointer}
+.home-pages .mail-provider-card .module-icon.mail-brand{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;overflow:visible}
+.home-pages .mail-provider-card .mail-brand-svg{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;stroke:none!important;filter:none!important}
+.home-pages .mail-provider-card.is-disconnected .mail-brand,.home-pages .mail-provider-card.is-expired .mail-brand{filter:grayscale(1);opacity:.45}
+.mail-provider-tile .module-face{position:relative}.mail-connection-dot{position:absolute;right:0;bottom:0;z-index:2;border:2px solid #111b24;border-radius:50%;width:15px;height:15px;display:grid;place-items:center;font-size:11px;font-weight:800;background:#77808c;color:white}
+.is-connected .mail-connection-dot{background:#3ddc84;width:11px;height:11px}.is-expired .mail-connection-dot{background:#e7a64e;color:#18120b}
+.mail-provider-heading{display:flex;gap:14px;align-items:center;margin-bottom:16px}.mail-provider-heading h2{margin:0}.mail-provider-logo{display:block;flex:0 0 48px;height:48px}.mail-provider-logo svg{width:100%;height:100%;stroke:none}.mail-provider-sheet input,.mail-provider-sheet select{width:100%;min-width:0}.mail-provider-status{color:#e3b867}.mail-account-list{margin-bottom:18px}.mail-account-list .task-row{text-align:left}.mail-account-list small{display:block;margin-top:6px;color:#95a1ae}
+
+.mail-manage-list .task-row{display:flex;align-items:center;gap:14px;text-align:left}.mail-manage-list small{display:block;color:#95a1ae;margin-top:4px}

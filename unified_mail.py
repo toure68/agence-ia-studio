@@ -11,6 +11,7 @@ import re
 import secrets
 import time
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from html import escape, unescape
 from urllib.parse import quote, urlencode
@@ -43,6 +44,12 @@ def init_schema(db):
         if 'subject' not in {r['name'] for r in con.execute('PRAGMA table_info(mail_compositions)')}:con.execute("ALTER TABLE mail_compositions ADD COLUMN subject TEXT NOT NULL DEFAULT ''")
         if 'account_key' not in {r['name'] for r in con.execute('PRAGMA table_info(mail_unified_states)')}:con.execute("ALTER TABLE mail_unified_states ADD COLUMN account_key TEXT NOT NULL DEFAULT ''")
 
+        con.execute("CREATE TABLE IF NOT EXISTS mail_connections(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,company_id INTEGER NOT NULL,email TEXT NOT NULL DEFAULT '',token TEXT NOT NULL DEFAULT '',keywords TEXT NOT NULL DEFAULT 'Activité',automatic INTEGER NOT NULL DEFAULT 1,cursor TEXT NOT NULL DEFAULT '',last_sync REAL NOT NULL DEFAULT 0,syncing INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '',provider TEXT NOT NULL DEFAULT 'nylas',grant_hash TEXT NOT NULL DEFAULT '',last_change REAL NOT NULL DEFAULT 0,mail_service TEXT NOT NULL DEFAULT '',inbox_id TEXT NOT NULL DEFAULT '',auth_invalid INTEGER NOT NULL DEFAULT 0,service TEXT NOT NULL DEFAULT '',UNIQUE(user_id,company_id,grant_hash))")
+        for table,fields in {'mail_messages':{'connection_id':'INTEGER NOT NULL DEFAULT 0'},'mail_compositions':{'connection_id':'INTEGER NOT NULL DEFAULT 0'},'mail_unified_states':{'connection_id':'INTEGER NOT NULL DEFAULT 0','service':"TEXT NOT NULL DEFAULT ''"}}.items():
+            existing={r['name'] for r in con.execute('PRAGMA table_info('+table+')')}
+            for name,definition in fields.items():
+                if name not in existing:con.execute('ALTER TABLE '+table+' ADD COLUMN '+name+' '+definition)
+
 
 class FileData(BaseModel):
     name:str=Field(min_length=1,max_length=180)
@@ -69,6 +76,9 @@ class Confirm(BaseModel):
 
 class ConnectIntent(BaseModel):
     replace_confirmed:bool=False
+    add:bool=False
+    service:str=Field(default='',max_length=40)
+    login_hint:str=Field(default='',max_length=254)
 
 
 class MailAction(BaseModel):
@@ -77,6 +87,33 @@ class MailAction(BaseModel):
 
 
 def install(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle):
+    # Request-local selection, copied by FastAPI into each sync worker. Never a global active mailbox.
+    selected=ContextVar('mail_connection',default=0)
+    legacy_scope,legacy_account,legacy_message=scope,account,message
+    def scope(req,cid,write=False):
+        uid=legacy_scope(req,cid,write)
+        try:aid=int(req.query_params.get('account_id','0'))
+        except ValueError:raise HTTPException(422,'Boîte invalide.')
+        if aid<0:raise HTTPException(422,'Boîte invalide.')
+        selected.set(aid)
+        if aid:
+            with db() as con:account(con,uid,cid)
+        return uid
+    def account(con,uid,cid,aid=None):
+        aid=selected.get() if aid is None else aid
+        if not aid:return {**legacy_account(con,uid,cid),'connection_id':0}
+        r=con.execute('SELECT * FROM mail_connections WHERE id=? AND user_id=? AND company_id=?',(aid,uid,cid)).fetchone()
+        if not r:raise HTTPException(404,'Boîte introuvable.')
+        return {**dict(r),'connection_id':aid}
+    def message(con,uid,cid,mid):
+        m=legacy_message(con,uid,cid,mid)
+        if m['connection_id']!=selected.get():raise HTTPException(404,'E-mail introuvable dans cette boîte.')
+        return m
+    def update_account(con,a,values):
+        table='mail_connections' if a.get('connection_id') else 'mail_accounts'
+        where='id=? AND user_id=? AND company_id=?' if a.get('connection_id') else 'user_id=? AND company_id=?'
+        args=([a['connection_id']] if a.get('connection_id') else [])+[a['user_id'],a['company_id']]
+        con.execute('UPDATE '+table+' SET '+','.join(k+'=?' for k in values)+' WHERE '+where, list(values.values())+args)
     def config():
         region=os.environ.get('NYLAS_REGION','eu')
         return {'key':os.environ.get('NYLAS_API_KEY',''),'client':os.environ.get('NYLAS_CLIENT_ID',''),
@@ -107,7 +144,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
             a=account(con,uid,cid);grant(a)
         return a
     def unchanged(con,uid,cid,a):
-        if account(con,uid,cid)['token']!=a['token']:raise HTTPException(409,'La connexion a changé. Rouvrez la messagerie.')
+        if account(con,uid,cid,a.get('connection_id',0))['token']!=a['token']:raise HTTPException(409,'La connexion a changé. Rouvrez la messagerie.')
     def text(raw):
         p=TextOnly();p.feed(str(raw or ''));return unescape(''.join(p.parts))[:30000]
     def upsert(uid,cid,a,obj):
@@ -124,15 +161,16 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         gid='nylas:'+hashlib.sha256(grant(a).encode()).hexdigest()+':'+rid
         with db() as con:
             unchanged(con,uid,cid,a)
-            con.execute('UPDATE mail_accounts SET last_change=? WHERE user_id=? AND company_id=?',(time.time(),uid,cid))
-            con.execute('''INSERT INTO mail_messages(user_id,company_id,gmail_id,thread_id,sender,reply_to,subject,body,received,category,provider,remote_id,attachments,folders,unread,send_status,archived)
-              VALUES (?,?,?,?,?,?,?,?,?,?,'nylas',?,?,?,?,?,?) ON CONFLICT(user_id,company_id,gmail_id) DO UPDATE SET subject=excluded.subject,body=excluded.body,sender=excluded.sender,reply_to=excluded.reply_to,attachments=excluded.attachments,folders=excluded.folders,unread=excluded.unread,archived=excluded.archived,remote_deleted=0''',
-              (uid,cid,gid,str(obj.get('thread_id') or rid)[:512],(str(who.get('name') or '')+' <'+address+'>')[:500],reply[:300],subject,body,received,category(subject+' '+body),rid,json.dumps(parts),json.dumps(folders),int(bool(obj.get('unread',False))),'sent' if outgoing else 'draft',archived))
+            update_account(con,a,{'last_change':time.time()})
+            con.execute('''INSERT INTO mail_messages(user_id,company_id,gmail_id,thread_id,sender,reply_to,subject,body,received,category,provider,remote_id,attachments,folders,unread,send_status,archived,connection_id)
+              VALUES (?,?,?,?,?,?,?,?,?,?,'nylas',?,?,?,?,?,?,?) ON CONFLICT(user_id,company_id,gmail_id) DO UPDATE SET subject=excluded.subject,body=excluded.body,sender=excluded.sender,reply_to=excluded.reply_to,attachments=excluded.attachments,folders=excluded.folders,unread=excluded.unread,archived=excluded.archived,remote_deleted=0''',
+              (uid,cid,gid,str(obj.get('thread_id') or rid)[:512],(str(who.get('name') or '')+' <'+address+'>')[:500],reply[:300],subject,body,received,category(subject+' '+body),rid,json.dumps(parts),json.dumps(folders),int(bool(obj.get('unread',False))),'sent' if outgoing else 'draft',archived,a.get('connection_id',0)))
             return con.execute('SELECT id FROM mail_messages WHERE user_id=? AND company_id=? AND gmail_id=?',(uid,cid,gid)).fetchone()['id']
-    def synchronize(uid,cid):
-        a=current(uid,cid)
+    def synchronize(uid,cid,aid=0):
+        selected.set(aid);a=current(uid,cid)
         with db() as con:
-            claimed=con.execute('UPDATE mail_accounts SET syncing=1,last_sync=? WHERE user_id=? AND company_id=? AND (syncing=0 OR last_sync<?)',(time.time(),uid,cid,time.time()-300))
+            table='mail_connections' if aid else 'mail_accounts'
+            claimed=con.execute('UPDATE '+table+' SET syncing=1,last_sync=? WHERE user_id=? AND company_id=?'+(' AND id=?' if aid else '')+' AND (syncing=0 OR last_sync<?)',(time.time(),uid,cid,*([aid] if aid else []),time.time()-300))
             if claimed.rowcount!=1:raise HTTPException(409,'Synchronisation déjà en cours.')
         try:
             fs=data('GET',prefix(a)+'/folders',params={'limit':200}).get('data',[])
@@ -140,7 +178,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
             if not inbox:raise HTTPException(409,'Le dossier Réception n’est pas encore disponible. Réessayez dans quelques minutes.')
             a['inbox_id']=inbox
             with db() as con:
-                unchanged(con,uid,cid,a);con.execute('UPDATE mail_accounts SET inbox_id=? WHERE user_id=? AND company_id=?',(inbox,uid,cid))
+                unchanged(con,uid,cid,a);update_account(con,a,{'inbox_id':inbox})
             params={'limit':50}
             if a['cursor']:params['page_token']=a['cursor']
             listing=data('GET',prefix(a)+'/messages',params=params)
@@ -149,56 +187,120 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
                 if upsert(uid,cid,a,obj):count+=1
             with db() as con:
                 unchanged(con,uid,cid,a)
-                con.execute('UPDATE mail_accounts SET cursor=?,error=? WHERE user_id=? AND company_id=?',(listing.get('next_cursor') or '', '',uid,cid))
+                update_account(con,a,{'cursor':listing.get('next_cursor') or '', 'error':''})
             return {'imported':count,'more':bool(listing.get('next_cursor'))}
         except HTTPException as e:
-            with db() as con:con.execute('UPDATE mail_accounts SET error=? WHERE user_id=? AND company_id=?',(str(e.detail),uid,cid))
+            with db() as con:update_account(con,a,{'error':str(e.detail)})
             raise
         finally:
-            with db() as con:con.execute('UPDATE mail_accounts SET syncing=0 WHERE user_id=? AND company_id=?',(uid,cid))
+            with db() as con:update_account(con,a,{'syncing':0})
     def revoke(uid,cid,a):
         # A grant may be shared by explicitly connected company scopes.
         with db() as con:
             others=con.execute('SELECT count(*) FROM mail_accounts WHERE grant_hash=? AND NOT (user_id=? AND company_id=?) AND length(token)>0',(a['grant_hash'],uid,cid)).fetchone()[0]
+        with db() as con:others+=con.execute('SELECT count(*) FROM mail_connections WHERE grant_hash=? AND id<>? AND length(token)>0',(a['grant_hash'],a.get('connection_id',0))).fetchone()[0]
         if not others:call('DELETE','/grants/'+quote(grant(a,False),safe=''),missing_ok=True)
     def disconnect(uid,cid,a):
         # On revocation failure retain the local reference so the user can retry.
         revoke(uid,cid,a)
         with db() as con:
-            con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=?',(uid,cid))
-            con.execute('DELETE FROM mail_unified_states WHERE user_id=? AND company_id=?',(uid,cid))
+            con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=?',(uid,cid,a.get('connection_id',0)))
+            con.execute('DELETE FROM mail_unified_states WHERE user_id=? AND company_id=? AND connection_id=?',(uid,cid,a.get('connection_id',0)))
     def public(m):
         result={k:v for k,v in m.items() if k not in ('gmail_id','remote_id','message_id')}
         result['attachments']=json.loads(m['attachments']);return result
+
+    @app.get('/api/companies/{cid}/mail/unified/accounts')
+    def connections(cid:int,req:Request):
+        uid=scope(req,cid)
+        from mail_providers import PROVIDERS
+        with db() as con:
+            rows=[{**dict(r),'connection_id':0} for r in con.execute("SELECT * FROM mail_accounts WHERE user_id=? AND company_id=? AND token<>''",(uid,cid))]
+            rows += [{**dict(r),'connection_id':r['id']} for r in con.execute('SELECT * FROM mail_connections WHERE user_id=? AND company_id=? ORDER BY id',(uid,cid))]
+        def display(a):
+            service=a.get('service') or ('gmail' if a['provider']=='gmail' or a.get('mail_service')=='google' else 'outlook' if a.get('mail_service')=='microsoft' else a.get('mail_service'))
+            service=service if service in PROVIDERS else 'other'
+            connected=bool(a['token']) and not a.get('auth_invalid') and (a['provider']=='gmail' or bool(config()['key']))
+            return {'id':a['connection_id'],'email':a['email'],'service':service,'connected':connected,'error':bool(a.get('error')),'legacy':a['provider']=='gmail'}
+        return {'configured':ready(),'providers':[{'id':k,**v} for k,v in PROVIDERS.items()],'accounts':[display(a) for a in rows]}
+
+    @app.get('/api/companies/{cid}/mail/unified/boxes/{aid}/status')
+    def box_status(cid:int,aid:int,req:Request):
+        uid=scope(req,cid);selected.set(aid)
+        with db() as con:a=account(con,uid,cid)
+        return {'configured':ready(),'connected':bool(a['token']) and not a['auth_invalid'] and bool(config()['key']),'provider':'nylas','connection_id':aid,'email':a['email'],'error':a['error'],'keywords':a['keywords'],'automatic':bool(a['automatic']),'realtime':bool(os.environ.get('NYLAS_WEBHOOK_SECRET'))}
+
+    @app.get('/api/companies/{cid}/mail/unified/boxes/{aid}/messages')
+    def box_messages(cid:int,aid:int,req:Request):
+        uid=scope(req,cid)
+        with db() as con:
+            account(con,uid,cid,aid)
+            return [dict(r) for r in con.execute('SELECT id,sender,subject,received,category,send_status,revision,provider,unread,archived,connection_id FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=? AND remote_deleted=0 ORDER BY id DESC LIMIT 1000',(uid,cid,aid))]
+
+    @app.put('/api/companies/{cid}/mail/unified/boxes/{aid}/settings')
+    def box_settings(cid:int,aid:int,payload:dict,req:Request):
+        uid=scope(req,cid,True)
+        keywords=payload.get('keywords','')
+        if not isinstance(keywords,str) or not 2<=len(keywords)<=500:raise HTTPException(422,'Précisez vos activités (2 à 500 caractères).')
+        with db() as con:
+            a=account(con,uid,cid,aid);update_account(con,a,{'keywords':keywords,'automatic':int(bool(payload.get('automatic'))),'cursor':''})
+        return {'ok':True}
+
+    @app.post('/api/companies/{cid}/mail/unified/boxes/{aid}/sync')
+    def box_sync(cid:int,aid:int,req:Request):
+        return synchronize(scope(req,cid,True),cid,aid)
+
+    @app.post('/api/companies/{cid}/mail/unified/boxes/{aid}/disconnect')
+    def box_disconnect(cid:int,aid:int,req:Request):
+        uid=scope(req,cid,True)
+        if aid<=0:raise HTTPException(422,'Utilisez la déconnexion de la boîte principale.')
+        with db() as con:a=account(con,uid,cid,aid)
+        disconnect(uid,cid,a)
+        with db() as con:
+            mids=[r[0] for r in con.execute('SELECT id FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=?',(uid,cid,aid))]
+            for mid in mids:con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=? AND message_id=?',(uid,cid,mid))
+            con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=?',(uid,cid,aid))
+            con.execute('DELETE FROM mail_connections WHERE id=? AND user_id=? AND company_id=?',(aid,uid,cid))
+        return {'ok':True}
 
     @app.get('/api/companies/{cid}/mail/unified/status')
     def status(cid:int,req:Request):
         uid=scope(req,cid)
         with db() as con:
-            row=con.execute('SELECT * FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
-        a=dict(row) if row else {}
+            try:a=account(con,uid,cid)
+            except HTTPException as e:
+                if selected.get():raise
+                a={}
         return {'configured':ready(),'connected':a.get('provider')=='nylas' and bool(a.get('token')) and not a.get('auth_invalid') and bool(config()['key']),'provider':a.get('provider','nylas'),
-          'email':a.get('email',''),'error':a.get('error',''),'last_sync':a.get('last_sync',0),'realtime':bool(os.environ.get('NYLAS_WEBHOOK_SECRET'))}
+          'email':a.get('email',''),'error':a.get('error',''),'last_sync':a.get('last_sync',0),'realtime':bool(os.environ.get('NYLAS_WEBHOOK_SECRET')),'connection_id':a.get('connection_id',0)}
 
     @app.get('/api/companies/{cid}/mail/unified/version')
     def version(cid:int,req:Request):
         uid=scope(req,cid)
         with db() as con:
-            row=con.execute('SELECT last_change FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
-        return {'version':row['last_change'] if row else 0}
+            try:a=account(con,uid,cid)
+            except HTTPException:a={}
+        return {'version':a.get('last_change',0)}
 
     @app.post('/api/companies/{cid}/mail/unified/connect')
     def connect(cid:int,req:Request,payload:ConnectIntent|None=None):
         uid=scope(req,cid,True);throttle('mail-connect:'+str(uid),10,3600)
         if not ready():raise HTTPException(503,'Le service de messagerie unifiée reste à configurer.')
-        state=secrets.token_urlsafe(40);cfg=config()
+        from mail_providers import PROVIDERS
+        service=payload.service if payload else ''
+        if service and service not in PROVIDERS:raise HTTPException(422,'Messagerie inconnue. Choisissez Autre messagerie.')
+        state=secrets.token_urlsafe(40);cfg=config();adding=bool(payload and payload.add)
+        aid=-1 if adding else selected.get()
         with db() as con:
-            old=con.execute('SELECT token FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
+            old=None if adding else (account(con,uid,cid) if selected.get() else con.execute('SELECT * FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone())
             oldkey=hashlib.sha256(old['token'].encode()).hexdigest() if old else ''
             if old and old['token'] and not (payload and payload.replace_confirmed):raise HTTPException(409,'Confirmez le remplacement de la connexion actuelle avant de continuer.')
             con.execute('DELETE FROM mail_unified_states WHERE expires<?',(time.time(),))
-            con.execute('INSERT INTO mail_unified_states VALUES (?,?,?,?,?)',(hashlib.sha256(state.encode()).hexdigest(),uid,cid,time.time()+600,oldkey))
-        return {'url':cfg['base']+'/connect/auth?'+urlencode({'client_id':cfg['client'],'redirect_uri':cfg['redirect'],'response_type':'code','state':state})}
+            con.execute('INSERT INTO mail_unified_states(state,user_id,company_id,expires,account_key,connection_id,service) VALUES (?,?,?,?,?,?,?)',(hashlib.sha256(state.encode()).hexdigest(),uid,cid,time.time()+600,oldkey,aid,service))
+        params={'client_id':cfg['client'],'redirect_uri':cfg['redirect'],'response_type':'code','state':state}
+        if service:params['provider']=PROVIDERS[service]['provider']
+        if payload and payload.login_hint:params['login_hint']=payload.login_hint.strip()
+        return {'url':cfg['base']+'/connect/auth?'+urlencode(params)}
 
     @app.get('/api/mail/unified/callback')
     def callback(req:Request,state:str='',code:str='',error:str=''):
@@ -214,17 +316,39 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         if not gid:raise HTTPException(502,'Autorisation de messagerie incomplète.')
         info=data('GET','/grants/'+quote(gid,safe='')).get('data',{});email=info.get('email') or email
         if not email:raise HTTPException(502,'Adresse de la boîte indisponible.')
+        if r['connection_id']!=0:
+            aid=r['connection_id'];gh=hashlib.sha256(gid.encode()).hexdigest()
+            with db() as con:
+                con.execute('BEGIN IMMEDIATE')
+                default=con.execute("SELECT * FROM mail_accounts WHERE user_id=? AND company_id=? AND provider='nylas' AND grant_hash=?",(user['id'],cid,gh)).fetchone()
+                if default:raise HTTPException(409,'Cette boîte est déjà connectée. Retrouvez-la dans vos messageries.')
+                existing=con.execute('SELECT * FROM mail_connections WHERE user_id=? AND company_id=? AND grant_hash=?',(user['id'],cid,gh)).fetchone()
+                if aid>0:
+                    old=account(con,user['id'],cid,aid)
+                    if hashlib.sha256(old['token'].encode()).hexdigest()!=r['account_key'] or old['grant_hash']!=gh:raise HTTPException(409,'Choisissez la même boîte pour la reconnecter. Pour une autre adresse, utilisez Ajouter un compte.')
+                elif existing:aid=existing['id']
+                values=(user['id'],cid,email,cipher.encrypt(gid.encode()).decode(),gh,str(info.get('provider') or '')[:30],r['service'])
+                con.execute("INSERT INTO mail_connections(user_id,company_id,email,token,grant_hash,mail_service,service) VALUES (?,?,?,?,?,?,?) ON CONFLICT(user_id,company_id,grant_hash) DO UPDATE SET email=excluded.email,token=excluded.token,error='',auth_invalid=0,last_sync=0",values)
+                aid=con.execute('SELECT id FROM mail_connections WHERE user_id=? AND company_id=? AND grant_hash=?',(user['id'],cid,gh)).fetchone()['id']
+                con.commit()
+            return callback_page(cid,aid)
         with db() as con:
+            con.execute('BEGIN IMMEDIATE')
             old=con.execute('SELECT * FROM mail_accounts WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
+            if con.execute('SELECT 1 FROM mail_connections WHERE user_id=? AND company_id=? AND grant_hash=?',(user['id'],cid,hashlib.sha256(gid.encode()).hexdigest())).fetchone():raise HTTPException(409,'Cette boîte est déjà connectée. Retrouvez-la dans vos messageries.')
             oldkey=hashlib.sha256(old['token'].encode()).hexdigest() if old else ''
             if oldkey!=r['account_key']:raise HTTPException(409,'Une autre connexion a été modifiée entre-temps. Recommencez.')
             if old and old['token'] and (old['provider']!='nylas' or old['grant_hash']!=hashlib.sha256(gid.encode()).hexdigest()):
                 if old['provider']=='nylas':revoke(user['id'],cid,dict(old))
                 now=con.execute('SELECT token FROM mail_accounts WHERE user_id=? AND company_id=?',(user['id'],cid)).fetchone()
                 if not now or now['token']!=old['token']:raise HTTPException(409,'La connexion a changé entre-temps. Recommencez.')
-                con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=?',(user['id'],cid));con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=?',(user['id'],cid));con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=?',(user['id'],cid))
+                con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=0',(user['id'],cid));con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=? AND message_id NOT IN (SELECT id FROM mail_messages)',(user['id'],cid));con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=0',(user['id'],cid))
             con.execute("INSERT INTO mail_accounts(user_id,company_id,email,token,provider,grant_hash,keywords,automatic,mail_service) VALUES (?,?,?,?,'nylas',?,'Activité',1,?) ON CONFLICT(user_id,company_id) DO UPDATE SET email=excluded.email,token=excluded.token,provider='nylas',grant_hash=excluded.grant_hash,cursor='',error='',last_sync=0,mail_service=excluded.mail_service,inbox_id='',auth_invalid=0",(user['id'],cid,email,cipher.encrypt(gid.encode()).decode(),hashlib.sha256(gid.encode()).hexdigest(),str(info.get('provider') or '')[:30]))
-        return HTMLResponse('<!doctype html><html lang="fr"><meta charset="utf-8"><title>Messagerie connectée</title><p>Messagerie connectée. Vous pouvez fermer cette fenêtre.</p><a href="/?mail_company='+str(cid)+'#/emails">Revenir à l’application</a><script src="/static/mail-auth.js" defer></script></html>',headers={'Cache-Control':'no-store'})
+            con.commit()
+        return callback_page(cid)
+
+    def callback_page(cid,aid=0):
+        return HTMLResponse('<!doctype html><html lang="fr" data-mail-account="'+str(aid)+'" data-mail-company="'+str(cid)+'"><meta charset="utf-8"><title>Messagerie connectée</title><p>Messagerie connectée. Vous pouvez fermer cette fenêtre.</p><a href="/?mail_company='+str(cid)+'&amp;mail_account='+str(aid)+'#/emails">Revenir à l’application</a><script src="/static/mail-auth.js" defer></script></html>',headers={'Cache-Control':'no-store'})
 
     @app.get('/api/companies/{cid}/mail/unified/messages/{mid}/thread')
     def thread(cid:int,mid:int,req:Request):
@@ -233,9 +357,9 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         if m['provider']!='nylas':raise HTTPException(409,'Ce message utilise la connexion Gmail existante.')
         with db() as con:
             con.execute('BEGIN')
-            rows=[public(dict(r)) for r in con.execute("SELECT * FROM mail_messages WHERE user_id=? AND company_id=? AND provider='nylas' AND thread_id=? AND remote_deleted=0 ORDER BY received,id LIMIT 100",(uid,cid,m['thread_id']))]
-            revision=account(con,uid,cid)['last_change']
-        return {'messages':rows,'selected':mid,'version':revision}
+            rows=[public(dict(r)) for r in con.execute("SELECT * FROM mail_messages WHERE user_id=? AND company_id=? AND provider='nylas' AND thread_id=? AND connection_id=? AND remote_deleted=0 ORDER BY received,id LIMIT 100",(uid,cid,m['thread_id'],selected.get()))]
+            a=account(con,uid,cid);revision=a['last_change']
+        return {'messages':rows,'selected':mid,'version':revision,'email':a['email']}
 
     @app.post('/api/companies/{cid}/mail/unified/messages/{mid}/refresh')
     def refresh_thread(cid:int,mid:int,req:Request):
@@ -276,7 +400,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         data('PUT',path,json=change)
         with db() as con:
             unchanged(con,uid,cid,a)
-            con.execute('UPDATE mail_accounts SET last_change=? WHERE user_id=? AND company_id=?',(time.time(),uid,cid))
+            update_account(con,a,{'last_change':time.time()})
             if 'unread' in change:con.execute('UPDATE mail_messages SET unread=? WHERE id=?',(int(change['unread']),mid))
             else:con.execute('UPDATE mail_messages SET folders=?,archived=? WHERE id=?',(json.dumps(change['folders']),int(payload.action=='archive'),mid))
         return {'ok':True}
@@ -308,7 +432,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         return Response(body,media_type='application/octet-stream',headers={'Content-Disposition':"attachment; filename*=UTF-8''"+quote(name,safe=''),'Cache-Control':'no-store'})
 
     def draft(con,uid,cid,did):
-        r=con.execute('SELECT * FROM mail_compositions WHERE id=? AND user_id=? AND company_id=?',(did,uid,cid)).fetchone()
+        r=con.execute('SELECT * FROM mail_compositions WHERE id=? AND user_id=? AND company_id=? AND connection_id=?',(did,uid,cid,selected.get())).fetchone()
         if not r:raise HTTPException(404,'Brouillon introuvable.')
         d=dict(r)
         try:d['content']=json.loads(cipher.decrypt(d['payload']).decode())
@@ -320,7 +444,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
     def drafts(cid:int,req:Request):
         uid=scope(req,cid)
         with db() as con:
-            return [dict(r) for r in con.execute('SELECT id,revision,status,mode,source_id,subject,updated FROM mail_compositions WHERE user_id=? AND company_id=? ORDER BY updated DESC LIMIT 100',(uid,cid))]
+            return [dict(r) for r in con.execute('SELECT id,revision,status,mode,source_id,subject,updated FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=? ORDER BY updated DESC LIMIT 100',(uid,cid,selected.get()))]
 
     @app.get('/api/companies/{cid}/mail/unified/drafts/{did}')
     def get_draft(cid:int,did:int,req:Request):
@@ -360,7 +484,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
                 if changed.rowcount!=1:raise HTTPException(409,'Brouillon modifié ou envoi déjà engagé. Rouvrez-le.')
                 did=payload.id
             else:
-                did=con.execute('INSERT INTO mail_compositions(user_id,company_id,source_id,mode,payload,account_key,operation,updated,subject) VALUES (?,?,?,?,?,?,?,?,?)',(uid,cid,payload.source_id,payload.mode,blob,key(a),secrets.token_hex(20),time.time(),payload.subject)).lastrowid
+                did=con.execute('INSERT INTO mail_compositions(user_id,company_id,source_id,mode,payload,account_key,operation,updated,subject,connection_id) VALUES (?,?,?,?,?,?,?,?,?,?)',(uid,cid,payload.source_id,payload.mode,blob,key(a),secrets.token_hex(20),time.time(),payload.subject,selected.get())).lastrowid
             return dict(con.execute('SELECT id,revision,status FROM mail_compositions WHERE id=?',(did,)).fetchone())
 
     @app.post('/api/companies/{cid}/mail/unified/drafts/{did}/send')
@@ -441,16 +565,16 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
             with db() as con:
                 claimed=con.execute('UPDATE mail_events SET claimed=?,attempts=attempts+1 WHERE id=? AND done=0 AND claimed<?',(time.time(),event['id'],time.time()-90))
                 if claimed.rowcount!=1:continue
-                accounts=[dict(r) for r in con.execute("SELECT * FROM mail_accounts WHERE provider='nylas' AND grant_hash=? AND token<>''",(event['grant_hash'],))]
+                accounts=[{**dict(r),'connection_id':0} for r in con.execute("SELECT * FROM mail_accounts WHERE provider='nylas' AND grant_hash=? AND token<>''",(event['grant_hash'],))]+[{**dict(r),'connection_id':r['id']} for r in con.execute("SELECT * FROM mail_connections WHERE grant_hash=? AND token<>''",(event['grant_hash'],))]
             try:
                 for a in accounts:
                     uid,cid=a['user_id'],a['company_id']
                     if event['kind'].startswith('grant.'):
-                        with db() as con:con.execute('UPDATE mail_accounts SET error=?,auth_invalid=1,last_change=? WHERE user_id=? AND company_id=?',('Autorisation expirée : reconnectez votre boîte.',time.time(),uid,cid))
+                        with db() as con:update_account(con,a,{'error':'Autorisation expirée : reconnectez votre boîte.','auth_invalid':1,'last_change':time.time()})
                     elif event['kind'].startswith('message.deleted'):
                         with db() as con:
-                            con.execute("UPDATE mail_messages SET remote_deleted=1,archived=1 WHERE user_id=? AND company_id=? AND provider='nylas' AND remote_id=?",(uid,cid,event['remote_id']))
-                            con.execute('UPDATE mail_accounts SET last_change=? WHERE user_id=? AND company_id=?',(time.time(),uid,cid))
+                            con.execute("UPDATE mail_messages SET remote_deleted=1,archived=1 WHERE user_id=? AND company_id=? AND provider='nylas' AND remote_id=? AND connection_id=?",(uid,cid,event['remote_id'],a.get('connection_id',0)))
+                            update_account(con,a,{'last_change':time.time()})
                     else:
                         if not a.get('inbox_id'):raise HTTPException(409,'La première synchronisation est nécessaire.')
                         upsert(uid,cid,a,data('GET',prefix(a)+'/messages/'+quote(event['remote_id'],safe='')).get('data',{}))
@@ -462,7 +586,12 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
     async def worker():
         while True:
             await asyncio.sleep(5)
-            try:await asyncio.to_thread(process_events)
+            try:
+                await asyncio.to_thread(process_events)
+                with db() as con:boxes=[dict(r) for r in con.execute("SELECT id,user_id,company_id FROM mail_connections WHERE automatic=1 AND auth_invalid=0 AND token<>'' AND last_sync<?",(time.time()-900,))]
+                for box in boxes:
+                    try:await asyncio.to_thread(synchronize,box['user_id'],box['company_id'],box['id'])
+                    except Exception:pass
             except Exception:pass
     previous=app.router.lifespan_context
     @asynccontextmanager

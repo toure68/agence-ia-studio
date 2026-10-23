@@ -1,6 +1,6 @@
 # Messagerie unifiée — activation et vérification
 
-La version v144 ajoute l’adaptateur Nylas, la réponse dans le fil, la rédaction superposée, le transfert, les pièces jointes et le menu « … ». La boîte Gmail déjà connectée reste utilisable tant qu’une nouvelle connexion n’est pas validée. Une seule boîte par utilisateur et entreprise est active. Aucun fournisseur payant n’est activé par le code.
+La version v144 ajoute l’adaptateur Nylas, la réponse dans le fil, la rédaction superposée, le transfert, les pièces jointes et le menu « … ». La boîte Gmail déjà connectée reste utilisable tant qu’une nouvelle connexion n’est pas validée. Plusieurs boîtes par utilisateur et entreprise peuvent être connectées, y compris chez un même fournisseur. La connexion historique reste la boîte principale (identifiant 0), les nouvelles sont conservées séparément. Aucun fournisseur payant n’est activé par le code.
 
 ## Activation côté serveur
 
@@ -22,7 +22,10 @@ La version v144 ajoute l’adaptateur Nylas, la réponse dans le fil, la rédact
 - La synchronisation complète charge cinquante messages par passage avec pagination. Un secours toutes les quinze minutes reste disponible. Le fil peut actualiser cinquante messages supplémentaires de la conversation ; les longues conversations peuvent nécessiter la synchronisation générale.
 - Les dossiers sont listés dans la limite des deux cents premiers ; une boîte avec davantage de dossiers nécessite un complément avant généralisation.
 - Aucun envoi depuis la synchronisation ou les notifications. L’utilisateur enregistre, relit puis clique « Confirmer et envoyer ». Une révision verrouille l’envoi ; la clé d’idempotence est stable. Un envoi incertain est bloqué et ne se relance jamais automatiquement : vérifier le dossier Envoyés.
-- Remplacer la connexion par une autre boîte demande une confirmation. Les anciennes copies locales et brouillons sont retirés, les originaux restent chez le fournisseur. Déconnexion : révocation du grant puis suppression locale ; en cas d’échec de révocation, l’application garde les références pour permettre une nouvelle tentative.
+- Les icônes Gmail/Google Workspace, Outlook/Microsoft 365/Hotmail, iCloud, Yahoo, Zoho, Orange/Wanadoo, SFR/Neuf, Free/Zimbra, La Poste.net, OVHcloud, IONOS, GMX, AOL, Fastmail et Infomaniak/kMail rejoignent les pages de fonctions. Gris = à connecter ; couleur + point vert = connecté ; gris + alerte = autorisation expirée. Le bouton Autre messagerie permet de choisir un fournisseur ou de saisir une adresse professionnelle compatible IMAP. Il ne garantit pas la prise en charge de toutes les messageries : les protocoles fermés sans IMAP externe ne sont pas compatibles. Les noms et symboles servent uniquement à identifier les fournisseurs.
+- Ajouter un compte ne remplace aucune boîte. Le choix du fournisseur utilise Hosted Auth (google/microsoft/icloud/yahoo ou fournisseur IMAP) ; les connecteurs correspondants restent à configurer dans Nylas, y compris IMAP pour les domaines professionnels. L’utilisateur saisit un éventuel mot de passe d’application et ses serveurs uniquement dans la fenêtre Nylas. Aucune clé ni mot de passe de messagerie dans le formulaire de l’application. Une autorisation répétée du même grant conserve la même boîte et ses brouillons.
+- Les messages, fils, fichiers, brouillons, synchronisations et notifications sont séparés par connexion. La revue d’envoi montre l’adresse expéditrice. Déconnecter une boîte ne supprime pas les autres. Un grant partagé entre entreprises n’est révoqué que lorsque sa dernière référence disparaît.
+- Remplacer la connexion principale par une autre boîte demande une confirmation. Les anciennes copies locales et brouillons sont retirés, les originaux restent chez le fournisseur. Déconnexion : révocation du grant puis suppression locale ; en cas d’échec de révocation, l’application garde les références pour permettre une nouvelle tentative.
 
 ## Sources techniques
 
