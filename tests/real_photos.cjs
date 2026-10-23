@@ -2,13 +2,13 @@
 // Real JPEGs through the existing trial notification: full image, carousel, Text and unchanged function cells.
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
+const openSessionPage=require('./ui_session.cjs');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']}:process.env.PLAYWRIGHT_BROWSER_CHANNEL?{channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL}:{})});
  try{
  for(const size of [{width:375,height:667},{width:430,height:932}]){
-  const page=await browser.newPage({viewport:size,isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
+  const page=await openSessionPage(browser,{viewport:size,isMobile:true,hasTouch:true,reducedMotion:'reduce'}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://127.0.0.1:8123/');await page.locator('#loginEmail').fill(process.env.ADMIN_EMAIL||'ui-owner@example.test');await page.locator('#loginPassword').fill(process.env.ADMIN_PASSWORD||'local-ui-smoke-test-only');await page.getByRole('button',{name:'Se connecter'}).click();await page.locator('.home-pages').waitFor();
   await page.evaluate(()=>homeReader.setSamples(true));await page.waitForTimeout(500);
   const index=await page.evaluate(()=>[...document.querySelectorAll('.reader-list .reader-item')].findIndex(e=>e.textContent.includes('Vos 7 photos du casque')));assert(index>=0);
   await page.locator('.reader-list [data-reader-item]').nth(index).click();await page.waitForTimeout(500);

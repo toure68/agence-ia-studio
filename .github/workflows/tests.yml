@@ -37,6 +37,7 @@ jobs:
       ADMIN_EMAIL: ui-owner@example.test
       ADMIN_PASSWORD: local-ui-smoke-test-only
       SESSION_SECRET: local-ui-smoke-secret-for-automated-tests-only
+      UI_AUTH_STATE_PATH: /tmp/agence-ui-session.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
