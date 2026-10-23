@@ -121,14 +121,18 @@ def install(app, db, require, own_company, utcnow):
             cards[-1]['home_title']='Devis · '+person_name(data['customer_name'])
             cards[-1]['home_detail']=money(quote['total_minor'],data.get('currency','EUR'))+' · À finaliser'+(' · Échéance : '+due if due else '')
 
-        for row in con.execute("SELECT id,subject,sender,received,unread,provider,connection_id,revision,send_status FROM mail_messages WHERE archived=0 AND remote_deleted=0 AND company_id=? AND user_id=? AND send_status IN ('draft','uncertain') ORDER BY received DESC,id DESC",(cid,user['id'])):
+        from mail_providers import PROVIDERS
+        for row in con.execute("SELECT m.id,m.subject,m.sender,m.received,m.unread,m.provider,m.connection_id,m.revision,m.send_status,COALESCE(NULLIF(n.service,''),NULLIF(n.mail_service,''),NULLIF(a.mail_service,''),'') AS service FROM mail_messages m LEFT JOIN mail_connections n ON n.id=m.connection_id AND n.user_id=m.user_id AND n.company_id=m.company_id LEFT JOIN mail_accounts a ON m.connection_id=0 AND a.user_id=m.user_id AND a.company_id=m.company_id WHERE m.archived=0 AND m.remote_deleted=0 AND m.company_id=? AND m.user_id=? AND m.send_status IN ('draft','uncertain') ORDER BY m.received DESC,m.id DESC",(cid,user['id'])):
             mail=dict(row);uncertain=mail['send_status']=='uncertain'
             add('email','mail-'+str(mail['id']),str(mail['revision'])+mail['send_status'],
                 ('Vérifier l’envoi : ' if uncertain else 'Examiner : ')+mail['subject'],
                 'Vérifiez dans votre messagerie si le message est parti avant toute nouvelle tentative.' if uncertain else 'Réponse en brouillon à relire. Aucun envoi automatique.',
                 {'type':'email','id':mail['id'],'connection_id':mail['connection_id'],'provider':mail['provider']},'Ouvrir l’e-mail',0 if uncertain else 3)
-            if mail['provider']=='nylas' and not uncertain:
-                cards[-1].update(mail_received=True,source='E-mail',from_=mail['sender'],subject=mail['subject'],date=mail['received'],
+            service='gmail' if mail['provider']=='gmail' else {'google':'gmail','microsoft':'outlook','generic':'other'}.get(mail['service'],mail['service'])
+            service=service if service in PROVIDERS else 'other'
+            cards[-1].update(mail_service=service,source=PROVIDERS[service]['short'])
+            if not uncertain:
+                cards[-1].update(mail_received=True,from_=mail['sender'],subject=mail['subject'],date=mail['received'],
                     home_title=mail['sender'],home_detail=mail['subject'],
                     state='danger' if uncertain else 'warning' if mail['unread'] else 'info',
                     state_label='Envoi à vérifier' if uncertain else 'Non lu' if mail['unread'] else 'À traiter')

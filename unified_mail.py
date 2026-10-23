@@ -86,7 +86,7 @@ class MailAction(BaseModel):
     folder_id:str=Field(default='',max_length=512)
 
 
-def install(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle):
+def install(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle,gmail_adapter=None):
     # Request-local selection, copied by FastAPI into each sync worker. Never a global active mailbox.
     selected=ContextVar('mail_connection',default=0)
     legacy_scope,legacy_account,legacy_message=scope,account,message
@@ -139,9 +139,10 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         try:return call(method,path,**kw).json()
         except (ValueError,TypeError):raise HTTPException(502,'Réponse de messagerie invalide.')
     def prefix(a):return '/grants/'+quote(grant(a),safe='')
-    def current(uid,cid):
+    def current(uid,cid,allow_gmail=False):
         with db() as con:
-            a=account(con,uid,cid);grant(a)
+            a=account(con,uid,cid)
+            if not (allow_gmail and gmail_adapter and a.get('provider')=='gmail' and a['token']):grant(a)
         return a
     def unchanged(con,uid,cid,a):
         if account(con,uid,cid,a.get('connection_id',0))['token']!=a['token']:raise HTTPException(409,'La connexion a changé. Rouvrez la messagerie.')
@@ -453,7 +454,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
 
     @app.put('/api/companies/{cid}/mail/unified/drafts')
     def save(cid:int,payload:Composition,req:Request):
-        uid=scope(req,cid,True);a=current(uid,cid);total=0
+        uid=scope(req,cid,True);a=current(uid,cid,allow_gmail=True);total=0
         if any(c in payload.subject+payload.to for c in '\r\n'):raise HTTPException(422,'Objet ou destinataire invalide.')
         for f in payload.files:
             if any(c in f.name+f.content_type for c in '\r\n\x00'):raise HTTPException(422,'Fichier invalide.')
@@ -468,7 +469,8 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
             if payload.mode!='new':
                 if not payload.source_id:raise HTTPException(422,'Message source requis.')
                 m=message(con,uid,cid,payload.source_id)
-                if m['provider']!='nylas' or m['remote_deleted']:raise HTTPException(409,'Message source indisponible.')
+                if m['provider']!=a['provider'] or m['remote_deleted']:raise HTTPException(409,'Message source indisponible.')
+                if payload.mode=='reply' and m['send_status'] in ('sending','sent','uncertain'):raise HTTPException(409,'Réponse déjà envoyée ou à vérifier dans les messages envoyés.')
                 if payload.mode=='reply' and payload.to.casefold()!=m['reply_to'].casefold():raise HTTPException(422,'Le destinataire de la réponse doit correspondre au message.')
                 allowed={f['id']:int(f.get('size') or 0) for f in json.loads(m['attachments'])}
                 if payload.mode!='forward' and payload.forwarded:raise HTTPException(422,'Transfert de fichiers invalide.')
@@ -491,13 +493,15 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
     def send(cid:int,did:int,payload:Confirm,req:Request):
         uid=scope(req,cid,True);throttle('mail-send:'+str(uid),30,3600)
         if not payload.confirmed:raise HTTPException(422,'Vérifiez le message puis confirmez explicitement son envoi.')
-        a=current(uid,cid)
+        a=current(uid,cid,allow_gmail=True)
         with db() as con:
             d=draft(con,uid,cid,did);c=d['content']
             if d['account_key']!=key(a):raise HTTPException(409,'La connexion a changé : rouvrez le brouillon.')
             if d['revision']!=payload.revision or d['status']!='draft':raise HTTPException(409,'Révision modifiée ou envoi déjà engagé. Vérifiez les messages envoyés.')
             if not re.fullmatch(r'[^\s@<>,;\r\n]+@[^\s@<>,;\r\n]+\.[^\s@<>,;\r\n]+',c['to']) or not c['subject'].strip() or not c['body'].strip():raise HTTPException(422,'Complétez le destinataire, l’objet et le message.')
             source=message(con,uid,cid,d['source_id']) if d['source_id'] else None
+            if source and source['provider']!=a['provider']:raise HTTPException(409,'La boîte source a changé.')
+            if source and c['mode']=='reply' and source['send_status'] in ('sending','sent','uncertain'):raise HTTPException(409,'Réponse déjà envoyée ou à vérifier dans les messages envoyés.')
         files=[]
         for f in c['files']:files.append((f['name'],base64.b64decode(f['data']),f['content_type']))
         for aid in c['forwarded']:
@@ -510,15 +514,30 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         if sum(len(f[1]) for f in files)>MAX_FILES:raise HTTPException(413,'16 Mo maximum par message.')
         body={'to':[{'email':c['to']}],'subject':c['subject'],'body':c['body'],'is_plaintext':True}
         if c['mode']=='reply' and source:body['reply_to_message_id']=source['remote_id']
+        legacy_token=gmail_adapter['access'](a) if a['provider']=='gmail' else None
         with db() as con:
             unchanged(con,uid,cid,a)
             claimed=con.execute("UPDATE mail_compositions SET status='sending' WHERE id=? AND revision=? AND status='draft'",(did,payload.revision))
             if claimed.rowcount!=1:raise HTTPException(409,'Envoi déjà engagé ou brouillon modifié.')
+            if source and c['mode']=='reply':
+                claimed_source=con.execute("UPDATE mail_messages SET send_status='sending' WHERE id=? AND send_status='draft'",(source['id'],))
+                if claimed_source.rowcount!=1:raise HTTPException(409,'Une réponse est déjà engagée pour ce message.')
         try:
             kwargs={'headers':{'Idempotency-Key':d['operation']}}
             if files:kwargs['files']=[('message',(None,json.dumps(body),'application/json'))]+[('file'+str(i),(name,raw,mime)) for i,(name,raw,mime) in enumerate(files)]
             else:kwargs['json']=body
-            result=data('POST',prefix(a)+'/messages/send',**kwargs).get('data',{})
+            if a['provider']=='gmail':
+                from email.message import EmailMessage
+                mail=EmailMessage();mail['From']=a['email'];mail['To']=c['to'];mail['Subject']=c['subject'];mail.set_content(c['body'])
+                if source and c['mode']=='reply' and source['message_id'] and not any(ch in source['message_id'] for ch in '\r\n'):
+                    mail['In-Reply-To']=source['message_id'];mail['References']=source['message_id']
+                for name,raw,mime in files:
+                    main,sub=mime.split('/',1) if '/' in mime else ('application','octet-stream')
+                    mail.add_attachment(raw,maintype=main,subtype=sub,filename=name)
+                message_body={'raw':base64.urlsafe_b64encode(mail.as_bytes()).decode()}
+                if source and c['mode']=='reply':message_body['threadId']=source['thread_id']
+                result=gmail_adapter['request']('POST','/messages/send',legacy_token,json=message_body)
+            else:result=data('POST',prefix(a)+'/messages/send',**kwargs).get('data',{})
             if not result.get('id'):raise HTTPException(502,'Confirmation d’envoi manquante.')
         except Exception:
             with db() as con:

@@ -50,11 +50,11 @@ const homePages=(()=>{
   // While reading (22/10): the first function row shows the function of the message being read (marked) then
   // the functions of the next messages, each once, in the same order; the other functions follow unchanged.
   let els=[...box.querySelector('.module-grid').children];
+  if(window.mailConnections){mailConnections.refresh();const brands=document.createElement('div');brands.innerHTML=mailConnections.tiles().join('');els.push(...brands.children);}
   if(reserve&&ROWS>1&&window.homeReader?.readingModules){const want=window.homeReader.readingModules(COLS);
    const picked=want.map(k=>els.find(e=>e.dataset.module===k)).filter(Boolean);els=[...picked,...els.filter(e=>!picked.includes(e))];
    if(picked[0])picked[0].classList.add('is-reading');}
   const cards=els.map(c=>c.outerHTML),pages=[];
-  if(window.mailConnections){mailConnections.refresh();cards.push(...mailConnections.tiles());}
   // Last square: the grid réglage (columns and rows), right after the functions.
   cards.push(`<article class="module-card home-grid-card" data-module="grille"><button type="button" class="module-tile home-grid-tile" data-grid-tile aria-label="Régler la grille : colonnes et rangées" title="Colonnes et rangées">${COLS===4?`<span class="module-face"><span class="module-icon" aria-hidden="true">${GRID_ICON}</span></span><span class="module-copy"><strong>Grille</strong></span>`:`<span class="module-icon" aria-hidden="true">${GRID_ICON}</span><span class="widget-copy"><span class="module-copy"><strong>Grille</strong></span></span>`}</button></article>`);
   // While reading (21/10): the first row of every page is kept free for the action buttons and the functions
