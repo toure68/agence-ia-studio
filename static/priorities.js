@@ -3,14 +3,14 @@ function priorityPresentation(c){
  if(c.action.type==='social')return tileState('warning','À valider');
  if(c.rank===0)return tileState('danger','Urgent');
  if(c.rank<=2)return tileState('warning',c.action.type==='document'?'À vérifier':'Important');
- if(['client','quote','document','email'].includes(c.action.type))return tileState('warning',({client:'À valider',quote:'À finaliser',document:'À vérifier',email:'À relire'})[c.action.type]);
+ if(['client','quote','document','email','mail-draft'].includes(c.action.type))return tileState('warning',({client:'À valider',quote:'À finaliser',document:'À vérifier',email:'À relire','mail-draft':'Brouillon'})[c.action.type]);
  if(c.action.type==='task')return tileState('warning','À prévoir');
  if(c.workflow_status==='waiting')return tileState('warning','En attente');
  if(c.workflow_status==='doing')return tileState('info','En cours');
  if(c.action.type==='activity')return tileState('info','À faire');
  return tileState('neutral',c.fallback?'À préparer':'À faire');
 }
-const priorityModules={activity:'activities','activity-new':'activities',task:'calendar',client:'clients',document:'scanner',quote:'leads',email:'emails',equipment:'equipment',material:'equipment',risk:'risks',social:'social',prospect:'prospects',lead:'requests'};
+const priorityModules={activity:'activities','activity-new':'activities',task:'calendar',client:'clients',document:'scanner',quote:'leads',email:'emails','mail-draft':'emails',equipment:'equipment',material:'equipment',risk:'risks',social:'social',prospect:'prospects',lead:'requests'};
 function groupPriorityCards(cards){
  const groups=new Map(),seen=new Set();
  for(const card of cards){
@@ -109,6 +109,7 @@ async function openPriorityAction(card){
       if (card.action.type === 'equipment') return await openTab('equipment',{recordId:card.action.id});
       if (card.action.type === 'material') return await openTab('material',{recordId:card.action.id});
       if (card.action.type === 'quote') return await openTab('quote',{recordId:card.action.id});
+      if (card.action.type === 'mail-draft') {await openTab('emails');return await mailClient.composer(null,'new',await api(`/api/companies/${company.id}/mail/unified/drafts/${card.action.id}`));}
       if (card.action.type === 'email') return await openTab('email',{recordId:card.action.id});
       if (card.action.type === 'activity') return await openTab('activity',{recordId:card.action.id});
       if (card.action.type === 'task') return await openTab('calendar', {taskId:card.action.id});
@@ -201,7 +202,7 @@ document.addEventListener('visibilitychange',()=>{
 
 function refreshHomeMessages(cards,cockpit){
  if(tab!=='dashboard')return;
- const routes={task:'calendar',activity:'activities',client:'clients',document:'scanner',quote:'leads',email:'emails',social:'social',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment',lead:'requests'};
+ const routes={task:'calendar',activity:'activities',client:'clients',document:'scanner',quote:'leads',email:'emails','mail-draft':'emails',social:'social',prospect:'prospects',risk:'risks',equipment:'equipment',material:'equipment',lead:'requests'};
  document.querySelectorAll('#content .module-grid:not(.module-reserve-grid-inline) .module-card').forEach(tile=>{
   const key=tile.dataset.module,card=cards.find(c=>!c.example&&!c.fallback&&routes[c.action.type]===key);
   const label=modulePresentation(key,cockpit).label;

@@ -1,0 +1,12 @@
+.mail-turn{padding:14px 0;border-bottom:1px solid #ffffff1c}.mail-turn:first-child{padding-top:0}.mail-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}.mail-files{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.mail-file{display:flex;align-items:center;gap:6px;max-width:100%;text-align:left;overflow-wrap:anywhere}.mail-file small{white-space:nowrap}.mail-reply-actions{margin:16px 0}.mail-compose{gap:14px}.mail-compose textarea{resize:vertical;min-height:112px}.mail-compose .field label{display:grid;gap:6px}.mail-compose .row{display:flex;gap:8px;flex-wrap:wrap}.mail-compose .row>.btn{flex:1 1 130px}.mail-file-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:6px 0}.mail-file-row span{overflow-wrap:anywhere;min-width:0}.mail-attach-choice{display:flex;align-items:center;gap:8px;margin:8px 0}.mail-compose .mail-attach-choice input{width:20px;height:20px;flex:none}.mail-confirm{padding:14px 0;border-top:1px solid #ffffff25}.mail-confirm .mail-body{max-height:150px;overflow:auto}.mail-confirm>.btn{width:100%}.mail-file-picker{display:block;text-align:center;cursor:pointer}.mail-file-preview img{display:block;width:100%;height:auto;object-fit:contain}.mail-file-preview iframe{display:block;width:100%;height:45vh;border:0}.mail-compose-status:empty{display:none}.mail-thread>.heading{align-items:start}.mail-thread>.heading h1{flex:1;min-width:0}.mail-thread #mailMore{font-size:24px;min-width:44px}.mail-row{width:100%;text-align:left}.mail-row>span{min-width:0}.mail-row small{display:block}.mail-workspace .mail-settings{margin:16px 0}.mail-workspace .list-filters{margin:18px 0}.mail-workspace #mailDraftList .task-row{width:100%;text-align:left}
+/* The composer overlays its thread; closing this overlay reveals that same thread. */
+body.us-open:has(#modalLayer:not(.hide) .modal[data-mail-overlay]) #contextPanel{visibility:visible}
+
+.mail-compose .row[hidden]{display:none!important}
+
+/* Status notices never block a mail action or the close control beneath them. */
+body:has(.mail-workspace,.mail-thread,.mail-compose) #toast{pointer-events:none}
+
+.mail-compose.is-reviewing>:not(.mail-send-review):not(.mail-compose-status){display:none!important}
+.us-scroll:has(.mail-compose.is-reviewing)>h2{display:none}
+.mail-confirm>.btn{margin:5px 0}
