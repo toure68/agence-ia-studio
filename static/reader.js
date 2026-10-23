@@ -134,7 +134,7 @@ const homeReader=(()=>{
  const FILE_ICON={pdf:'PDF',doc:'DOC',xls:'XLS',other:'FICHIER'};
  function fileThumb(f,i){
   const inner=f.type==='image'?`<img src="${clean(f.src)}" alt="">`:`<span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span>`;
-  return `<button type="button" class="reader-thumb" data-file="${i}" aria-label="Voir en grand : ${clean(f.name)}">${inner}</button>`;
+  return `<span class="reader-file-slot"><button type="button" class="reader-thumb" data-file="${i}" aria-label="Voir en grand : ${clean(f.name)}">${inner}</button></span>`;
  }
  function fileOverflow(box){
   const strip=box?.querySelector('.reader-thumbs');if(!strip)return;
@@ -157,12 +157,13 @@ const homeReader=(()=>{
    let y0=null,x0=0;box.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;},{passive:true});
    box.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)*1.5)goTo(view.focus+(dy<0?1:-1));},{passive:true});}
   if(box.dataset.card!==c.key){box.dataset.card=c.key;
-   box.innerHTML=`<div class="reader-file-row"><button type="button" class="reader-thumb reader-text-thumb" data-file="-1" aria-label="Afficher le texte du message"><span aria-hidden="true">📝</span><span>Texte</span></button><div class="reader-file-window"><div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div><button type="button" class="reader-scroll is-prev" data-files-prev aria-label="Images précédentes" hidden>‹</button><button type="button" class="reader-scroll is-next" data-files-next aria-label="Images suivantes" hidden>›</button></div></div>`;
+   box.innerHTML=`<div class="reader-file-row"><span class="reader-file-slot"><button type="button" class="reader-thumb reader-text-thumb" data-file="-1" aria-label="Afficher le texte du message"><span aria-hidden="true">📝</span><span>Texte</span></button></span><div class="reader-file-window"><div class="reader-thumbs">${c.files.map((f,i)=>fileThumb(f,i)).join('')}</div><button type="button" class="reader-scroll is-prev" data-files-prev aria-label="Images précédentes" hidden>‹</button><button type="button" class="reader-scroll is-next" data-files-next aria-label="Images suivantes" hidden>›</button></div></div>`;
    box.querySelector('.reader-thumbs').addEventListener('scroll',()=>fileOverflow(box),{passive:true});
    box.dataset.file='';
   } // the count is in the reader (« 📎 N pièces jointes »)
   box.querySelectorAll('[data-file]').forEach(t=>{const on=Number(t.dataset.file)===view.file;t.classList.toggle('is-on',on);t.setAttribute('aria-pressed',String(on));});
   if(box.dataset.file!==String(view.file)){box.dataset.file=String(view.file);if(view.file>=0){const strip=box.querySelector('.reader-thumbs'),thumb=strip.querySelector(`[data-file="${view.file}"]`);if(thumb){const tr=thumb.getBoundingClientRect(),sr=strip.getBoundingClientRect();if(tr.left<sr.left||tr.right>sr.right)strip.scrollLeft+=tr.left<sr.left?tr.left-sr.left:tr.right-sr.right;}}}
+  box.style.setProperty('--reader-visible-files',String(Math.min(5,c.files.length)));
   fileOverflow(box);requestAnimationFrame(()=>fileOverflow(box));
   queue.classList.add('has-files');
  }
@@ -261,9 +262,13 @@ const homeReader=(()=>{
      const oldPitch=pitch();
      list.dataset.pitch=String(basePitch);list.style.setProperty('--reader-card-h',cardH+'px');
      anchor=Math.abs(basePitch-oldPitch)>.1;
-     if(files){const size=Math.max(0,Math.min(72,Math.floor(room-used-4)));queue.style.setProperty('--reader-thumb-size',size+'px');files.classList.toggle('is-compact',size<32);}
-     else queue.style.removeProperty('--reader-thumb-size');
-     queue.style.setProperty('--reader-tail-gap',(files?2:stack+space)+'px');
+     if(files){
+      const cell=Math.max(1,(queue.clientWidth-5*9)/6),actions=document.querySelector('#content .home-action-row');
+      const free=Math.max(0,(actions?.getBoundingClientRect().top||pg.getBoundingClientRect().top)-list.getBoundingClientRect().top-used);
+      const size=Math.max(0,Math.min(cell,Math.floor(free*.65)));
+      queue.style.setProperty('--reader-file-cell',cell+'px');queue.style.setProperty('--reader-thumb-size',size+'px');
+      queue.style.setProperty('--reader-tail-gap',((free-size)/2)+'px');files.classList.toggle('is-compact',size<32);
+     }else{queue.style.removeProperty('--reader-thumb-size');queue.style.setProperty('--reader-tail-gap',(stack+space)+'px');}
     }
    }else{delete list.dataset.pitch;list.style.removeProperty('--reader-card-h');}
    list.style.height=Math.max(0,n*pitch()-(n?gap:0))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;

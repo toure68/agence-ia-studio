@@ -74,12 +74,12 @@ html.home-ios .filler-tag{align-self:flex-start;font-size:10px;font-weight:800;l
 html.home-ios .home-back-zone{position:absolute;left:0;right:0;z-index:1;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
 /* Files fit the unused room below the unchanged notification list. */
 html.home-ios .reader-files{position:relative;top:auto;margin-top:var(--reader-tail-gap,12px);height:46px}
-html.home-ios .reader-thumbs{flex:none;height:46px;gap:12px}
+html.home-ios .reader-thumbs{flex:none;height:46px;gap:9px}
 html.home-ios .reader-thumb{outline:1px solid #ffffff26;outline-offset:-1px}
 html.home-ios .home-back-zone{touch-action:pan-x}
 /* Text remains available while the image strip scrolls. Short strips center as one group. */
-html.home-ios .reader-file-row{display:flex;align-self:center;align-items:center;gap:12px;width:fit-content;max-width:100%;height:46px}
-html.home-ios .reader-file-window{position:relative;flex:0 1 auto;min-width:0;height:46px}
+html.home-ios .reader-file-row{display:flex;align-self:center;align-items:center;gap:9px;width:fit-content;max-width:100%;height:46px}
+html.home-ios .reader-file-window{position:relative;flex:none;min-width:0;width:calc(var(--reader-visible-files,5)*var(--reader-file-cell,46px) + (var(--reader-visible-files,5) - 1)*9px);height:46px}
 html.home-ios .reader-file-window .reader-thumbs{max-width:100%}
 html.home-ios .reader-text-thumb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--home-text,#fff);background:#ffffff0c;font:inherit;font-size:10px;line-height:1.15}
 html.home-ios .reader-text-thumb>span:first-child{font-size:19px}
@@ -271,7 +271,7 @@ html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not
 
 /* Files use the spare queue room; notifications and function icons keep their home size. */
 html.home-ios .reader-files,html.home-ios .reader-file-row,html.home-ios .reader-file-window,html.home-ios .reader-thumbs{height:var(--reader-thumb-size,64px)}
-html.home-ios .reader-thumb{flex:0 0 max(32px,var(--reader-thumb-size,64px));width:max(32px,var(--reader-thumb-size,64px));height:var(--reader-thumb-size,64px)}
+html.home-ios .reader-thumb{flex:none;width:var(--reader-thumb-size,64px);height:var(--reader-thumb-size,64px)}
 html.home-ios .reader-thumb img,html.home-ios .reader-thumb .reader-file-kind{width:100%;height:100%}
 
 /* Whole-card navigation: stacking stays within the notification bounds. */
@@ -303,3 +303,9 @@ html.home-ios .reader-files.is-compact .reader-text-thumb>span:last-child{displa
 html.home-ios .reader-files.is-compact .reader-scroll{font-size:clamp(10px,var(--reader-thumb-size),27px)}
 
 html.home-ios .home-stack[hidden]{display:none}
+
+html.home-ios .reader-file-slot{display:flex;align-items:center;justify-content:center;flex:0 0 var(--reader-file-cell,46px);width:var(--reader-file-cell,46px);height:var(--reader-thumb-size,46px)}
+/* Snap whole slots; navigation arrows stay out of thumbnail centers. */
+html.home-ios .reader-file-slot{scroll-snap-align:start}
+html.home-ios .reader-file-slot .reader-thumb{scroll-snap-align:none}
+html.home-ios .reader-files .reader-scroll{width:min(18px,calc(var(--reader-file-cell,46px)/3))}

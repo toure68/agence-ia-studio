@@ -203,7 +203,7 @@ const homePages=(()=>{
   let z=home.querySelector('.home-back-zone');
   const files=home.querySelector('.reader-files');
   if(el)el.hidden=!!files; // The thumbnail strip uses this decorative edge's room too.
-  const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom:top,zBottom=pr.top;
+  const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom:top,zBottom=reading?(home.querySelector('.home-action-row')?.getBoundingClientRect().top||pr.top):pr.top;
   if(zBottom-zTop>0){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';home.append(z);}
    z.setAttribute('aria-label',reading?'Revenir à l’accueil':'Lire la première notification');

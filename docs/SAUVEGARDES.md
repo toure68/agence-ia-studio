@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT CARROUSEL SIX CENTRÉ** | `sauvegarde/avant-carrousel-six-centre-v137` (v136) | Miniatures proches des notifications, nombre visible variable. |
 | **RETOUR AVANT MINIATURES ESPACE LIBRE** | `sauvegarde/avant-miniatures-espace-libre-v136` (v135) | Miniatures remplaçant des notifications et bouton principal plus large. |
 | **RETOUR AVANT INVITATION QUOTIDIEN** | `sauvegarde/avant-invitation-quotidien-v135` (v134) | Invitation à la place de Fin de liste et clic vide avançant au message suivant. |
 | **RETOUR AVANT ZONE NOTIFICATIONS ACTIVE** | `sauvegarde/avant-zone-notifications-active` (v133) | Carte d’idée séparée et espace vide sensible uniquement en lecture. |
