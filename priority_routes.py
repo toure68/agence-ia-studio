@@ -121,12 +121,17 @@ def install(app, db, require, own_company, utcnow):
             cards[-1]['home_title']='Devis · '+person_name(data['customer_name'])
             cards[-1]['home_detail']=money(quote['total_minor'],data.get('currency','EUR'))+' · À finaliser'+(' · Échéance : '+due if due else '')
 
-        for row in con.execute("SELECT id,subject,revision,send_status FROM mail_messages WHERE archived=0 AND remote_deleted=0 AND company_id=? AND user_id=? AND send_status IN ('draft','uncertain')",(cid,user['id'])):
+        for row in con.execute("SELECT id,subject,sender,received,unread,provider,connection_id,revision,send_status FROM mail_messages WHERE archived=0 AND remote_deleted=0 AND company_id=? AND user_id=? AND send_status IN ('draft','uncertain') ORDER BY received DESC,id DESC",(cid,user['id'])):
             mail=dict(row);uncertain=mail['send_status']=='uncertain'
             add('email','mail-'+str(mail['id']),str(mail['revision'])+mail['send_status'],
                 ('Vérifier l’envoi : ' if uncertain else 'Examiner : ')+mail['subject'],
                 'Vérifiez dans votre messagerie si le message est parti avant toute nouvelle tentative.' if uncertain else 'Réponse en brouillon à relire. Aucun envoi automatique.',
-                {'type':'email','id':mail['id']},'Ouvrir l’e-mail',0 if uncertain else 3)
+                {'type':'email','id':mail['id'],'connection_id':mail['connection_id'],'provider':mail['provider']},'Ouvrir l’e-mail',0 if uncertain else 3)
+            if mail['provider']=='nylas' and not uncertain:
+                cards[-1].update(mail_received=True,source='E-mail',from_=mail['sender'],subject=mail['subject'],date=mail['received'],
+                    home_title=mail['sender'],home_detail=mail['subject'],
+                    state='danger' if uncertain else 'warning' if mail['unread'] else 'info',
+                    state_label='Envoi à vérifier' if uncertain else 'Non lu' if mail['unread'] else 'À traiter')
 
         for r in con.execute("SELECT id,subject,status,revision,connection_id FROM mail_compositions WHERE company_id=? AND user_id=? AND (source_id IS NULL OR mode<>'reply') AND status IN ('draft','uncertain')",(cid,user['id'])):
             uncertain=r['status']=='uncertain'

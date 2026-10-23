@@ -130,7 +130,7 @@ jobs:
       - name: Verify reader spacing and gestures
         run: node tests/reader_layout.cjs
       - name: Unified mail, explicit consent and preserved thread
-        run: node tests/mail_client.cjs && node tests/mail_providers.cjs
+        run: node tests/mail_client.cjs && node tests/mail_providers.cjs && node tests/mail_notifications.cjs
       - name: Shared form margins in all sheet states
         run: node tests/form_spacing.cjs
       - name: Universal sheets, keyboard and save outcomes

@@ -45,6 +45,20 @@ def connected(env,monkeypatch):
     return c,h,root,u,mid,calls,control
 
 
+def test_received_mail_notification_metadata(env,monkeypatch):
+    c,h,root,u,mid,calls,_=connected(env,monkeypatch)
+    before=len(calls)
+    cards=c.get('/api/companies/1/priorities').json()
+    card=next(x for x in cards if x['action']=={'type':'email','id':mid,'connection_id':0,'provider':'nylas'})
+    assert card['mail_received'] and card['state_label']=='Non lu'
+    assert card['home_title']=='Client <client@example.test>'
+    assert card['home_detail']=='Commande test'
+    assert 'raw' not in card and 'body' not in card
+    assert len(calls)==before, 'Notification polling must never call the mail provider'
+    with env.db() as con:con.execute("UPDATE mail_messages SET send_status='sent' WHERE id=?",(mid,))
+    assert not any(x['action'].get('type')=='email' and x['action'].get('id')==mid for x in c.get('/api/companies/1/priorities').json())
+
+
 def test_unified_oauth_sync_attachment_and_scoping(env,monkeypatch):
     c,h,root,u,mid,calls,_=connected(env,monkeypatch)
     status=c.get(u+'/status').json();assert status['connected'] and status['configured'] and status['realtime']

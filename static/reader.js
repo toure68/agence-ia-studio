@@ -49,6 +49,10 @@ const homeReader=(()=>{
  function buttons(c){
   if(c._done)return [{label:'✓ '+c._done,kind:'done',run:()=>{}}];
   if(c.sample)return sampleButtons(c);
+  if(c.mail_received&&window.mailClient)return [
+   {label:'Répondre',kind:'main',run:()=>mailClient.openNotification(c,'reply')},
+   {label:'Transférer',kind:'second',run:()=>mailClient.openNotification(c,'forward')},
+   {label:'Voir le fil',kind:'second',run:()=>mailClient.openNotification(c,'thread')}];
   const inline=typeof inlineActions!=='undefined'&&inlineActions.has(c)?inlineActions.buttons(c):[];
   const list=inline.map((b,i)=>({label:b.label,kind:i?'second':'main',run:()=>finish(c,b)}));
   list.push({label:inline.length?'Détail':(verbs[c.action?.type]||'Ouvrir'),kind:inline.length?'second':'main',run:()=>openAction(c)});
@@ -128,10 +132,10 @@ const homeReader=(()=>{
  function bodyMarkup(c,cp){
   // Attachments (22/10, step 2): files are kept apart from the text — only « 📎 N pièces jointes » on top;
   // a tap on a small thumbnail under the cards shows that file in the reader itself (image mode, view.file).
-  if(c.files?.length&&view.editing!==c.key&&!(c.sample&&view.full)){const n=c.files.length;
+  if((c.mail_received||c.files?.length)&&view.editing!==c.key&&!(c.sample&&view.full)){const n=c.files?.length||0;
    const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
    // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
-   return `<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div><dl class="reader-mail">${row('De',c.from||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text">${clean(c.raw||cp.detail||'')}</div>`;}
+   return `${n?`<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div>`:''}<dl class="reader-mail">${row('De',c.from||c.from_||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text">${clean(c.raw??(c.mail_received?'Chargement du message…':cp.detail||''))}</div>`;}
   if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
   if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
   return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';
@@ -200,6 +204,10 @@ const homeReader=(()=>{
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
   const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;view.file=-1;}view.keepKey=c.key;
+  if(c.mail_received&&!c._mailLoaded&&!c._mailLoading&&window.mailClient){
+   c._mailLoading=true;const cid=view.cid;
+   mailClient.loadNotification(c).then(()=>{if(view.cid===cid&&view.cards[view.focus]===c)showReader();}).catch(error=>{c.raw=error.message;c._mailLoaded=true;if(view.cid===cid&&view.cards[view.focus]===c)showReader();}).finally(()=>{c._mailLoading=false;});
+  }
   if(view.file>=0&&!c.files?.[view.file])view.file=-1;
   const editing=view.editing===c.key;
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
