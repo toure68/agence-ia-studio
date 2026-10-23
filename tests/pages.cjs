@@ -114,17 +114,13 @@ const out='/tmp/screens';fs.mkdirSync(out,{recursive:true});
   const s1=await page.evaluate(()=>document.body.dataset.readerSlots);await page.waitForTimeout(1200);assert.equal(await page.evaluate(()=>document.body.dataset.readerSlots),s1,'Card count stays stable');
   // One single way back at the end of the list: « ✓ Fin de la liste » itself (21/10).
   assert.equal(await page.locator('#content .filler-back').count(),0);
-  const end=await page.evaluate(()=>{const b=document.querySelector('#content .reader-end [data-reader-top]');return b?{text:b.textContent.trim(),n:document.querySelectorAll('#content .reader-end button').length}:null;});
-  // At the very end of the list (reading), the end button is shown whole, never cut by the box (21/10).
-  if(end){await page.evaluate(()=>{const l=document.querySelector('#content .reader-list');l.scrollTo({top:l.scrollHeight});});await page.waitForTimeout(900);
-   const cut=await page.evaluate(()=>{const l=document.querySelector('#content .reader-list').getBoundingClientRect(),b=document.querySelector('#content .reader-end [data-reader-top]').getBoundingClientRect();return {list:[Math.round(l.top),Math.round(l.bottom)],btn:[Math.round(b.top),Math.round(b.bottom)]};});
-   console.log('end button',JSON.stringify(cut));assert(cut.btn[0]>=cut.list[0]-1&&cut.btn[1]<=cut.list[1]+1,'End button not cut '+JSON.stringify(cut));
-   // A tap in the empty room under the end button goes back to the home, like the button.
-   const pt=await page.evaluate(()=>{const e=document.querySelector('#content .reader-end').getBoundingClientRect(),b=document.querySelector('#content .reader-end [data-reader-top]').getBoundingClientRect();return {x:e.left+e.width/2,y:Math.min(e.bottom-4,b.bottom+12)};});
-   const roomBelow=await page.evaluate(()=>{const l=document.querySelector('#content .reader-list').getBoundingClientRect(),b=document.querySelector('#content .reader-end [data-reader-top]').getBoundingClientRect();return l.bottom-b.bottom;});
-   if(roomBelow>16){await page.mouse.click(pt.x,pt.y);await page.waitForTimeout(900);assert(await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTop<4),'Empty room under the end button goes back home');}
-   await page.evaluate(()=>document.querySelector('#content .reader-list').scrollTo({top:0}));await page.waitForTimeout(600);}
-  if(end){assert(end.text.startsWith('✓ Fin de la liste'));assert.equal(end.n,1);}
+  // The terminal invitation is not a notification and stays in the scrolling queue.
+  const end=page.locator('#content .reader-end [data-filler]');
+  if(await end.count()){
+   await page.evaluate(()=>{const list=document.querySelector('#content .reader-list');list.scrollTop=document.querySelectorAll('#content .reader-list .reader-item').length*(Number(list.dataset.pitch)||Number(document.body.dataset.readerPitch));});
+   await page.waitForTimeout(700);assert(await end.isVisible(),'End invitation stays visible');
+   await page.evaluate(()=>homeReader.close());await page.waitForTimeout(500);
+  }
   // Compact bottom (21/10): Assistant IA 44px high, dots centred between the functions and the Assistant.
   const bottom=await page.evaluate(()=>{const d=document.querySelector('#content .reference-home .home-topbar .assistant-dock').getBoundingClientRect(),dots=document.querySelector('#content .home-page-dots'),pg=document.querySelector('#content .home-pages').getBoundingClientRect();const dot=dots?.querySelector('.home-page-dot')?.getBoundingClientRect();
    return {h:Math.round(d.height),gap:Math.round(d.top-pg.bottom),above:dot?Math.round(dot.top-pg.bottom):null,below:dot?Math.round(d.top-dot.bottom):null,under:Math.round(innerHeight-d.bottom)};});

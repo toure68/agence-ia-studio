@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT ZONE NOTIFICATIONS ACTIVE** | `sauvegarde/avant-zone-notifications-active` (v133) | Carte d’idée séparée et espace vide sensible uniquement en lecture. |
 | **RETOUR AVANT PILE IPHONE MAGNÉTIQUE** | `sauvegarde/avant-pile-iphone-magnetique` (v132) | Animation déclenchée après relâchement, sans suivi continu du doigt. |
 | **RETOUR AVANT LECTURE DISCRÈTE** | `sauvegarde/avant-lecture-discrete` (v131) | Barre verte épaisse et animation d’empilement par simple réduction de taille. |
 | **RETOUR AVANT NOTIFICATIONS PILE** | `sauvegarde/avant-notifications-pile` (v130) | Grandes miniatures et défilement natif pouvant laisser les notifications partiellement coupées. |
