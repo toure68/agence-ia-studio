@@ -13,8 +13,17 @@ const {chromium}=require('playwright');
    const items=[...document.querySelectorAll('.reader-list .reader-item')].map(e=>e.getBoundingClientRect()).filter(r=>r.top>=list.top-1&&r.bottom<=list.bottom+1);
    return {reader:card.height,grid:pg.top,tail:pg.top-(files?.bottom||list.bottom),cards:items.length,cols:Number(document.querySelector('.home-pages').dataset.columns),icon:icons[0]?.width,iconGap:icons.length>1?icons[1].left-icons[0].right:null,errors:[],bodyHeight:document.querySelector('.reference-home').getBoundingClientRect().bottom,vh:innerHeight};});
   await open('M. Dupuis');const text=await geometry();await p.screenshot({path:`/tmp/compact-reader/${width}-text.png`});
-  assert.equal(text.cols,width===430?7:width===768?12:6,'Columns adapt to screen width');
+  assert.equal(text.cols,width===768?12:6,'Phones show six columns; tablets adapt to screen width');
   assert(Math.abs(text.iconGap-13)<1,'Compact, regular icon spacing');
+  const clipped=await p.evaluate(()=>{
+   const home=document.querySelector('.reference-home').getBoundingClientRect(),grid=document.querySelector('.home-pages').getBoundingClientRect();
+   return [...document.querySelectorAll('.home-page[data-page="0"] .module-icon,.home-page[data-page="0"] .module-count')].filter(e=>{
+    const r=e.getBoundingClientRect(),s=getComputedStyle(e);if(!r.width||!r.height)return false;
+    const extra=e.classList.contains('module-count')?2:Math.max(0,parseFloat(s.outlineWidth)+parseFloat(s.outlineOffset));
+    return r.left-extra<home.left-.5||r.right+extra>home.right+.5||r.top-extra<grid.top-.5||r.bottom+extra>grid.bottom+.5;
+   }).map(e=>e.className);
+  });
+  assert.deepEqual(clipped,[],'Icons, reading outline and counters fit inside the visible grid');
   await open('Vos 7 photos');const files=await geometry();await p.screenshot({path:`/tmp/compact-reader/${width}-files.png`});
   assert(Math.abs(files.reader-text.reader)<=1,JSON.stringify({width,text,files}));
   assert(files.cards<text.cards,'Files replace notification slots '+JSON.stringify({width,text,files}));

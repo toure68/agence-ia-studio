@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT SIX ICÔNES IPHONE** | `sauvegarde/avant-six-icones-iphone` (v127) | Sept icônes possibles sur grand iPhone, sans marge réservée aux contours et compteurs. |
 | **RETOUR AVANT BARRE ASSISTANT 4PX** | `sauvegarde/avant-barre-assistant-4px` (v126) | Barre de l’Assistant et profil avant leur descente de 4 px. |
 | **RETOUR AVANT LECTEUR COMPACT** | `sauvegarde/avant-lecteur-compact` (main du 22/10, v125) | Lecteur variable selon les pièces jointes, réserve de 52 px et quatre icônes par rangée. |
 | **RETOUR AVANT ESSAI PHOTOS RÉELLES** | `sauvegarde/avant-essai-photos-reelles` (main du 22/10, v124) | Messages d’essai avec photos SVG ; pictogrammes à 64% sans cadrage propre à chaque fonction. |
