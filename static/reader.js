@@ -57,10 +57,15 @@ const homeReader=(()=>{
  function sampleButtons(c){
   if(view.editing===c.key)return [{label:'Annuler',kind:'second',run:()=>{view.editing=null;showReader();}},{label:'Enregistrer et envoyer',kind:'main',run:()=>sampleDone(c,'Modifié et envoyé'+(view.draft.amount?' · '+view.draft.amount:'')+(view.draft.date?' · '+view.draft.date:''))}];
   return (c.actions||[]).map((a,i)=>({label:a.l,kind:a.t==='p'?'main':a.t==='d'?'danger':'second',run:()=>{
-   if(a.t==='e'){view.editing=c.key;view.full=false;view.draft={amount:c.edit?.amount||c.amount||'',date:c.edit?.date||'',note:''};showReader();return;}
+   if(a.t==='e'){if(window.universalSheets?.enabled()){editSampleSheet(c);return;}view.editing=c.key;view.full=false;view.draft={amount:c.edit?.amount||c.amount||'',date:c.edit?.date||'',note:''};showReader();return;}
    if(a.t==='r'){const url='mailto:'+(c.mail||'')+'?subject='+encodeURIComponent('Re : '+c.state_label+' — '+c.title);try{window.open(url,'_blank');}catch{}notify('Ouverture de votre messagerie… (essai : rien n’est envoyé)');return;}
    sampleDone(c,a.d||a.l);
   }}));
+ }
+ function editSampleSheet(c){
+  const d={amount:c.edit?.amount||c.amount||'',date:c.edit?.date||'',note:''};
+  openModal(`<h2>Modifier · ${clean(c.title)}</h2><form id="readerEditSheet"><label>Montant / quantité<input name="amount" value="${clean(d.amount)}" inputmode="decimal"></label><label>Date<input name="date" value="${clean(d.date)}"></label><label>Message joint<textarea name="note" rows="3"></textarea></label><button type="submit" class="btn primary">Enregistrer et envoyer (essai)</button></form>`);
+  document.querySelector('#readerEditSheet').onsubmit=async e=>{e.preventDefault();view.draft=Object.fromEntries(new FormData(e.target));await universalSheets.complete();sampleDone(c,'Modifié et envoyé'+(view.draft.amount?' · '+view.draft.amount:''));};
  }
  function sampleDone(c,text){
   if(view.busy)return;view.busy=true;markDone(c.key);notify(text+' (essai)');keepDone(c,text);const nk=nextKey(c);

@@ -29,10 +29,11 @@ async function prepareContext(next){
 }
 function restoreCockpit(){
  if(!contextState)return false;
+ document.activeElement?.blur();
  parkAssistant();const saved=contextState;contextState=null;
  closeModal();saved.parent.prepend(saved.back);saved.back.classList.add('hide');
  $('#contextLayer')?.remove();saved.cockpit.id='content';
- document.body.classList.remove('context-open');document.body.style.removeProperty('--cockpit-scroll');
+ document.body.classList.remove('context-open','us-open');document.body.style.removeProperty('--cockpit-scroll');
  syncContextLayers();window.scrollTo(0,saved.scroll);
  if(saved.focus?.isConnected)saved.focus.focus({preventScroll:true});
  return true;
@@ -54,7 +55,7 @@ async function refreshCockpit(){
 }
 function bindSheetGesture(panel,close){
  let start=null;
- const eligible=target=>!target.closest('input,textarea,select,button,a,canvas,video,audio,label')&&(!(panel.querySelector('.context-scroll')||panel).scrollTop||target.closest('.sheet-handle,.context-header'));
+ const eligible=target=>!panel.classList.contains('universal-sheet')&&!target.closest('input,textarea,select,button,a,canvas,video,audio,label')&&(!(panel.querySelector('.context-scroll')||panel).scrollTop||target.closest('.sheet-handle,.context-header'));
  panel.addEventListener('touchstart',e=>{if(e.touches.length===1&&eligible(e.target))start={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
  panel.addEventListener('touchmove',e=>{if(!start||e.touches.length!==1)return;const dx=e.touches[0].clientX-start.x,dy=e.touches[0].clientY-start.y;if(dy>12&&dy>Math.abs(dx)*1.5){e.preventDefault();panel.style.transform=`translateY(${Math.min(dy,260)}px)`;}},{passive:false});
  panel.addEventListener('touchend',e=>{if(!start)return;const point=e.changedTouches[0],dy=point.clientY-start.y,dx=point.clientX-start.x;start=null;panel.style.transform='';if(dy>90&&dy>Math.abs(dx)*1.5)close();});
