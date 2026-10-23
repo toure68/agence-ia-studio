@@ -202,6 +202,7 @@ const homePages=(()=>{
   // Home and reader share an active bottom surface, below the list/files only.
   let z=home.querySelector('.home-back-zone');
   const files=home.querySelector('.reader-files');
+  if(el)el.hidden=!!files; // The thumbnail strip uses this decorative edge's room too.
   const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom:top,zBottom=pr.top;
   if(zBottom-zTop>0){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';home.append(z);}
@@ -265,6 +266,28 @@ window.homePages=homePages;
 const homeActions=(()=>{
  const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  let current=null;
+ // Equal shares until a label actually needs more room; preserve enough for every other label.
+ function sizeButtons(row){
+  const buttons=[...row.querySelectorAll('.reader-btn')];if(!buttons.length)return;
+  const available=row.clientWidth-(parseFloat(getComputedStyle(row).gap)||0)*(buttons.length-1);
+  const ctx=document.createElement('canvas').getContext('2d');
+  const needs=buttons.map(b=>{b.style.fontSize='';const s=getComputedStyle(b);ctx.font=s.fontWeight+' '+s.fontSize+' '+s.fontFamily;return Math.ceil(ctx.measureText(b.textContent).width+parseFloat(s.paddingLeft)+parseFloat(s.paddingRight)+parseFloat(s.borderLeftWidth)+parseFloat(s.borderRightWidth)+2);});
+  // If one line cannot fit for everyone, find the width each label needs with wrapping
+  // at the existing font size and row height. Measurements never change the row itself.
+  const wrappedNeeds=()=>buttons.map(b=>{
+   let lo=8,hi=available;for(let n=0;n<10;n++){const mid=(lo+hi)/2;b.style.flex='0 0 '+mid+'px';if(b.scrollHeight<=b.clientHeight+1&&b.scrollWidth<=b.clientWidth+1)hi=mid;else lo=mid;}return Math.ceil(hi);
+  });
+  let required=needs.reduce((a,b)=>a+b,0)<=available?needs:wrappedNeeds();
+  // Very dense rows may need a small font adjustment, never words split letter by letter.
+  const fonts=buttons.map(b=>parseFloat(getComputedStyle(b).fontSize));
+  for(let delta=.5;required.reduce((a,b)=>a+b,0)>available&&delta<=2;delta+=.5){buttons.forEach((b,i)=>b.style.fontSize=Math.max(10,fonts[i]-delta)+'px');required=wrappedNeeds();}
+  let widths=buttons.map(()=>available/buttons.length);
+  if(required.reduce((a,b)=>a+b,0)<=available){
+   let remaining=available,indices=buttons.map((_,i)=>i);
+   while(indices.length){const share=remaining/indices.length,wide=indices.filter(i=>required[i]>share);if(!wide.length){indices.forEach(i=>widths[i]=share);break;}wide.forEach(i=>{widths[i]=required[i];remaining-=required[i];});indices=indices.filter(i=>!wide.includes(i));}
+  }else{const total=needs.reduce((a,b)=>a+b,0);widths=needs.map(n=>available*n/total);}
+  buttons.forEach((b,i)=>{b.style.flex='0 0 '+widths[i]+'px';});
+ }
  function place(){
   const home=document.querySelector('#content .reference-home'),row=home?.querySelector('.home-action-row'),box=home?.querySelector('.home-pages');
   if(!home||!row||!box)return;
@@ -274,6 +297,7 @@ const homeActions=(()=>{
   // Horizontal place taken from the fixed pages box, not from a page that may be sliding.
   const br=box.getBoundingClientRect(),pr=pg.getBoundingClientRect(),x=br.left+(a.left-pr.left);
   row.style.top=(a.top-hr.top)+'px';row.style.left=(x-hr.left)+'px';row.style.width=(z.right-a.left)+'px';row.style.height=a.height+'px';
+  sizeButtons(row);
  }
  // Shows the actions; returns how many of them were placed in the reserved row (0 when there is no iPhone grid).
  function show(btns){

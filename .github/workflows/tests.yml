@@ -129,6 +129,8 @@ jobs:
         run: node tests/real_photos.cjs
       - name: Verify reader spacing and gestures
         run: node tests/reader_layout.cjs
+      - name: Equal action widths and readable long labels
+        run: node tests/reader_action_widths.cjs
       - name: Compact reader and responsive function icons
         run: node tests/compact_reader.cjs
       - name: Reader single-finger scroll and discreet indicator

@@ -251,19 +251,19 @@ const homeReader=(()=>{
     if(pg){
      // Queue cards retain the home height and pitch. Spare room belongs to the
      // image carousel, or stays between the queue and the action buttons.
-     const stack=view.cards.length>1?9:0,space=files?16:8;
+     const stack=view.cards.length>1?9:0,space=8;
      const room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
      const basePitch=Number(document.body.dataset.readerPitch)||69,cardH=basePitch-gap;
-     const thumb=files?Math.min(56,Math.max(46,room-stack-2*space-cardH)):0;
-     const tail=stack+space+(files?thumb+space:0);
+     // Attachment presence never changes the number of notification slots.
+     const tail=stack+space;
      n=editing?0:Math.max(0,Math.min(cap(),Math.floor((room-tail+gap)/basePitch)));
      const used=Math.max(0,n*basePitch-(n?gap:0));
      const oldPitch=pitch();
      list.dataset.pitch=String(basePitch);list.style.setProperty('--reader-card-h',cardH+'px');
      anchor=Math.abs(basePitch-oldPitch)>.1;
-     if(files)queue.style.setProperty('--reader-thumb-size',Math.min(72,Math.max(46,room-used-stack-2*space))+'px');
+     if(files){const size=Math.max(0,Math.min(72,Math.floor(room-used-4)));queue.style.setProperty('--reader-thumb-size',size+'px');files.classList.toggle('is-compact',size<32);}
      else queue.style.removeProperty('--reader-thumb-size');
-     queue.style.setProperty('--reader-tail-gap',(stack+space)+'px');
+     queue.style.setProperty('--reader-tail-gap',(files?2:stack+space)+'px');
     }
    }else{delete list.dataset.pitch;list.style.removeProperty('--reader-card-h');}
    list.style.height=Math.max(0,n*pitch()-(n?gap:0))+'px';const end=list.querySelector('.reader-end');if(end)end.style.height=list.style.height;

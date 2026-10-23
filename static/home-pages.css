@@ -72,8 +72,7 @@ html.home-ios .home-pages,html.home-ios .home-page-dots{position:relative;z-inde
 html.home-ios .filler-tag{align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7dd3fc;background:#7dd3fc1f;border-radius:6px;padding:1px 6px;margin-bottom:2px}
 /* While reading: the empty room under the cards is a touch zone back to the home (invisible). */
 html.home-ios .home-back-zone{position:absolute;left:0;right:0;z-index:1;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
-/* Files share the queue's flow: a separate strip, with the same breathing room on both sides.
-   reader.js measures this strip before deciding how many full notification cards fit. */
+/* Files fit the unused room below the unchanged notification list. */
 html.home-ios .reader-files{position:relative;top:auto;margin-top:var(--reader-tail-gap,12px);height:46px}
 html.home-ios .reader-thumbs{flex:none;height:46px;gap:12px}
 html.home-ios .reader-thumb{outline:1px solid #ffffff26;outline-offset:-1px}
@@ -272,7 +271,7 @@ html.home-ios .reference-home .home-page.module-grid:not([data-columns="2"]):not
 
 /* Files use the spare queue room; notifications and function icons keep their home size. */
 html.home-ios .reader-files,html.home-ios .reader-file-row,html.home-ios .reader-file-window,html.home-ios .reader-thumbs{height:var(--reader-thumb-size,64px)}
-html.home-ios .reader-thumb{flex:0 0 var(--reader-thumb-size,64px);width:var(--reader-thumb-size,64px);height:var(--reader-thumb-size,64px)}
+html.home-ios .reader-thumb{flex:0 0 max(32px,var(--reader-thumb-size,64px));width:max(32px,var(--reader-thumb-size,64px));height:var(--reader-thumb-size,64px)}
 html.home-ios .reader-thumb img,html.home-ios .reader-thumb .reader-file-kind{width:100%;height:100%}
 
 /* Whole-card navigation: stacking stays within the notification bounds. */
@@ -296,3 +295,11 @@ html.home-ios .home-filler{touch-action:pan-x}
 html.home-ios .reader-invitation{width:100%;flex:none}
 html.home-ios .reader-invitation[hidden]{display:none}
 html.home-ios .reference-home:not(.reader-active) .reader-end-btn{display:none}
+
+/* All action buttons share width; only measured label needs may alter their share. */
+html.home-ios .home-action-row .reader-btn{box-sizing:border-box;white-space:normal;overflow-wrap:normal;text-overflow:clip;line-height:1.15;max-height:100%}
+html.home-ios .reader-files.is-compact .reader-text-thumb>span:first-child{font-size:clamp(8px,calc(var(--reader-thumb-size) - 4px),19px)}
+html.home-ios .reader-files.is-compact .reader-text-thumb>span:last-child{display:none}
+html.home-ios .reader-files.is-compact .reader-scroll{font-size:clamp(10px,var(--reader-thumb-size),27px)}
+
+html.home-ios .home-stack[hidden]{display:none}
