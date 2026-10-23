@@ -49,8 +49,8 @@ const openSessionPage=require('./ui_session.cjs');
   await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.reader-stage-img').waitFor();await swipe(-50);assert.equal(await page.locator('.home-reader.is-image').count(),0,'changing message resets to text');await swipe(50);assert.equal(await page.locator('.reader-text-thumb').getAttribute('aria-pressed'),'true','returning to message starts with text');
   // The swipe deliberately suppresses its trailing synthetic click for 500ms.
   await page.waitForTimeout(550);
-  await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.reader-stage-img').waitFor();await page.locator('.home-back-zone').click();await page.waitForTimeout(400);await open(index);assert.equal(await page.locator('.home-reader.is-image').count(),0,'reopening the same message starts with text');
-  await open(0);await page.locator('.home-back-zone').click();await page.waitForTimeout(400);assert(await page.locator('#homeTreasury').isVisible(),'tap returns home');
+  await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.reader-stage-img').waitFor();await page.locator('.home-back-zone').click();await page.waitForTimeout(400);assert.equal(await page.locator('.home-reader.is-image').count(),0,'bottom tap reads the next message');await open(index);assert.equal(await page.locator('.home-reader.is-image').count(),0,'reopening the same message starts with text');
+  await open(0);await page.locator('.reader-grip').click();await page.waitForTimeout(400);assert(await page.locator('#homeTreasury').isVisible(),'reader grip returns home');
   assert.deepEqual(errors,[]);console.log('reader layout OK',size, {plainCards:Math.round((plain.list.h+plain.gap)/plain.pitch),filesCards:Math.round((files.list.h+files.gap)/files.pitch)});await page.close();
  }
  }finally{await browser.close();}

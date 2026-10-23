@@ -243,7 +243,7 @@ const homeReader=(()=>{
   const base=Number(list.dataset.base)||list.offsetHeight;list.dataset.base=base;
   if(ios()){const reading=view.focus>=0&&card&&!card.hidden;
    const gap=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||9;
-   let n=Math.min(view.cards.length,cap()),anchor=false;
+   let n=cap(),anchor=false;
    if(reading){
     const pg=document.querySelector('#content .home-pages'),files=view.host.querySelector('.reader-files'),queue=list.parentElement;
     const editing=card.classList.contains('is-editing');
@@ -337,35 +337,13 @@ const homeReader=(()=>{
  }
  function step(d){if(view.focus+d<-1||view.focus+d>=view.cards.length)return;if(view.focus+d<0)closeReader();else goTo(view.focus+d);}
 
- function render(host,cards,actual,cid){
-  clearPile();
-  view.host=host;view.cid=cid;
-  const pending=[...samples(),...actual.filter(c=>!c.example)].filter(c=>!doneCards.some(d=>d.c.key===c.key));
-  const real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
-  const home=document.querySelector('#content .reference-home');
-  // Nothing left: one single replacement card keeps the middle filled (the routine/first card), no reader.
-  if(!real.length){if(typeof homeActions!=='undefined')homeActions.hide();home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
-  const prevKey=view.keepKey,prevFocus=view.focus;
-  view.cards=real;
-  const n=real.length,h=Math.min(n,cap())*pitch()-8;
-  host.classList.add('reader-host');
-  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button></div></div></div>`;
-  const list=host.querySelector('.reader-list');
-  // The whole end block (button and the empty room under it) goes back to the home (21/10).
-  host.querySelector('.reader-end').onclick=closeReader;
-  host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
-  // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
-  let focus=-1;
-  if(prevFocus>=0){const k=prevKey?real.findIndex(c=>c.key===prevKey):-1;focus=k>=0?k:Math.min(prevFocus,n-1);}
-  view.focus=focus;
-  list.scrollTop=(focus+1)*pitch();
-  showReader();
-  if(ios()){
+ function bindSurface(surface,tapNext=false){
+   if(!ios()||!surface||surface.dataset.readerGestures)return;surface.dataset.readerGestures='1';
    let start=null,suppressUntil=0,wheelAt=0;
-   list.addEventListener('touchstart',e=>{
+   surface.addEventListener('touchstart',e=>{
     clearPile();start=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,offset:0}:null;
    },{passive:true});
-   list.addEventListener('touchmove',e=>{
+   surface.addEventListener('touchmove',e=>{
     if(!start||e.touches.length!==1)return;
     const dx=e.touches[0].clientX-start.x,dy=e.touches[0].clientY-start.y;
     if(Math.abs(dy)<=8||Math.abs(dy)<=Math.abs(dx)*1.3)return;
@@ -374,18 +352,44 @@ const homeReader=(()=>{
     start.offset=blocked?dy*.12:Math.sign(dy)*Math.min(limit,Math.abs(dy));
     paintPile(start.offset);
    },{passive:false});
-   list.addEventListener('touchend',e=>{
+   surface.addEventListener('touchend',e=>{
     if(!start)return;const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y,offset=start.offset;start=null;
     if(Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+650;
     const dir=offset<0?1:-1,at=view.focus+dir;
     const commit=Math.abs(offset)>=pitch()*.3&&at>=-1&&at<view.cards.length;
     tweenPile(offset,commit?-dir*pitch():0,()=>{if(commit){if(at<0)closeReader();else goTo(at,true);}});
    },{passive:true});
-   list.addEventListener('touchcancel',()=>{const offset=start?.offset||0;start=null;tweenPile(offset,0);},{passive:true});
-   list.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
-   list.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)<=Math.abs(e.deltaX))return;e.preventDefault();if(Date.now()-wheelAt>250&&Math.abs(e.deltaY)>8){wheelAt=Date.now();step(e.deltaY>0?1:-1);}},{passive:false});
-   list.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();step(e.key==='ArrowDown'?1:-1);}});
-  }
+   surface.addEventListener('touchcancel',()=>{const offset=start?.offset||0;start=null;tweenPile(offset,0);},{passive:true});
+   surface.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}if(tapNext&&!e.target.closest('[data-filler],.reader-item'))step(1);},true);
+   surface.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)<=Math.abs(e.deltaX))return;e.preventDefault();if(Date.now()-wheelAt>250&&Math.abs(e.deltaY)>8){wheelAt=Date.now();step(e.deltaY>0?1:-1);}},{passive:false});
+   surface.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();step(e.key==='ArrowDown'?1:-1);}});
+ }
+
+ function render(host,cards,actual,cid){
+  clearPile();
+  view.host=host;view.cid=cid;
+  const pending=[...samples(),...actual.filter(c=>!c.example)].filter(c=>!doneCards.some(d=>d.c.key===c.key));
+  const real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
+  const home=document.querySelector('#content .reference-home');
+  // Nothing left: one single replacement card keeps the middle filled (the routine/first card), no reader.
+  if(!real.length){if(typeof homeActions!=='undefined')homeActions.hide();home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
+  home?.querySelector('.home-filler')?.remove(); // remove old idle overlays before new arrivals are drawn
+  const prevKey=view.keepKey,prevFocus=view.focus;
+  view.cards=real;
+  const n=real.length,h=Math.min(n,cap())*pitch()-8;
+  host.classList.add('reader-host');
+  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px">${ios()&&window.homePages?.reminderCard?window.homePages.reminderCard():'<button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button>'}</div></div></div>`;
+  const list=host.querySelector('.reader-list');
+  // The terminal invitation remains outside the messages and shares list gestures.
+  host.querySelector('.reader-end').onclick=e=>{const target=e.target.closest('[data-filler]');if(target)window.homePages?.openFiller(target.dataset.filler);else if(!ios())closeReader();};
+  host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
+  // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
+  let focus=-1;
+  if(prevFocus>=0){const k=prevKey?real.findIndex(c=>c.key===prevKey):-1;focus=k>=0?k:Math.min(prevFocus,n-1);}
+  view.focus=focus;
+  list.scrollTop=(focus+1)*pitch();
+  showReader();
+  bindSurface(list,true);
   let raf=0;
   list.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
    const f=Math.min(n-1,Math.round(list.scrollTop/pitch())-1);
@@ -417,6 +421,6 @@ const homeReader=(()=>{
   return out;
  }
  function reflow(){if(view.focus>=0){fitList();fileOverflow(view.host?.querySelector('.reader-files'));requestAnimationFrame(()=>window.homePages?.stack());}}
- return {enabled,render,setEnabled,setSamples,readingModules,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
+ return {enabled,render,setEnabled,setSamples,readingModules,bindSurface,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
 })();
 window.homeReader=homeReader;

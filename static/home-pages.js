@@ -151,12 +151,18 @@ const homePages=(()=>{
   try{const cid=company?.id,uid=me?.id;if(cid&&uid&&typeof assistantDrafts!=='undefined'){const k=uid+':'+cid,d=assistantDrafts.get(k)||{text:'',files:[],requestId:null};if(!d.text)d.text='Mon problème au quotidien : ';assistantDrafts.set(k,d);}}catch(e){}
   document.querySelector('#assistantDock')?.click();
  }
+ function openFiller(k){
+  if(k==='idea'){openIdea();return;}
+  if(k==='reminder')k='calendar';
+  const tile=document.querySelector(`#content .home-pages [data-go="${k}"]`);if(tile)tile.click();else if(typeof openTab==='function')openTab(k);
+ }
  // Bottom of the last visible thing in the cards block (e.g. the single replacement card), or its top when empty.
  function lastBottom(block){if(!block)return 0;const kids=[...block.querySelectorAll('.priority-card,.priority-stack>*,article')].filter(e=>e.offsetParent&&!e.closest('.home-filler'));return kids.length?Math.max(...kids.map(e=>e.getBoundingClientRect().bottom)):block.getBoundingClientRect().top;}
  let lastRest=-1;
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
   const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list'),block=home.querySelector('#priorityBlock');
+  if(list){home.querySelector('.home-filler')?.remove();const end=list.querySelector('.reader-end'),markup=reminderCard();if(end&&end._reminderMarkup!==markup){end._reminderMarkup=markup;end.innerHTML=markup;}}
   if(!pages||list?.dataset.pileMotion==='1')return;
   const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
   const items=[...home.querySelectorAll('.reader-list .reader-item')];
@@ -184,38 +190,25 @@ const homePages=(()=>{
   const after=lr&&shown?Math.max(...items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).map(e=>e.getBoundingClientRect().bottom)):(block?.querySelector('.reader-bar')?.getBoundingClientRect().bottom||lastBottom(block)||pr.top); // under the replacement card when there is no notification (21/10)
   const top=after+8,bottom=pr.top-(rest?24:10),room=bottom-top;
   let f=home.querySelector('.home-filler');
-  // While reading, the whole empty room under the cards is a touch zone back to the home (treasury + cards).
-  // It starts under the cards box, so it never covers a card nor blocks sliding them (21/10).
+  // Home and reader share an active bottom surface, below the list/files only.
   let z=home.querySelector('.home-back-zone');
   const files=home.querySelector('.reader-files');
-  const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom+(rest?9:0):top,zBottom=pr.top;
-  if(reading&&zBottom-zTop>=8){
-   if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Revenir à l’accueil');home.append(z);
-    // 22/10 (user): the empty room is also a wide swipe zone — up/down moves between messages like on the cards
-    // (no need to aim at the cards nor touch the functions); a simple tap still goes back to the home.
-    let y0=null,x0=0,moved=false,suppressUntil=0;
-    z.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;x0=e.touches[0].clientX;moved=false;},{passive:true});
-    z.addEventListener('touchmove',e=>{if(y0!==null&&Math.abs(e.touches[0].clientY-y0)>10){moved=true;e.preventDefault();}},{passive:false});
-    z.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;if(moved||Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+500;if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx))window.homeReader?.step(dy<0?1:-1);},{passive:true});
-    z.onclick=()=>{if(Date.now()<suppressUntil)return;window.homeReader?.close();};}
+  const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom:top,zBottom=pr.top;
+  if(zBottom-zTop>0){
+   if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';z.setAttribute('aria-label','Lire la notification suivante');home.append(z);}
+   window.homeReader?.bindSurface(z,true);
    z.style.top=(zTop-hr.top)+'px';z.style.height=(zBottom-zTop)+'px';
   }else z?.remove();
-  if(room>=64&&!reading){
+  if(room>=64&&!reading&&!items.length){
    if(!f){f=document.createElement('section');f.className='home-filler';f.setAttribute('aria-label','À préparer');home.append(f);
-    f.addEventListener('click',e=>{const b=e.target.closest('[data-filler]');if(!b)return;let k=b.dataset.filler;
-     if(k==='idea'){openIdea();return;}
-     if(k==='reminder')k='calendar';
-     const tile=home.querySelector(`.home-pages [data-go="${k}"]`);if(tile)tile.click();else if(typeof openTab==='function')openTab(k);});}
-   // « Préparer demain » and « Veille concurrentielle » are never part of the notification group (user request
-   // 21/10): they show as their own cards only when there is no notification card at all (pending or done).
-   // While notifications are there, only the reminder card below may fill the room (never while reading).
-   // With a few notifications that leave room (21/10): ONE reminder card of another style, never counted as a
-   // notification, gone as soon as a notification is touched (reading). Real next agenda item, otherwise an
-   // invitation to describe a daily problem to the Assistant IA. Nothing invented.
-   const solo=items.length===0,tall=room>=150;
-   f.classList.toggle('is-tall',tall);f.classList.toggle('is-cards',true);f.classList.toggle('is-reminder',!solo);
+    f.addEventListener('click',e=>{const button=e.target.closest('[data-filler]');if(button)openFiller(button.dataset.filler);});
+    window.homeReader?.bindSurface(f);
+   }
+   // No notifications at all: preserve the existing Prepare tomorrow / Watch cards.
+   const tall=room>=150;
+   f.classList.toggle('is-tall',tall);f.classList.add('is-cards');
    const row=(k,title,sub)=>`<button type="button" class="filler-row filler-card" data-filler="${k}"><span class="module-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon(k):''}</span><span class="filler-copy"><strong>${title}</strong><small>${sub}</small></span><span aria-hidden="true">›</span></button>`;
-   f.innerHTML=solo?row('calendar','Préparer demain','Rendez-vous, chantiers et rappels de demain')+(tall?row('veille','Veille concurrentielle','Marchés, prix et nouveautés de votre métier'):''):reminderCard();
+   f.innerHTML=row('calendar','Préparer demain','Rendez-vous, chantiers et rappels de demain')+(tall?row('veille','Veille concurrentielle','Marchés, prix et nouveautés de votre métier'):'');
    if(!f.innerHTML){f.remove();return;}
    f.style.top=(top-hr.top)+'px';f.style.height=room+'px';
   }else f?.remove();
@@ -225,7 +218,7 @@ const homePages=(()=>{
   const block=document.querySelector('#content #priorityBlock');
   if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch=new MutationObserver(()=>requestAnimationFrame(stack));stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
    block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});
-   block.addEventListener('pointerdown',e=>{if(e.target.closest('.reader-list'))document.querySelector('#content .home-filler.is-reminder')?.remove();},{capture:true,passive:true});}
+}
   // Re-fit when a block changes height (treasury folded/unfolded, grid sized, settings shown…).
   const home=document.querySelector('#content .reference-home');if(!home||typeof ResizeObserver!=='function')return;
   watcher?.disconnect();watcher=new ResizeObserver(()=>requestAnimationFrame(fit));
@@ -251,7 +244,7 @@ const homePages=(()=>{
  install();
  addEventListener('resize',()=>requestAnimationFrame(fit));
  document.addEventListener('DOMContentLoaded',()=>{const c=document.querySelector('#content');if(c)new MutationObserver(sync).observe(c,{childList:true});});
- return {on,sync,fit,orderedKeys,layout,setReserve,stack};
+ return {on,sync,fit,orderedKeys,layout,setReserve,stack,reminderCard,openFiller};
 })();
 window.homePages=homePages;
 

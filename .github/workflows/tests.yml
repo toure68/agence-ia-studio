@@ -135,6 +135,8 @@ jobs:
         run: node tests/reader_scroll.cjs
       - name: Continuous magnetic notification pile
         run: node tests/reader_pile.cjs
+      - name: Few notifications, terminal idea and incoming messages
+        run: node tests/reader_footer.cjs
       - name: Run node tests/pages.cjs
         run: |
           set -o pipefail
