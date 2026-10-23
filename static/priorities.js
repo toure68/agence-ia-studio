@@ -110,7 +110,7 @@ async function openPriorityAction(card){
       if (card.action.type === 'material') return await openTab('material',{recordId:card.action.id});
       if (card.action.type === 'quote') return await openTab('quote',{recordId:card.action.id});
       if (card.action.type === 'mail-draft') {mailClient.selectAccount(card.action.connection_id||0);await openTab('emails');return await mailClient.composer(null,'new',await api(mailClient.scopedUrl(`/api/companies/${company.id}/mail/unified/drafts/${card.action.id}`)));}
-      if (card.action.type === 'email') return await openTab('email',{recordId:card.action.id});
+      if (card.action.type === 'email') {mailClient.selectAccount(card.action.connection_id||0);return await openTab('email',{recordId:card.action.id});}
       if (card.action.type === 'activity') return await openTab('activity',{recordId:card.action.id});
       if (card.action.type === 'task') return await openTab('calendar', {taskId:card.action.id});
       if (card.action.type === 'prospect') {

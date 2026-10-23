@@ -34,6 +34,28 @@ const mailClient=(()=>{
   popup.document.title='Connexion de votre messagerie';popup.document.body.textContent='Ouverture de la connexion sécurisée…';
   try{const r=await mailApi(unified()+'/connect',{method:'POST',body:JSON.stringify({replace_confirmed:replace===true,...options})});popup.location.href=r.url;}catch(e){popup.close();notify(e.message);}
  }
+ async function notificationMessage(card){
+  const cid=company.id,aid=card.action.connection_id||0;
+  const message=await api(scopedUrl(`/api/companies/${cid}/mail/messages/${card.action.id}`,aid));
+  if(company.id!==cid)throw Error('L’entreprise a changé. Rouvrez la notification.');
+  if((message.connection_id||0)!==aid)throw Error('La boîte a changé. Rouvrez la notification.');
+  return message;
+ }
+ async function loadNotification(card){
+  const message=await notificationMessage(card),aid=card.action.connection_id||0;
+  card.raw=message.body||'';card.from=message.sender;card.subject=message.subject;
+  card.date=timestamp(message.received);card._mailLoaded=true;
+  const attachments=Array.isArray(message.attachments)?message.attachments:JSON.parse(message.attachments||'[]');
+  card.files=attachments.map(f=>({name:f.filename||'Pièce jointe',type:/^image\/(png|jpeg|gif|webp)$/.test(f.content_type)?'image':f.content_type==='application/pdf'?'pdf':'other',
+   src:scopedUrl(`/api/companies/${company.id}/mail/unified/messages/${message.id}/attachments/${encodeURIComponent(f.id)}`,aid)}));
+ }
+ async function openNotification(card,mode){
+  try{const cid=company.id,message=await notificationMessage(card);if(company.id!==cid)return;
+   selectAccount(card.action.connection_id||0);
+   if(mode==='thread')return await openTab('email',{recordId:message.id});
+   await composer(message,mode);
+  }catch(error){notify(error.message);}
+ }
  window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===popup&&e.data?.type==='aia-mail-connected'){popup=null;if(e.data.company_id&&e.data.company_id!==company?.id)return notify('Messagerie connectée dans l’entreprise d’origine.');selectAccount(e.data.account_id||0);window.mailConnections?.refresh(true);if(document.querySelector('#modalLayer:not(.hide) .mail-provider-sheet')){closeModal();openTab('emails');}else if(tab==='emails')renderEmails();else notify('Messagerie connectée. Ouvrez E-mails pour actualiser.');}});
  async function mailbox(status,messages,legacy){
   accountEmails.set(emailKey(),status.email||'');
@@ -90,7 +112,7 @@ const mailClient=(()=>{
   form.onsubmit=async e=>{e.preventDefault();if(composeBusy)return;composeBusy=true;try{if(!form.reportValidity())return;if(d.status&&d.status!=='draft')throw Error('Cet envoi est déjà engagé ou à vérifier. Aucun renvoi automatique.');if(!saved||dirty)if(!await save())return;
    form.classList.add('is-reviewing');review.innerHTML=`<div class="mail-confirm"><h3>Vérifiez avant d’envoyer</h3>${accountEmails.get(emailKey())?`<p>De : <strong>${clean(accountEmails.get(emailKey()))}</strong></p>`:''}<p>À : <strong>${clean(d.to)}</strong><br>Objet : ${clean(d.subject)}</p><p>${d.files.length+d.forwarded.length} pièce(s) jointe(s)</p><p class="mail-body">${clean(d.body)}</p>${button('mailEditReview','Modifier le message')}${button('mailConfirmSend','Confirmer et envoyer',true)}</div>`;
    review.querySelector('#mailEditReview').onclick=()=>{form.classList.remove('is-reviewing');review.replaceChildren();baseActions.hidden=false;const field=form.querySelector('textarea');field.focus({preventScroll:true});universalSheets.reveal(field);};
-   baseActions.hidden=true;review.querySelector('#mailConfirmSend').classList.add('fg-primary');review.querySelector('#mailConfirmSend').onclick=async e=>{const b=e.currentTarget;b.disabled=true;form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);try{if(!saved||dirty)throw Error('Le texte a changé : vérifiez-le de nouveau.');await formApi(unified()+`/drafts/${d.id}/send`,{method:'POST',body:JSON.stringify({revision:d.revision,confirmed:true})});d.status='sent';drafts.delete(d.key);if(isDocked)closeModal();if(source&&tab==='email')await thread(await formApi(base()+`/messages/${source.id}`));else if(tab==='emails')await renderEmails();notify('Message envoyé.');}catch(e){error.textContent=e.message;try{const current=await formApi(unified()+'/drafts/'+d.id);d.status=current.status;}catch{}if(d.status==='draft'){b.disabled=false;form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=false);}}};
+   baseActions.hidden=true;review.querySelector('#mailConfirmSend').classList.add('fg-primary');review.querySelector('#mailConfirmSend').onclick=async e=>{const b=e.currentTarget;b.disabled=true;form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);try{if(!saved||dirty)throw Error('Le texte a changé : vérifiez-le de nouveau.');await formApi(unified()+`/drafts/${d.id}/send`,{method:'POST',body:JSON.stringify({revision:d.revision,confirmed:true})});d.status='sent';drafts.delete(d.key);if(isDocked)closeModal();if(source&&tab==='email')await thread(await formApi(base()+`/messages/${source.id}`));else if(tab==='emails')await renderEmails();notify('Message envoyé.');if(tab==='dashboard')renderPriorities().catch(()=>{});}catch(e){error.textContent=e.message;try{const current=await formApi(unified()+'/drafts/'+d.id);d.status=current.status;}catch{}if(d.status==='draft'){b.disabled=false;form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=false);}}};
    const sc=form.closest('.us-scroll,.context-scroll');if(sc)sc.scrollTop=0;
   }catch(e){error.textContent=e.message;}finally{composeBusy=false;}};
   if(d.status&&d.status!=='draft'){error.textContent=d.status==='sent'?'Message envoyé.':'Envoi engagé ou non confirmé : vérifiez votre dossier Envoyés. Aucun renvoi automatique.';form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);}
@@ -108,6 +130,6 @@ const mailClient=(()=>{
    const observer=new MutationObserver(()=>{if(!p.isConnected){URL.revokeObjectURL(url);observer.disconnect();}});observer.observe(document.body,{childList:true,subtree:true});
   }catch(e){notify(e.message);}
  }
- return {mailbox,thread,composer,connect,selected,selectAccount,scopedUrl};
+ return {mailbox,thread,composer,connect,selected,selectAccount,scopedUrl,loadNotification,openNotification};
 })();
 window.mailClient=mailClient;
