@@ -97,8 +97,8 @@ const homeReader=(()=>{
  function moneyChip(c,amount){const sg=sign(c);return sg?`<b class="reader-money ${sg.cls}">${sg.s}${clean(amount)}</b>`:clean(amount);}
  function small(c,i){
   const p=presentation(c),cp=copy(c),key=moduleOf(c);
-  if(c._done)return `<button type="button" class="reader-item is-done" data-reader-item="${i}" aria-label="${clean(cp.title)} · traité"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${clean(cp.title)}</strong><small><span class="reader-done-tag">✓ Traité</span> · ${clean(c._done)}</small></span></button>`;
-  return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+moneyChip(c,cp.amount):''}${c.source?' · '+clean(c.source):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
+  if(c._done)return `<button type="button" class="reader-item is-done" data-reader-item="${i}" data-reader-key="${clean(c.key)}" aria-label="${clean(cp.title)} · traité"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${clean(cp.title)}</strong><small><span class="reader-done-tag">✓ Traité</span> · ${clean(c._done)}</small></span></button>`;
+  return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" data-reader-key="${clean(c.key)}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="module-icon" aria-hidden="true">${moduleIcon(key)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+moneyChip(c,cp.amount):''}${c.source?' · '+clean(c.source):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
  }
  function readerMarkup(c){
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
@@ -332,6 +332,7 @@ const homeReader=(()=>{
  }
  function closeReader(){
   clearPile();
+  if(view.focus>=0)window.homePages?.dismissReminder();
   if(ios()){view.focus=-1;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'instant'});return;}
   view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
  }
@@ -360,7 +361,7 @@ const homeReader=(()=>{
     tweenPile(offset,commit?-dir*pitch():0,()=>{if(commit){if(at<0)closeReader();else goTo(at,true);}});
    },{passive:true});
    surface.addEventListener('touchcancel',()=>{const offset=start?.offset||0;start=null;tweenPile(offset,0);},{passive:true});
-   surface.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}if(tapNext&&!e.target.closest('[data-filler],.reader-item'))step(1);},true);
+   surface.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}if(tapNext&&!e.target.closest('button[data-filler],.reader-item,[data-reader-top]')){if(view.focus>=0)closeReader();else step(1);}},true);
    surface.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)<=Math.abs(e.deltaX))return;e.preventDefault();if(Date.now()-wheelAt>250&&Math.abs(e.deltaY)>8){wheelAt=Date.now();step(e.deltaY>0?1:-1);}},{passive:false});
    surface.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();step(e.key==='ArrowDown'?1:-1);}});
  }
@@ -378,10 +379,10 @@ const homeReader=(()=>{
   view.cards=real;
   const n=real.length,h=Math.min(n,cap())*pitch()-8;
   host.classList.add('reader-host');
-  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px">${ios()&&window.homePages?.reminderCard?window.homePages.reminderCard():'<button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button>'}</div></div></div>`;
+  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button><div class="reader-invitation" hidden></div></div></div></div>`;
   const list=host.querySelector('.reader-list');
   // The terminal invitation remains outside the messages and shares list gestures.
-  host.querySelector('.reader-end').onclick=e=>{const target=e.target.closest('[data-filler]');if(target)window.homePages?.openFiller(target.dataset.filler);else if(!ios())closeReader();};
+  host.querySelector('.reader-end').onclick=e=>{const target=e.target.closest('[data-filler]');if(target)window.homePages?.openFiller(target.dataset.filler);else closeReader();};
   host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
   // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
   let focus=-1;
