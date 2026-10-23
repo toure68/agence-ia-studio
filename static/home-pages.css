@@ -285,3 +285,7 @@ html.home-ios .reference-home .home-reader.is-in{animation:none}
 html.home-ios .reference-home .home-stack.is-moving i{animation:notificationPile .24s cubic-bezier(.2,.75,.25,1);transform-origin:50% 0}
 @keyframes notificationPile{from{transform:scaleX(.94) scaleY(.8)}to{transform:scaleX(1) scaleY(1)}}
 @media(prefers-reduced-motion:reduce){html.home-ios .reference-home .home-stack.is-moving i{animation:none}}
+
+/* Continuous iPhone-style pile: only the card contents fade as the glass folds. */
+html.home-ios .reference-home .reader-list[data-pile-motion="1"] .reader-item>*{opacity:var(--pile-content,1)}
+html.home-ios .reference-home .reader-list[data-pile-motion="1"] .reader-end>*{opacity:var(--pile-content,1)}

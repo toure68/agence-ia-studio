@@ -133,6 +133,8 @@ jobs:
         run: node tests/compact_reader.cjs
       - name: Reader single-finger scroll and discreet indicator
         run: node tests/reader_scroll.cjs
+      - name: Continuous magnetic notification pile
+        run: node tests/reader_pile.cjs
       - name: Run node tests/pages.cjs
         run: |
           set -o pipefail

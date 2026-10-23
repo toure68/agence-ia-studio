@@ -286,37 +286,59 @@ const homeReader=(()=>{
   st.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3){const n=c.files.length;showFile((view.file+(dx<0?1:-1)+n)%n);}},{passive:true});
  }
- // Each gesture selects a whole card. Animate inside its bounds rather than
- // sliding clipped fragments through a black overflow edge.
- function animateQueue(direction){
-  if(!ios()||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ // The pile follows the finger continuously. At each edge, whole cards fold
+ // into a narrower glass layer; release settles magnetically on one message.
+ let pileRaf=0;
+ function clearPile(){
+  cancelAnimationFrame(pileRaf);pileRaf=0;
   const list=view.host?.querySelector('.reader-list');if(!list)return;
-  const box=list.getBoundingClientRect(),items=[...list.querySelectorAll('.reader-item')];
-  items.forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
-  const visible=items.filter(el=>{const r=el.getBoundingClientRect();return r.top>=box.top-1&&r.bottom<=box.bottom+1;});
-  visible.forEach((el,index)=>{
-   const r=el.getBoundingClientRect(),distance=Math.sign(direction)*pitch();
-   // Existing cards slide from the neighbouring slot; the entering card unfolds
-   // from the stack at the edge. Both endpoints stay fully inside the list.
-   const from=Math.max(box.top-r.top,Math.min(box.bottom-r.bottom,distance));
-   const edge=Math.abs(from)<1;
-   el.style.transformOrigin=direction<0?'50% 100%':'50% 0';
-   el.animate([{transform:`translateY(${from}px) scale(${edge ? .91 : .98})`,opacity:edge ? .6 : 1},
-    {transform:'translateY(0) scale(1)',opacity:1}],
-    {duration:340,delay:index*16,easing:'cubic-bezier(.22,.75,.2,1)',fill:'backwards'});
+  delete list.dataset.pileMotion;
+  list.querySelectorAll('.reader-item,.reader-end').forEach(el=>{
+   for(const k of ['transform','transform-origin','opacity','visibility','--pile-content'])el.style.removeProperty(k);
+  });
+  requestAnimationFrame(()=>window.homePages?.stack());
+ }
+ function paintPile(offset){
+  const list=view.host?.querySelector('.reader-list');if(!list)return;
+  list.dataset.pileMotion='1';
+  const height=list.clientHeight,step=pitch(),cardH=parseFloat(list.style.getPropertyValue('--reader-card-h'))||60;
+  list.querySelectorAll('.reader-item,.reader-end').forEach((el,i)=>{
+   const h=el.classList.contains('reader-end')?height:cardH,base=i*step-list.scrollTop,y=base+offset;
+   const fold=Math.max(0,Math.min(1,(y+h)/h,(height-Math.max(0,y))/h));
+   if(fold<.015){el.style.visibility='hidden';el.style.transform='';return;}
+   el.style.visibility='visible';el.style.transformOrigin='50% 0';
+   el.style.transform=`translateY(${Math.max(0,y)-base}px) scale(${.93+.07*fold},${fold})`;
+   el.style.opacity=String(.45+.55*fold);
+   el.style.setProperty('--pile-content',String(Math.max(0,Math.min(1,(fold-.4)/.6))));
   });
  }
- function goTo(i){
-  if(ios()){const direction=i-view.focus;view.focus=i;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'instant'});animateQueue(direction);return;}
+ function tweenPile(from,to,done){
+  cancelAnimationFrame(pileRaf);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){clearPile();done?.();return;}
+  const list=view.host?.querySelector('.reader-list'),started=performance.now();
+  const frame=now=>{
+   if(!list?.isConnected||view.host?.querySelector('.reader-list')!==list){clearPile();return;}
+   const t=Math.min(1,(now-started)/300),ease=1-Math.pow(1-t,3);
+   paintPile(from+(to-from)*ease);
+   if(t<1)pileRaf=requestAnimationFrame(frame);else{clearPile();done?.();}
+  };
+  paintPile(from);pileRaf=requestAnimationFrame(frame);
+ }
+ function goTo(i,settled=false){
+  clearPile();
+  if(ios()){const direction=i-view.focus;view.focus=i;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'instant'});
+   if(!settled)tweenPile(Math.sign(direction)*pitch(),0);return;}
   view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});
  }
  function closeReader(){
+  clearPile();
   if(ios()){view.focus=-1;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'instant'});return;}
   view.host?.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
  }
  function step(d){if(view.focus+d<-1||view.focus+d>=view.cards.length)return;if(view.focus+d<0)closeReader();else goTo(view.focus+d);}
 
  function render(host,cards,actual,cid){
+  clearPile();
   view.host=host;view.cid=cid;
   const pending=[...samples(),...actual.filter(c=>!c.example)].filter(c=>!doneCards.some(d=>d.c.key===c.key));
   const real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
@@ -340,13 +362,26 @@ const homeReader=(()=>{
   showReader();
   if(ios()){
    let start=null,suppressUntil=0,wheelAt=0;
-   list.addEventListener('touchstart',e=>{start=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;},{passive:true});
-   list.addEventListener('touchmove',e=>{if(start&&Math.abs(e.touches[0].clientY-start.y)>10)e.preventDefault();},{passive:false});
-   list.addEventListener('touchend',e=>{if(!start)return;const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;start=null;
-    if(Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+500;
-    if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx)*1.3)step(dy<0?1:-1);
+   list.addEventListener('touchstart',e=>{
+    clearPile();start=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,offset:0}:null;
    },{passive:true});
-   list.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+   list.addEventListener('touchmove',e=>{
+    if(!start||e.touches.length!==1)return;
+    const dx=e.touches[0].clientX-start.x,dy=e.touches[0].clientY-start.y;
+    if(Math.abs(dy)<=8||Math.abs(dy)<=Math.abs(dx)*1.3)return;
+    e.preventDefault();const limit=pitch();
+    const blocked=dy>0&&view.focus<0||dy<0&&view.focus>=view.cards.length-1;
+    start.offset=blocked?dy*.12:Math.sign(dy)*Math.min(limit,Math.abs(dy));
+    paintPile(start.offset);
+   },{passive:false});
+   list.addEventListener('touchend',e=>{
+    if(!start)return;const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y,offset=start.offset;start=null;
+    if(Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+650;
+    const dir=offset<0?1:-1,at=view.focus+dir;
+    const commit=Math.abs(offset)>=pitch()*.3&&at>=-1&&at<view.cards.length;
+    tweenPile(offset,commit?-dir*pitch():0,()=>{if(commit){if(at<0)closeReader();else goTo(at,true);}});
+   },{passive:true});
+   list.addEventListener('touchcancel',()=>{const offset=start?.offset||0;start=null;tweenPile(offset,0);},{passive:true});
    list.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
    list.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)<=Math.abs(e.deltaX))return;e.preventDefault();if(Date.now()-wheelAt>250&&Math.abs(e.deltaY)>8){wheelAt=Date.now();step(e.deltaY>0?1:-1);}},{passive:false});
    list.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();step(e.key==='ArrowDown'?1:-1);}});
