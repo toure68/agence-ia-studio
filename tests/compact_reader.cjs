@@ -38,6 +38,7 @@ const {chromium}=require('playwright');
   assert(Math.abs(files.cardHeight-home.cardHeight)<1,'File-message cards retain the home height');
   assert(Math.abs(text.icon-home.icon)<1&&Math.abs(files.icon-home.icon)<1,'Function icons retain their home size');
   assert.equal(await p.locator('.reader-card .reader-item').count(),0,'No nested notification card');
+  assert(await p.locator('.reader-text-thumb').evaluate(b=>{const r=b.getBoundingClientRect(),s=b.querySelector('svg')?.getBoundingClientRect();return s&&Math.abs(s.width-r.width)<1&&Math.abs(s.height-r.height)<1&&getComputedStyle(b).backgroundColor==='rgb(244, 240, 230)';}),'Text illustration fills the entire light tile');
   assert(await p.locator('.reader-files').evaluate(e=>{const r=e.getBoundingClientRect(),l=document.querySelector('.reader-list').getBoundingClientRect(),a=document.querySelector('.home-action-row').getBoundingClientRect();return r.height>0&&r.top>=l.bottom&&r.bottom<=a.top;}),'Carousel occupies only the existing gap');
   await p.locator('.reader-thumb[data-file="0"]').click();await p.locator('.reader-stage-img').waitFor();await p.waitForTimeout(150);
   const image=await geometry();console.log(JSON.stringify({width,text,files,image}));assert(Math.abs(image.reader-files.reader)<=1,'Image keeps reader height');

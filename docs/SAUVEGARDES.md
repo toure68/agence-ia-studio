@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT MINIATURE TEXTE DOCUMENT** | `sauvegarde/avant-miniature-texte-document-v138` (v137) | Petit pictogramme Texte sur fond noir. |
 | **RETOUR AVANT CARROUSEL SIX CENTRÉ** | `sauvegarde/avant-carrousel-six-centre-v137` (v136) | Miniatures proches des notifications, nombre visible variable. |
 | **RETOUR AVANT MINIATURES ESPACE LIBRE** | `sauvegarde/avant-miniatures-espace-libre-v136` (v135) | Miniatures remplaçant des notifications et bouton principal plus large. |
 | **RETOUR AVANT INVITATION QUOTIDIEN** | `sauvegarde/avant-invitation-quotidien-v135` (v134) | Invitation à la place de Fin de liste et clic vide avançant au message suivant. |
