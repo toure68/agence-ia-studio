@@ -129,6 +129,8 @@ jobs:
         run: node tests/real_photos.cjs
       - name: Verify reader spacing and gestures
         run: node tests/reader_layout.cjs
+      - name: Assistant keyboard overlay and collapse
+        run: node tests/assistant_overlay.cjs
       - name: Equal action widths and readable long labels
         run: node tests/reader_action_widths.cjs
       - name: Compact reader and responsive function icons

@@ -271,7 +271,7 @@ function moduleDockKeyboard(){
  document.body.classList.toggle('kb-open',kb);
  const on=document.body.classList.contains('dock-to-focus')&&kb;
  document.body.classList.toggle('dock-keyboard',on);
- if(kb)requestAnimationFrame(()=>active.scrollIntoView({block:'center',inline:'nearest'}));
+ if(kb&&!active.closest('#contextPanel[data-module="assistant"]'))requestAnimationFrame(()=>active.scrollIntoView({block:'center',inline:'nearest'}));
 }
 window.visualViewport?.addEventListener('resize',moduleDockKeyboard,{passive:true});
 window.visualViewport?.addEventListener('scroll',moduleDockKeyboard,{passive:true});
