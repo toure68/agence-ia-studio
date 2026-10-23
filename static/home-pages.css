@@ -81,8 +81,9 @@ html.home-ios .home-back-zone{touch-action:pan-x}
 html.home-ios .reader-file-row{display:flex;align-self:center;align-items:center;gap:9px;width:fit-content;max-width:100%;height:46px}
 html.home-ios .reader-file-window{position:relative;flex:none;min-width:0;width:calc(var(--reader-visible-files,5)*var(--reader-file-cell,46px) + (var(--reader-visible-files,5) - 1)*9px);height:46px}
 html.home-ios .reader-file-window .reader-thumbs{max-width:100%}
-html.home-ios .reader-text-thumb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--home-text,#fff);background:#ffffff0c;font:inherit;font-size:10px;line-height:1.15}
-html.home-ios .reader-text-thumb>span:first-child{font-size:19px}
+html.home-ios .reader-text-thumb{position:relative;display:block;padding:0;color:#354456;background:#f4f0e6;font:inherit;line-height:1.15}
+html.home-ios .reader-text-thumb .reader-text-art{display:block;width:100%;height:100%}
+html.home-ios .reader-text-thumb>span{position:absolute;bottom:3%;left:0;right:0;font-size:clamp(6px,calc(var(--reader-thumb-size,46px)*.2),11px);font-weight:700}
 html.home-ios .reader-thumb.is-on{outline:2px solid #fff;outline-offset:-2px}
 html.home-ios .reader-scroll{position:absolute;top:0;bottom:0;width:26px;padding:0;border:0;color:#fff;font:700 27px/1 system-ui;cursor:pointer;z-index:1;text-shadow:0 1px 4px #000}
 html.home-ios .reader-scroll.is-prev{left:0;background:linear-gradient(to right,#10151ef2,#10151e55)}
@@ -298,7 +299,6 @@ html.home-ios .reference-home:not(.reader-active) .reader-end-btn{display:none}
 
 /* All action buttons share width; only measured label needs may alter their share. */
 html.home-ios .home-action-row .reader-btn{box-sizing:border-box;white-space:normal;overflow-wrap:normal;text-overflow:clip;line-height:1.15;max-height:100%}
-html.home-ios .reader-files.is-compact .reader-text-thumb>span:first-child{font-size:clamp(8px,calc(var(--reader-thumb-size) - 4px),19px)}
 html.home-ios .reader-files.is-compact .reader-text-thumb>span:last-child{display:none}
 html.home-ios .reader-files.is-compact .reader-scroll{font-size:clamp(10px,var(--reader-thumb-size),27px)}
 
