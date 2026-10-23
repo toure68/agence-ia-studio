@@ -222,7 +222,7 @@ html.home-ios #contextPanel[data-module="assistant"] .context-scroll{padding-top
 html.home-ios #contextPanel[data-module="assistant"] #assistantMessage{min-height:0;max-height:150px;padding:9px 4px 3px!important;line-height:22px}
 html.home-ios #contextPanel[data-module="assistant"] .chat-attach-menu>summary,html.home-ios #contextPanel[data-module="assistant"] #assistantMic{width:34px!important;height:34px!important;flex-basis:34px;border:0!important;border-radius:50%!important;background:rgba(255,255,255,.10)!important;color:#e2e8f0!important;opacity:1}
 html.home-ios #contextPanel[data-module="assistant"] .chat-attach-menu>summary svg,html.home-ios #contextPanel[data-module="assistant"] #assistantMic svg{width:20px;height:20px}
-html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{top:auto!important;left:8px;right:8px;bottom:calc(var(--kb-bottom,0px) + 8px)!important;height:auto!important;max-height:calc(var(--vv-h,60dvh) - 16px)!important;border-radius:28px!important;padding-top:0!important}
+html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{top:auto!important;left:8px;right:8px;bottom:6px!important;height:auto!important;max-height:calc(var(--dialog-height,60dvh) - 16px)!important;border-radius:28px!important;padding-top:0!important}
 
 /* iOS function icons (visual only): retain every grid cell, route, order and row height.
    Use the whole existing cell for the icon; accessible names stay on the original links. */
@@ -312,7 +312,11 @@ html.home-ios .reader-files .reader-scroll{width:min(18px,calc(var(--reader-file
 
 /* Assistant overlays the unchanged cockpit and follows the keyboard's visible upper edge. */
 html.home-ios #contextPanel[data-module="assistant"],html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{
- top:auto!important;bottom:calc(var(--kb-bottom,0px) + 8px)!important;left:8px;right:8px;height:auto!important;max-height:calc(var(--vv-h,100dvh) - 24px)!important;min-height:0;animation:none!important;
+ top:auto!important;bottom:6px!important;left:8px;right:8px;height:auto!important;max-height:calc(var(--dialog-height,100dvh) - 24px)!important;min-height:0;animation:none!important;
 }
 html.home-ios #contextPanel[data-module="assistant"] .assistant-collapse{display:grid;place-items:center;align-self:center;flex:none;width:64px;height:28px;margin:0;padding:0;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px;color:#c2cbd5;cursor:pointer;touch-action:none}
 html.home-ios #contextPanel[data-module="assistant"] .context-scroll{padding-top:0!important}
+
+/* Keep the assistant in the viewport layer, avoiding a second keyboard offset on iOS. */
+html.home-ios body .context-layer:has(#contextPanel[data-module="assistant"]){top:var(--dialog-top,0px)!important;left:var(--dialog-left,0px)!important;width:var(--dialog-width,100%)!important;height:var(--dialog-height,100dvh)!important;padding:0!important;box-sizing:border-box;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.home-ios body #contextPanel[data-module="assistant"],html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{position:absolute!important;bottom:6px!important;left:8px!important;right:8px!important;transform:none!important;margin:0!important}
