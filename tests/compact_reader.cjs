@@ -44,15 +44,16 @@ const {chromium}=require('playwright');
   const motion=await p.locator('.reader-list').evaluate(async el=>{
    const first=el.scrollTop,box=el.getBoundingClientRect(),x=box.left+30,y=box.top+35;
    const fire=(type,yy)=>el.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==='touchend'?[]:[new Touch({identifier:1,target:el,clientX:x,clientY:yy})],changedTouches:[new Touch({identifier:1,target:el,clientX:x,clientY:yy})]}));
-   fire('touchstart',y);fire('touchmove',y-60);fire('touchend',y-60);
-   const animations=[...el.querySelectorAll('.reader-item')].flatMap(e=>e.getAnimations());
-   const moving=animations.some(a=>a.effect.getKeyframes().some(k=>/translateY\((?!0px)[^)]+\)/.test(k.transform||'')));
+   fire('touchstart',y);fire('touchmove',y-60);
+   const moving=el.dataset.pileMotion==='1'&&[...el.querySelectorAll('.reader-item')].some(e=>e.style.transform.includes('translateY('));
+   const tracked=el.scrollTop===first;
+   fire('touchend',y-60);
    let partial=0;
    for(let i=0;i<20;i++){await new Promise(requestAnimationFrame);const b=el.getBoundingClientRect();for(const item of el.querySelectorAll('.reader-item')){const r=item.getBoundingClientRect();if(r.bottom>b.top+1&&r.top<b.bottom-1&&(r.top<b.top-1||r.bottom>b.bottom+1))partial++;}}
-   return {first,after:el.scrollTop,partial,moving,pitch:Number(el.dataset.pitch)};
+   return {first,after:el.scrollTop,partial,moving,tracked,pitch:Number(el.dataset.pitch)};
   });
   assert(Math.abs(motion.after-motion.first-motion.pitch)<1,'Swipe advances exactly one card');
-  if(files.cards>1)assert(motion.moving,'Whole cards slide from the neighbouring stack slot');
+  assert(motion.moving&&motion.tracked,'Cards follow the finger before magnetic release');
   assert.equal(motion.partial,0,'No card is clipped through the black edge during the animation');
   assert.deepEqual(errors,[]);results.push({width,height,text,files,image});await p.close();
  }

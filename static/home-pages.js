@@ -157,7 +157,7 @@ const homePages=(()=>{
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
   const pages=home.querySelector('.home-pages'),list=home.querySelector('.reader-list'),block=home.querySelector('#priorityBlock');
-  if(!pages)return;
+  if(!pages||list?.dataset.pileMotion==='1')return;
   const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
   const items=[...home.querySelectorAll('.reader-list .reader-item')];
   const lr=list?.getBoundingClientRect();
