@@ -18,6 +18,7 @@ const homeReader=(()=>{
  const doneKey=()=>'aia-reader-done-'+(company?.id||0)+'-'+new Date().toISOString().slice(0,10);
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
  const markDone=key=>{const s=doneSet();s.add(key);try{sessionStorage.setItem(doneKey(),JSON.stringify([...s]));}catch{}};
+ let railCleanup=()=>{};
  let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false,full:false,editing:null,draft:{},file:-1};
  // Messages d'essai (reader-samples.js): off by default, switch in the account menu, buttons simulated.
  const SAMPLES='aia-reader-samples';
@@ -167,20 +168,25 @@ const homeReader=(()=>{
  }
  function syncRail(card){
   const body=card?.querySelector('.reader-body'),wrap=card?.querySelector('.reader-body-wrap');if(!body||!wrap)return;
-  const over=body.scrollHeight-body.clientHeight>2;wrap.classList.toggle('is-long',over);
-  if(!over)return;const thumb=wrap.querySelector('.reader-rail i'),h=Math.max(.25,body.clientHeight/body.scrollHeight);
-  thumb.style.height=(h*100)+'%';thumb.style.top=((body.scrollTop/(body.scrollHeight-body.clientHeight))*(1-h)*100)+'%';
+  const range=body.scrollHeight-body.clientHeight,over=range>2;wrap.classList.toggle('is-long',over);
+  if(!over){wrap.classList.remove('is-scrolling');return;}
+  const rail=wrap.querySelector('.reader-rail'),thumb=rail.querySelector('i');
+  const track=rail.clientHeight,h=Math.min(track,Math.max(24,track*body.clientHeight/body.scrollHeight));
+  thumb.style.height=h+'px';thumb.style.top=(Math.max(0,Math.min(1,body.scrollTop/range))*(track-h))+'px';
  }
  function wireRail(card){
-  const body=card.querySelector('.reader-body'),rail=card.querySelector('.reader-rail');let drag=false;
-  body.addEventListener('scroll',()=>syncRail(card),{passive:true});
-  const to=e=>{const r=rail.getBoundingClientRect(),t=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height));body.scrollTop=t*(body.scrollHeight-body.clientHeight);};
-  rail.addEventListener('pointerdown',e=>{drag=true;try{rail.setPointerCapture(e.pointerId);}catch{}to(e);});
-  rail.addEventListener('pointermove',e=>{if(drag)to(e);});
-  ['pointerup','pointercancel'].forEach(t=>rail.addEventListener(t,()=>{drag=false;}));
-  requestAnimationFrame(()=>syncRail(card));
+  const body=card.querySelector('.reader-body'),wrap=card.querySelector('.reader-body-wrap');let idle;
+  const active=()=>{syncRail(card);if(!wrap.classList.contains('is-long'))return;
+   wrap.classList.add('is-scrolling');clearTimeout(idle);idle=setTimeout(()=>wrap.classList.remove('is-scrolling'),850);
+  };
+  body.addEventListener('scroll',active,{passive:true});
+  body.addEventListener('touchstart',active,{passive:true});
+  const observer=new ResizeObserver(()=>syncRail(card));observer.observe(body);
+  railCleanup=()=>{clearTimeout(idle);observer.disconnect();body.removeEventListener('scroll',active);body.removeEventListener('touchstart',active);};
+  requestAnimationFrame(()=>{if(card.isConnected)syncRail(card);});
  }
  function showReader(){
+  railCleanup();railCleanup=()=>{};
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
   if(view.focus<0&&doneCards.length&&!view.busy){doneCards.length=0;view.keepKey=null;setTimeout(()=>renderPriorities().catch(()=>{}),0);}
@@ -285,14 +291,20 @@ const homeReader=(()=>{
  function animateQueue(direction){
   if(!ios()||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const list=view.host?.querySelector('.reader-list');if(!list)return;
-  const box=list.getBoundingClientRect();
-  for(const el of list.querySelectorAll('.reader-item')){
-   const r=el.getBoundingClientRect();if(r.top<box.top-1||r.bottom>box.bottom+1)continue;
-   el.getAnimations().forEach(a=>a.cancel());
-   el.animate([{transform:'scale(.95)',opacity:.65},{transform:'scale(1)',opacity:1}],
-    {duration:240,easing:'cubic-bezier(.2,.75,.25,1)'});
+  const box=list.getBoundingClientRect(),items=[...list.querySelectorAll('.reader-item')];
+  items.forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
+  const visible=items.filter(el=>{const r=el.getBoundingClientRect();return r.top>=box.top-1&&r.bottom<=box.bottom+1;});
+  visible.forEach((el,index)=>{
+   const r=el.getBoundingClientRect(),distance=Math.sign(direction)*pitch();
+   // Existing cards slide from the neighbouring slot; the entering card unfolds
+   // from the stack at the edge. Both endpoints stay fully inside the list.
+   const from=Math.max(box.top-r.top,Math.min(box.bottom-r.bottom,distance));
+   const edge=Math.abs(from)<1;
    el.style.transformOrigin=direction<0?'50% 100%':'50% 0';
-  }
+   el.animate([{transform:`translateY(${from}px) scale(${edge ? .91 : .98})`,opacity:edge ? .6 : 1},
+    {transform:'translateY(0) scale(1)',opacity:1}],
+    {duration:340,delay:index*16,easing:'cubic-bezier(.22,.75,.2,1)',fill:'backwards'});
+  });
  }
  function goTo(i){
   if(ios()){const direction=i-view.focus;view.focus=i;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'instant'});animateQueue(direction);return;}
