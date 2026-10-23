@@ -245,17 +245,17 @@ const homeReader=(()=>{
     if(pg){
      // Queue cards retain the home height and pitch. Spare room belongs to the
      // image carousel, or stays between the queue and the action buttons.
-     const stack=view.cards.length>1?9:0,space=16;
+     const stack=view.cards.length>1?9:0,space=files?16:8;
      const room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
      const basePitch=Number(document.body.dataset.readerPitch)||69,cardH=basePitch-gap;
-     const thumb=files?Math.min(64,Math.max(46,room-stack-2*space-cardH)):0;
+     const thumb=files?Math.min(56,Math.max(46,room-stack-2*space-cardH)):0;
      const tail=stack+space+(files?thumb+space:0);
      n=editing?0:Math.max(0,Math.min(cap(),Math.floor((room-tail+gap)/basePitch)));
      const used=Math.max(0,n*basePitch-(n?gap:0));
      const oldPitch=pitch();
      list.dataset.pitch=String(basePitch);list.style.setProperty('--reader-card-h',cardH+'px');
      anchor=Math.abs(basePitch-oldPitch)>.1;
-     if(files)queue.style.setProperty('--reader-thumb-size',Math.max(46,room-used-stack-2*space)+'px');
+     if(files)queue.style.setProperty('--reader-thumb-size',Math.min(72,Math.max(46,room-used-stack-2*space))+'px');
      else queue.style.removeProperty('--reader-thumb-size');
      queue.style.setProperty('--reader-tail-gap',(stack+space)+'px');
     }
@@ -280,8 +280,22 @@ const homeReader=(()=>{
   st.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3){const n=c.files.length;showFile((view.file+(dx<0?1:-1)+n)%n);}},{passive:true});
  }
+ // Each gesture selects a whole card. Animate inside its bounds rather than
+ // sliding clipped fragments through a black overflow edge.
+ function animateQueue(direction){
+  if(!ios()||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const list=view.host?.querySelector('.reader-list');if(!list)return;
+  const box=list.getBoundingClientRect();
+  for(const el of list.querySelectorAll('.reader-item')){
+   const r=el.getBoundingClientRect();if(r.top<box.top-1||r.bottom>box.bottom+1)continue;
+   el.getAnimations().forEach(a=>a.cancel());
+   el.animate([{transform:'scale(.95)',opacity:.65},{transform:'scale(1)',opacity:1}],
+    {duration:240,easing:'cubic-bezier(.2,.75,.25,1)'});
+   el.style.transformOrigin=direction<0?'50% 100%':'50% 0';
+  }
+ }
  function goTo(i){
-  if(ios()){view.focus=i;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'instant'});return;}
+  if(ios()){const direction=i-view.focus;view.focus=i;showReader();view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'instant'});animateQueue(direction);return;}
   view.host?.querySelector('.reader-list')?.scrollTo({top:(i+1)*pitch(),behavior:'smooth'});
  }
  function closeReader(){
@@ -312,10 +326,24 @@ const homeReader=(()=>{
   view.focus=focus;
   list.scrollTop=(focus+1)*pitch();
   showReader();
+  if(ios()){
+   let start=null,suppressUntil=0,wheelAt=0;
+   list.addEventListener('touchstart',e=>{start=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;},{passive:true});
+   list.addEventListener('touchmove',e=>{if(start&&Math.abs(e.touches[0].clientY-start.y)>10)e.preventDefault();},{passive:false});
+   list.addEventListener('touchend',e=>{if(!start)return;const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;start=null;
+    if(Math.abs(dy)>10||Math.abs(dx)>10)suppressUntil=Date.now()+500;
+    if(Math.abs(dy)>30&&Math.abs(dy)>Math.abs(dx)*1.3)step(dy<0?1:-1);
+   },{passive:true});
+   list.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+   list.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
+   list.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)<=Math.abs(e.deltaX))return;e.preventDefault();if(Date.now()-wheelAt>250&&Math.abs(e.deltaY)>8){wheelAt=Date.now();step(e.deltaY>0?1:-1);}},{passive:false});
+   list.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();step(e.key==='ArrowDown'?1:-1);}});
+  }
   let raf=0;
   list.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
    const f=Math.min(n-1,Math.round(list.scrollTop/pitch())-1);
-   if(f!==view.focus){view.focus=f;showReader();}
+   if(ios()){if(f!==view.focus)goTo(f);else if(Math.abs(list.scrollTop-(f+1)*pitch())>.5)list.scrollTop=(f+1)*pitch();}
+   else if(f!==view.focus){view.focus=f;showReader();}
   });},{passive:true});
   return true;
  }

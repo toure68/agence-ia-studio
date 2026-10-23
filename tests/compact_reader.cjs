@@ -29,8 +29,8 @@ const {chromium}=require('playwright');
   await open('Vos 7 photos');const files=await geometry();await p.screenshot({path:`/tmp/compact-reader/${width}-files.png`});
   assert(Math.abs(files.reader-text.reader)<=1,JSON.stringify({width,text,files}));
   assert(files.cards<text.cards||(text.cards===1&&files.cards===1),'Files use queue space while preserving one card on short screens '+JSON.stringify({width,text,files}));
-  assert(files.tail>=8&&files.tail<=16,'Compact bottom gap '+JSON.stringify(files));
-  assert(text.tail>=16,'Spare room separates notifications from actions '+JSON.stringify(text));
+  assert(files.tail>=16&&files.tail<90,'Compact bottom gap '+JSON.stringify(files));
+  assert(text.tail>=8,'Spare room separates notifications from actions '+JSON.stringify(text));
   assert(Math.abs(text.cardHeight-home.cardHeight)<1,'Text cards retain the home height');
   assert(Math.abs(files.cardHeight-home.cardHeight)<1,'File-message cards retain the home height');
   assert(Math.abs(text.icon-home.icon)<1&&Math.abs(files.icon-home.icon)<1,'Function icons retain their home size');
@@ -39,6 +39,18 @@ const {chromium}=require('playwright');
   await p.locator('.reader-thumb[data-file="0"]').click();await p.locator('.reader-stage-img').waitFor();await p.waitForTimeout(150);
   const image=await geometry();console.log(JSON.stringify({width,text,files,image}));assert(Math.abs(image.reader-files.reader)<=1,'Image keeps reader height');
   await p.locator('.reader-thumb[data-file="-1"]').click();assert.equal(await p.locator('.home-reader.is-image').count(),0);
+  // Real touch gestures use whole-card stack transitions, including every sampled animation frame.
+  await p.emulateMedia({reducedMotion:'no-preference'});
+  const motion=await p.locator('.reader-list').evaluate(async el=>{
+   const first=el.scrollTop,box=el.getBoundingClientRect(),x=box.left+30,y=box.top+35;
+   const fire=(type,yy)=>el.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==='touchend'?[]:[new Touch({identifier:1,target:el,clientX:x,clientY:yy})],changedTouches:[new Touch({identifier:1,target:el,clientX:x,clientY:yy})]}));
+   fire('touchstart',y);fire('touchmove',y-60);fire('touchend',y-60);
+   let partial=0;
+   for(let i=0;i<20;i++){await new Promise(requestAnimationFrame);const b=el.getBoundingClientRect();for(const item of el.querySelectorAll('.reader-item')){const r=item.getBoundingClientRect();if(r.bottom>b.top+1&&r.top<b.bottom-1&&(r.top<b.top-1||r.bottom>b.bottom+1))partial++;}}
+   return {first,after:el.scrollTop,partial,pitch:Number(el.dataset.pitch)};
+  });
+  assert(Math.abs(motion.after-motion.first-motion.pitch)<1,'Swipe advances exactly one card');
+  assert.equal(motion.partial,0,'No card is clipped through the black edge during the animation');
   assert.deepEqual(errors,[]);results.push({width,height,text,files,image});await p.close();
  }
  console.log(JSON.stringify(results,null,2));await browser.close();
