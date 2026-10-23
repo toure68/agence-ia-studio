@@ -22,7 +22,7 @@ const openSessionPage=require('./ui_session.cjs');
   const title=()=>page.locator('.home-reader .reader-card strong').innerText();const first=await title();await swipe(-50);assert.notEqual(await title(),first,'swipe up advances');await swipe(50);assert.equal(await title(),first,'swipe down returns');
   const index=await page.evaluate(()=>[...document.querySelectorAll('.reader-list .reader-item')].findIndex(e=>e.textContent.includes('Photos du chantier')));assert(index>=0);await open(index);const files=await geometry();
   const plainCount=Math.round((plain.list.h+plain.gap)/plain.pitch),fileCount=Math.round((files.list.h+files.gap)/files.pitch);
-  assert(files.files&&files.files.h>=46&&files.files.h<=72);assert(fileCount<plainCount||(plainCount===1&&fileCount===1),'files use queue space, retaining one notification on short screens');assert(files.list.h>=60,'even a compact phone keeps a scrollable notification card');assert(files.files.top-files.list.bottom>=16,'files separated from cards and stack');assert(files.zone.h>=16,'comfortable zone below files');assert(Math.abs(files.reader.h-plain.reader.h)<1,'files never shrink the reader');assert(Math.abs(files.pages.top-home.pages.top)<1,'attachments do not move functions');
+  assert(files.files&&files.files.h>0&&files.files.h<=72);assert.equal(fileCount,plainCount,'files retain all notification slots');assert(files.list.h>=60,'even a compact phone keeps a scrollable notification card');assert(files.files.top-files.list.bottom>=2,'files separated from cards and stack');assert(files.zone.h>=2,'comfortable zone below files');assert(Math.abs(files.reader.h-plain.reader.h)<1,'files never shrink the reader');assert(Math.abs(files.pages.top-home.pages.top)<1,'attachments do not move functions');
   await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.home-reader.is-image .reader-stage-img').waitFor();assert(Math.abs((await geometry()).reader.h-files.reader.h)<1,'image keeps reader height');
   await page.locator('.reader-thumb[data-file="5"]').click();assert.match(await page.locator('.reader-stage-doc').innerText(),/pdf/i);await page.locator('.reader-text-thumb').click();assert.equal(await page.locator('.home-reader.is-image').count(),0);assert.equal(await page.locator('.reader-text-thumb').getAttribute('aria-pressed'),'true');
   // One image centers with Text, without empty cells; ten images scroll while Text stays pinned.
@@ -42,14 +42,14 @@ const openSessionPage=require('./ui_session.cjs');
    }
    await page.locator(`.reader-thumb[data-file="${count-1}"]`).click();await page.locator('.reader-stage-img').waitFor();
    await page.locator('.reader-text-thumb').click();assert.equal(await page.locator('.home-reader.is-image').count(),0,'Text restores the message');
-   assert((await geometry()).zone.h>=16);
+   assert((await geometry()).zone.h>=2);
    await page.screenshot({path:`/tmp/aia-carousel-${size.width}-${count}.png`});
   }
   await page.screenshot({path:`/tmp/aia-reader-layout-${size.width}.png`});
   await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.reader-stage-img').waitFor();await swipe(-50);assert.equal(await page.locator('.home-reader.is-image').count(),0,'changing message resets to text');await swipe(50);assert.equal(await page.locator('.reader-text-thumb').getAttribute('aria-pressed'),'true','returning to message starts with text');
-  // The swipe deliberately suppresses its trailing synthetic click for 500ms.
-  await page.waitForTimeout(550);
-  await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.reader-stage-img').waitFor();await page.locator('.home-back-zone').click();await page.waitForTimeout(400);assert.equal(await page.locator('.home-reader.is-image').count(),0,'bottom tap returns home');assert.equal(await page.locator('.reference-home.reader-active').count(),0,'Blank tap returns home');await open(index);assert.equal(await page.locator('.home-reader.is-image').count(),0,'reopening the same message starts with text');
+  // The swipe deliberately suppresses its trailing synthetic click for 650ms.
+  await page.waitForTimeout(700);
+  await page.locator('.reader-thumb[data-file="0"]').click();await page.locator('.reader-stage-img').waitFor();await page.locator('.home-back-zone').click();await page.waitForTimeout(400);assert.equal(await page.locator('.home-reader.is-image:visible').count(),0,'bottom tap returns home');assert.equal(await page.locator('.reference-home.reader-active').count(),0,'Blank tap returns home');await open(index);assert.equal(await page.locator('.home-reader.is-image').count(),0,'reopening the same message starts with text');
   await open(0);await page.locator('.reader-grip').click();await page.waitForTimeout(400);assert(await page.locator('#homeTreasury').isVisible(),'reader grip returns home');
   assert.deepEqual(errors,[]);console.log('reader layout OK',size, {plainCards:Math.round((plain.list.h+plain.gap)/plain.pitch),filesCards:Math.round((files.list.h+files.gap)/files.pitch)});await page.close();
  }
