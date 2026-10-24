@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT RÉGLAGE EFFET ÉCRAN** | `sauvegarde/avant-reglage-effet-ecran-v160` (v159) | Effet écran du lecteur actif sans interrupteur dans les réglages. |
 | **RETOUR AVANT LECTEUR ÉCRAN** | `sauvegarde/avant-lecteur-ecran-v159` (v158) | Apparence du lecteur avant le cadre discret façon écran. |
 | **RETOUR AVANT ICÔNE COO LIÉ** | `sauvegarde/avant-icone-coo-lie-v158` (v157) | Icône iPhone Coo avec deux o séparés. |
 | **RETOUR AVANT LECTURE INTÉGRALE** | `sauvegarde/avant-lecture-integrale-v157` (v156) | Dernière ligne parfois coupée après déploiement du lecteur ; poignée sans animation. |
