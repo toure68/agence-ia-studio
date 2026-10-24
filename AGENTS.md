@@ -193,3 +193,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - 24/10 (user, reversible visual trial): give the reader a discreet screen-like frame using inset shadows only. Preserve reading space, rounded shape, wallpaper glass, state rims, controls and all behavior. No tests requested. Keyword « RETOUR AVANT LECTEUR ÉCRAN » restores the pre-trial appearance.
 
 - 24/10 (user): account settings expose « Effet écran du lecteur » on/off, applied instantly without redrawing the message. Default on; off restores exactly the pre-frame reader shadows. Persist in users.prefs.reader_screen and sync across sign-ins. No tests requested. Keyword « RETOUR AVANT RÉGLAGE EFFET ÉCRAN ».
+
+- 24/10 (user): reader attachment images adapt to the actual reader area with centered contain sizing, preserving the complete photo and its proportions. Reserve a small inset from rounded screen corners and keep the iPhone grip clear of the image. Keep carousel, reader height and gestures. No tests requested. Keyword « RETOUR AVANT IMAGES AJUSTÉES ».
