@@ -4,7 +4,7 @@ const universalSheets=(()=>{
  let queued=false,closing=null,transaction=null;
  const enabled=()=>document.documentElement.classList.contains('home-ios')&&typeof company!=='undefined'&&!!company&&typeof me!=='undefined'&&!!me;
  const active=()=>document.querySelector('#modalLayer:not(.hide) .universal-sheet')||document.querySelector('#contextPanel.universal-sheet');
- const intermediate=new Set(['assistantForm','scanForm','socialCreate','mailReplyForm','interactionForm','mailComposeForm','mailInlineForm']);
+ const intermediate=new Set(['assistantForm','scanForm','socialCreate','mailReplyForm','interactionForm','mailComposeForm','mailInlineForm','mailGoogleSetupForm']);
  function request(method,path){return transaction&&!['GET','HEAD'].includes(method.toUpperCase())&&!/module-use|module-peek|workspace\/usage|\/track/.test(path)?transaction:null;}
  function result(tx,ok){if(tx){tx.saved=tx.saved||ok;tx.failed=tx.failed||!ok;}}
  function viewport(){const v=visualViewport;return {height:v?.height||innerHeight,top:v?.offsetTop||0};}

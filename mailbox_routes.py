@@ -104,11 +104,15 @@ def init_schema(db):
 
     from native_mail import init_schema as init_unified_schema
     init_unified_schema(db)
+    from google_mail_config import init_schema as init_google_config
+    init_google_config(db)
 
 def install(app,db,require,own_company,utcnow,secret,throttle):
     cipher=Fernet(base64.urlsafe_b64encode(hashlib.sha256((secret+':gmail-tokens').encode()).digest()))
+    from google_mail_config import install as install_google_config
+    google_config=install_google_config(app,db,require,own_company,secret,throttle)
     def config():
-        return (os.environ.get('GMAIL_CLIENT_ID',''),os.environ.get('GMAIL_CLIENT_SECRET',''),os.environ.get('GMAIL_REDIRECT_URI',''))
+        c=google_config();return (c['client_id'],c['client_secret'],c['redirect_uri'])
     def account(con,uid,cid):
         row=con.execute('SELECT * FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
         if not row:raise HTTPException(409,'Configurez les intérêts et connectez Gmail.')
@@ -273,7 +277,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         return {'sent':True}
 
     from native_mail import install as install_unified
-    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle,{'access':access,'request':gmail,'plain_body':plain_body})
+    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle,{'access':access,'request':gmail,'plain_body':plain_body,'config':google_config})
     app.state.native_mail=unified
 
     async def worker():
