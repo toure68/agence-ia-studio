@@ -133,13 +133,23 @@ const homeReader=(()=>{
   const f=src+(c.facts||[]).map(([k,v])=>`<span class="reader-fact"><span>${clean(k)}</span> <b>${clean(v)}</b></span>`).join('');
   return c.must||f?`<div class="reader-facts">${c.must?'<span class="reader-fact is-must">À lire en entier</span>':''}${f}</div>`:'';
  }
+ function compactMailMarkup(value){
+  // Provider HTML often leaves dozens of empty/indented layout rows in plain text.
+  // Compact only their display: the original still feeds replies and forwarding.
+  const text=String(value??'').replace(/\r\n?/g,'\n').replace(/\u00a0/g,' ')
+   .split('\n').map(line=>line.replace(/[ \t\f\v]+/g,' ').trim())
+   .map(line=>/^[\s\u200b-\u200d\u2060\ufeff]*$/.test(line)?'':line)
+   .join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  return text.split(/\n{2,}/).filter(Boolean).map(part=>`<p>${clean(part)}</p>`).join('');
+ }
  function bodyMarkup(c,cp){
   // Attachments (22/10, step 2): files are kept apart from the text — only « 📎 N pièces jointes » on top;
   // a tap on a small thumbnail under the cards shows that file in the reader itself (image mode, view.file).
   if((c.mail_received||c.files?.length)&&view.editing!==c.key&&!(c.sample&&view.full)){const n=c.files?.length||0;
    const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
    // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
-   return `${n?`<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div>`:''}<dl class="reader-mail">${row('De',c.from||c.from_||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text">${clean(c.raw??(c.mail_received?'Chargement du message…':cp.detail||''))}</div>`;}
+   const text=c.raw??(c.mail_received?'Chargement du message…':cp.detail||'');
+   return `${n?`<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div>`:''}<dl class="reader-mail">${row('De',c.from||c.from_||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text${c.mail_received?' is-compact':''}">${c.mail_received?compactMailMarkup(text):clean(text)}</div>`;}
   if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
   if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
   return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';

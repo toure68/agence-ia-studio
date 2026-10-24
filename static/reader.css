@@ -119,6 +119,9 @@ body[data-wall] .reference-home .reader-item{background:linear-gradient(135deg,#
 .reader-mail dt{flex:0 0 44px;color:var(--home-muted,#9aa4b2)}
 .reader-mail dd{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--home-text,#fff)}
 .reader-mail-text{margin:0 0 10px;white-space:pre-line}
+.reader-mail-text.is-compact{white-space:normal;line-height:1.42;overflow-wrap:anywhere}
+.reader-mail-text.is-compact p{margin:0 0 6px;white-space:pre-line}
+.reader-mail-text.is-compact p:last-child{margin-bottom:0}
 .reader-mail-files{margin:0 0 6px;font-size:12px;color:var(--home-muted,#9aa4b2)}
 /* 22/10 step 2: thumbnails as small as an action button (46px squares, no names), kept apart from the text. */
 .reader-thumb{flex:0 0 46px;width:46px;height:46px;padding:0;border:0;background:none;cursor:pointer;scroll-snap-align:start;border-radius:10px;overflow:hidden}
