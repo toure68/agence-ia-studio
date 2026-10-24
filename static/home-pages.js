@@ -18,7 +18,8 @@ const homePages=(()=>{
   const saved=[2,3,4].includes(v?.cols)?v.cols:4,home=document.querySelector('#content .reference-home');
   const width=home?.clientWidth||Math.min(880,innerWidth-28);
   const cols=saved===4?Math.max(4,Math.min(innerWidth<600?6:12,Math.floor((width+9)/57))):saved;
-  const rows=Number.isInteger(v?.rows)?Math.min(3,Math.max(1,v.rows)):2;return {cols,rows};};
+  const savedRows=Number.isInteger(v?.rows)?Math.min(3,Math.max(1,v.rows)):2;
+  const rows=innerWidth>innerHeight&&innerHeight<500?Math.min(2,savedRows):savedRows;return {cols,rows};};
  // A choice in the grid panel (columns square or rows −/+) is kept for this home and applied at once.
  document.addEventListener('click',e=>{
   const pick=e.target.closest('#homeColumnChooser [data-set-columns],#homeColumnChooser [data-rows-step]');if(!pick||!on())return;
@@ -31,6 +32,7 @@ const homePages=(()=>{
  const GRID_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  const on=()=>{try{return localStorage.getItem(KEY)!=='off';}catch{return true;}};
  document.documentElement.classList.toggle('home-ios',on());
+ const cellSize=(width,cols)=>Math.min(innerWidth>innerHeight&&innerHeight<500?44:72,(width-16-9*(cols-1))/cols);
  let page=0;
 
  // Functions in order: those with an action first (worst first), then the ones checked for the home, then the rest.
@@ -62,7 +64,7 @@ const homePages=(()=>{
   if(reserve&&ROWS>1){const per=COLS*(ROWS-1),slot='<article class="module-card home-slot-reserved" aria-hidden="true"></article>'.repeat(COLS);for(let i=0;i<cards.length;i+=per)pages.push([slot,...cards.slice(i,i+per)]);}
   else for(let i=0;i<cards.length;i+=PER)pages.push(cards.slice(i,i+PER));
   const at=Math.min(page,Math.max(0,pages.length-1));
-  const width=document.querySelector('#content .reference-home')?.clientWidth||Math.min(880,innerWidth-28),cell=Math.min(72,(width-16-9*(COLS-1))/COLS);
+  const width=document.querySelector('#content .reference-home')?.clientWidth||Math.min(880,innerWidth-28),cell=cellSize(width,COLS);
   return `<div class="module-grid home-pages" style="--page-cols:${COLS};--function-cell:${cell}px" data-columns="${COLS}" data-layout="${COLS}x${ROWS}" aria-label="Fonctions, balayez pour la page suivante">${pages.map((p,i)=>`<nav class="module-grid home-page" data-columns="${COLS}" data-page="${i}" aria-label="Fonctions, page ${i+1} sur ${pages.length}">${p.join('')}</nav>`).join('')}</div><div class="home-page-dots" role="tablist" aria-label="Pages de fonctions">${pages.map((_,i)=>`<button type="button" role="tab" class="home-page-dot" data-page-dot="${i}" aria-label="Page ${i+1}" aria-selected="${i===at}"></button>`).join('')}</div>`;
  }
  function wirePages(){
@@ -82,14 +84,16 @@ const homePages=(()=>{
  function fit(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
   const pages=home.querySelector('.home-pages'),dims=layout();
-  const cell=Math.min(72,(home.clientWidth-16-9*(dims.cols-1))/dims.cols);
+  const cell=cellSize(home.clientWidth,dims.cols);
   if(pages&&homeLayout.workspace&&(pages.dataset.layout!==`${dims.cols}x${dims.rows}`||Math.abs(parseFloat(pages.style.getPropertyValue('--function-cell'))-cell)>.5)){
    pages.dataset.force='1';updateHomeGrid(homeLayout.workspace,homeLayout.state);return;
   }
   // Counted with the treasury shown; while reading, the reader's extra height comes out of the list (reader.js).
   // 10px kept under the home for its floating frame (21/10).
-  const top=home.getBoundingClientRect().top+scrollY,h=Math.max(480,innerHeight-top-10);
+  const top=home.getBoundingClientRect().top+scrollY,h=Math.max(innerWidth>innerHeight?0:480,innerHeight-top-10);
   home.style.setProperty('--home-ios-height',h+'px');
+  // The grid has its final dimensions now: place actions before measuring the reader against them.
+  window.homeActions?.place();
   if(home.classList.contains('reader-active')){window.homeReader?.reflow();return;}
   const block=home.querySelector('#priorityBlock'),list=block?.querySelector('.reader-list');
   // Folded treasury height, kept (also across openings): the reader and the unfolded treasury use it (21/10).
@@ -257,6 +261,7 @@ const homePages=(()=>{
  }
  install();
  addEventListener('resize',()=>requestAnimationFrame(fit));
+ visualViewport?.addEventListener('resize',()=>{if(!document.body.classList.contains('kb-open'))requestAnimationFrame(fit);},{passive:true});
  document.addEventListener('DOMContentLoaded',()=>{const c=document.querySelector('#content');if(c)new MutationObserver(sync).observe(c,{childList:true});});
  return {on,sync,fit,orderedKeys,layout,setReserve,stack,reminderCard,openFiller,dismissReminder};
 })();
@@ -321,7 +326,7 @@ const homeActions=(()=>{
   current=null;const home=document.querySelector('#content .reference-home');
   home?.querySelector('.home-action-row')?.remove();home?.classList.remove('actions-in-grid');homePages.setReserve(false);
  }
- addEventListener('resize',()=>requestAnimationFrame(place));
+ // homePages.fit owns resize ordering: size the home, place actions, then fit the reader.
  return {show,hide,place};
 })();
 window.homeActions=homeActions;

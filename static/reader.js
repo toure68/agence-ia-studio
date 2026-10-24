@@ -282,12 +282,12 @@ const homeReader=(()=>{
  // queue card and room for attachments; this limit is identical for text and images.
  function readerHeight(){
   if(!ios())return Math.max(view.treasuryH||0,MIN_H);
-  const step=Number(document.body.dataset.readerPitch)||69;
+  const step=Number(document.body.dataset.readerPitch)||69,minimum=innerWidth>innerHeight&&innerHeight<500?144:180;
   const base=Math.max(180,Math.min(260,innerHeight*.34,(view.treasuryH||0)+(cap()-Math.max(1,cap()-2))*step));
   const card=view.host?.querySelector('.home-reader'),bar=view.host?.querySelector('.reader-bar'),pg=document.querySelector('#content .home-pages');
   const reserve=8+(bar?.getBoundingClientRect().height||26)+(step-9)+9+32+46+2;
   const limit=card&&pg?pg.getBoundingClientRect().top-card.getBoundingClientRect().top-reserve:Infinity;
-  return Math.max(180,Math.min(base+step,limit));
+  return Math.max(minimum,Math.min(base+step,limit));
  }
  // Measure actual text, not the flexible body's allocated height: medium messages stop at their last line.
  function textHeight(body){
@@ -305,7 +305,7 @@ const homeReader=(()=>{
   const reserve=8+(bar?.offsetHeight||26)+8+(files?58:0);
   const max=Math.max(compact,edge-card.getBoundingClientRect().top-reserve);
   const expandable=needed>compact+2&&max>compact+2;
-  if(!expandable)view.expanded=false;
+  // Keep the requested expanded state across orientation changes, even if the wider text already fits.
   const height=view.expanded?Math.min(needed,max):compact,value=Math.ceil(height)+'px';
   if(card.style.height!==value)card.style.height=value;
   card.classList.toggle('is-expanded',view.expanded);grip.dataset.expandable=String(expandable);
