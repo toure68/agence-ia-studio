@@ -159,3 +159,14 @@ html.home-ios .home-reader .reader-card>.module-icon.reader-mail-brand svg{width
 .reader-grip[data-expandable="true"]::before{width:22px;height:3px;transform:translate(-50%,-50%) rotate(0);top:7px}
 .reader-grip[data-expandable="true"]::after{content:"";position:absolute;left:50%;top:10px;width:5px;height:5px;border:solid rgba(255,255,255,.65);border-width:0 1.5px 1.5px 0;transform:translateX(-50%) rotate(45deg)}
 .reader-grip[aria-expanded="true"]::after{top:11px;transform:translateX(-50%) rotate(225deg)}
+
+/* 24/10: keep the final line clear of the grip; gently invite expansion. */
+html.home-ios .reader-body{box-sizing:border-box;padding-bottom:6px}
+.reader-grip[data-expandable="true"][aria-expanded="false"]::after{animation:readerMoreCue 2.8s ease-in-out infinite}
+@keyframes readerMoreCue{
+  0%,60%,100%{transform:translate(-50%,0) rotate(45deg);opacity:.6}
+  30%{transform:translate(-50%,3px) rotate(45deg);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+ .reader-grip[data-expandable="true"][aria-expanded="false"]::after{animation:none}
+}

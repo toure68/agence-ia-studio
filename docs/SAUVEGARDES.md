@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTURE INTÉGRALE** | `sauvegarde/avant-lecture-integrale-v157` (v156) | Dernière ligne parfois coupée après déploiement du lecteur ; poignée sans animation. |
 | **RETOUR AVANT ROTATION ACTIONS** | `sauvegarde/avant-rotation-actions-v156` (v155) | Positionnement des actions pouvant rester périmé après une rotation ; hauteur minimale de 480 px en paysage. |
 | **RETOUR AVANT LECTEUR DÉPLOYABLE** | `sauvegarde/avant-lecteur-deployable-v155` (v154) | Lecteur fixe ; poignée centrale uniquement pour fermer. |
 | **RETOUR AVANT FOND CLAIR COO** | `sauvegarde/avant-fond-icone-coo-v154` (v153) | Étoile Coo sur fond sombre pour tous les formats. |
