@@ -189,3 +189,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - 24/10 (user): expanded reader includes the complete last line and bottom inset; no internal scroll while content fits below the available height cap. Compact expandable grip has a gentle downward cue, disabled under reduced motion. No tests or additional controls without the user's request; publication is followed by user validation. Keyword « RETOUR AVANT LECTURE INTÉGRALE ».
 
 - 24/10 (user): iPhone home-screen apple-touch-icon uses the approved new Coo logo with interlocked oo loops tucked into C, on its opaque white backing. Preserve the application name and module icons. No tests requested. Keyword « RETOUR AVANT ICÔNE COO LIÉ ».
+
+- 24/10 (user, reversible visual trial): give the reader a discreet screen-like frame using inset shadows only. Preserve reading space, rounded shape, wallpaper glass, state rims, controls and all behavior. No tests requested. Keyword « RETOUR AVANT LECTEUR ÉCRAN » restores the pre-trial appearance.
