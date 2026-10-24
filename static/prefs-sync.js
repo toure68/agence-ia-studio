@@ -3,13 +3,14 @@
 // any phone or address. At sign-in the account values are written on this phone before the home is drawn;
 // each change made here is sent back to the account. Wallpaper already works this way (wallpaper.js).
 const prefsSync=(()=>{
- const MAP={reader:'aia-reader',samples:'aia-reader-samples',grid:'aia-pages-grid'};
+ const MAP={reader:'aia-reader',samples:'aia-reader-samples',reader_screen:'aia-reader-screen',grid:'aia-pages-grid'};
  let sending=false,timer=0,pending={};
  function apply(prefs){
   if(!prefs||typeof prefs!=='object')return;
   sending=true;
   try{for(const [k,key] of Object.entries(MAP)){if(prefs[k]===undefined)continue;localStorage.setItem(key,k==='grid'?JSON.stringify(prefs[k]):String(prefs[k]));}}catch(e){}
   sending=false;
+  window.homeReader?.syncAppearance?.();
  }
  function send(){timer=0;const body=pending;pending={};if(typeof api!=='function'||!Object.keys(body).length)return;api('/api/me/prefs',{method:'PUT',body:JSON.stringify(body)}).catch(()=>{});}
  try{

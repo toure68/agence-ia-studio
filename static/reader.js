@@ -8,7 +8,10 @@
 // Nothing to do: one single replacement card (the routine priority) keeps the middle filled.
 // Mode off (or the tests that set localStorage aia-reader=off): the classic action cards, unchanged.
 const homeReader=(()=>{
- const KEY='aia-reader',MAX=5,MIN_H=300;
+ const KEY='aia-reader',SCREEN='aia-reader-screen',MAX=5,MIN_H=300;
+ const screenOn=()=>{try{return localStorage.getItem(SCREEN)!=='off';}catch{return true;}};
+ function syncScreenEffect(){document.documentElement.dataset.readerScreen=screenOn()?'on':'off';}
+ function setScreenEffect(on){try{localStorage.setItem(SCREEN,on?'on':'off');}catch{}syncMenu();}
  // Card pitch (height + gap): 64 + 8 normally; on the iPhone-style home, sized to fill the room (home-pages.js).
  const ios=()=>document.documentElement.classList.contains('home-ios');
  const pitch=()=>ios()?(Number(view.host?.querySelector('.reader-list')?.dataset.pitch)||Number(document.body.dataset.readerPitch)||54):72;
@@ -510,12 +513,16 @@ const homeReader=(()=>{
   if(typeof renderPriorities==='function')renderPriorities().catch(()=>{});
  }
  function syncMenu(){
+  syncScreenEffect();
   const panel=document.querySelector('.account-panel');if(!panel)return;
   let b=panel.querySelector('#accountReader');
   if(!b){b=document.createElement('button');b.id='accountReader';b.type='button';b.className='btn small';b.setAttribute('role','switch');b.onclick=()=>setEnabled(!enabled());panel.querySelector('#accountWallpaper')?.after(b)||panel.append(b);}
   b.setAttribute('aria-checked',String(enabled()));b.textContent='Mode lecteur : '+(enabled()?'activé':'désactivé');
+  let screen=panel.querySelector('#accountReaderScreen');
+  if(!screen){screen=document.createElement('button');screen.id='accountReaderScreen';screen.type='button';screen.className='btn small';screen.setAttribute('role','switch');screen.onclick=()=>setScreenEffect(!screenOn());b.after(screen);}
+  screen.hidden=!enabled();screen.setAttribute('aria-checked',String(screenOn()));screen.textContent='Effet écran du lecteur : '+(screenOn()?'activé':'désactivé');
   let t=panel.querySelector('#accountReaderSamples');
-  if(!t){t=document.createElement('button');t.id='accountReaderSamples';t.type='button';t.className='btn small';t.setAttribute('role','switch');t.onclick=()=>setSamples(!samplesOn());b.after(t);}
+  if(!t){t=document.createElement('button');t.id='accountReaderSamples';t.type='button';t.className='btn small';t.setAttribute('role','switch');t.onclick=()=>setSamples(!samplesOn());screen.after(t);}
   t.hidden=!enabled();t.setAttribute('aria-checked',String(samplesOn()));t.textContent='Messages d’essai : '+(samplesOn()?'affichés':'masqués');
  }
  document.addEventListener('DOMContentLoaded',syncMenu);if(document.readyState!=='loading')syncMenu();
@@ -525,6 +532,6 @@ const homeReader=(()=>{
   return out;
  }
  function reflow(){if(view.focus>=0){fitList();fileOverflow(view.host?.querySelector('.reader-files'));requestAnimationFrame(()=>window.homePages?.stack());}}
- return {enabled,render,resize,queueSnapshot,setEnabled,setSamples,readingModules,bindSurface,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
+ return {syncAppearance:syncMenu,enabled,render,resize,queueSnapshot,setEnabled,setSamples,readingModules,bindSurface,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
 })();
 window.homeReader=homeReader;

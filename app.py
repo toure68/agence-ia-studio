@@ -467,7 +467,7 @@ def set_wallpaper(data: WallpaperInput, req: Request):
 # reader mode, trial messages, function grid. Only these keys and values are accepted.
 def clean_prefs(raw):
     out = {}
-    for key in ('reader', 'samples'):
+    for key in ('reader', 'samples', 'reader_screen'):
         if raw.get(key) in ('on', 'off'):
             out[key] = raw[key]
     grid = raw.get('grid')
