@@ -320,3 +320,8 @@ html.home-ios #contextPanel[data-module="assistant"] .context-scroll{padding-top
 /* Keep the assistant in the viewport layer, avoiding a second keyboard offset on iOS. */
 html.home-ios body .context-layer:has(#contextPanel[data-module="assistant"]){top:var(--dialog-top,0px)!important;left:var(--dialog-left,0px)!important;width:var(--dialog-width,100%)!important;height:var(--dialog-height,100dvh)!important;padding:0!important;box-sizing:border-box;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 html.home-ios body #contextPanel[data-module="assistant"],html.home-ios body.kb-open #contextPanel[data-module="assistant"],html.home-ios body.kb-open:not(.dock-to-focus) #contextPanel[data-module="assistant"]{position:absolute!important;bottom:6px!important;left:8px!important;right:8px!important;transform:none!important;margin:0!important}
+
+/* Landscape keeps touch targets usable and both the actions and functions inside the visible screen. */
+@media(orientation:landscape) and (max-height:500px){
+ html.home-ios .reference-home .home-page.module-grid[data-columns]>.module-card{height:var(--function-cell,44px)!important;--ios-icon:var(--function-cell,44px)}
+}
