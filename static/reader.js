@@ -185,7 +185,7 @@ const homeReader=(()=>{
   // Attachments (22/10, step 2): files are kept apart from the text — only « 📎 N pièces jointes » on top;
   // a tap on a small thumbnail under the cards shows that file in the reader itself (image mode, view.file).
   if((c.mail_received||c.files?.length)&&view.editing!==c.key&&!(c.sample&&view.full)){const n=c.files?.length||0;
-   const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
+   const row=(k,v)=>v?`<div${k==='De'||k==='À'?' class="reader-mail-address"':''}><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
    // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
    const text=c.raw??(c.mail_received?'Chargement du message…':cp.detail||'');
    const reply=c.mail_received&&window.mailClient?mailClient.readerReplyMarkup(c):'',received=reply?'<div class="reader-received-label">Message reçu</div>':'';

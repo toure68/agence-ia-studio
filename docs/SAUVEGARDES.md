@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT MÉTADONNÉES CONTRASTE** | `sauvegarde/avant-metadata-contraste-v164` (v163) | Lignes De/À visibles et boutons secondaires translucides. |
 | **RETOUR AVANT RÉPONSE IA LECTEUR** | `sauvegarde/avant-reponse-ia-lecteur-v163` (v162) | E-mail et aide IA séparés ; aucun brouillon proposé dans le lecteur. |
 | **RETOUR AVANT SOBRIÉTÉ ÉCRAN** | `sauvegarde/avant-sobriete-ecran-v162` (v161) | Effet écran limité au cadre ; textes secondaires gris et icônes plus brillantes. |
 | **RETOUR AVANT IMAGES AJUSTÉES** | `sauvegarde/avant-images-ajustees-v161` (v160) | Images au bord du lecteur, sous les coins arrondis et la poignée. |
