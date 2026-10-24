@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Agence IA Studio",
+    "slug": "agence-ia-studio-mobile",
+    "version": "0.1.0",
+    "scheme": "agence-ia-studio",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
+  }
+}
