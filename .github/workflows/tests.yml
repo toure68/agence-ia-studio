@@ -155,6 +155,8 @@ jobs:
             echo "::error title=pages::$msg"
             exit 1
           fi
+      - name: Google setup, editable address and keyboard
+        run: node tests/google_setup.cjs
       - name: Verify large queues and idle performance
         run: node tests/performance.cjs
       - name: Capture every screen (visual review)

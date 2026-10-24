@@ -109,7 +109,7 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         args=([a['connection_id']] if a.get('connection_id') else [])+[a['user_id'],a['company_id']]
         con.execute('UPDATE '+table+' SET '+','.join(k+'=?' for k in values)+' WHERE '+where, list(values.values())+args)
     def config():
-        return {k:os.environ.get('GMAIL_'+k.upper(),'') for k in ('client_id','client_secret','redirect_uri')}
+        c=gmail_adapter['config']();return {k:c[k] for k in ('client_id','client_secret','redirect_uri')}
     def ready():return all(config().values())
     def key(a):return a.get('grant_hash') or hashlib.sha256(a['token'].encode()).hexdigest()
     def current(uid,cid,allow_gmail=False):
