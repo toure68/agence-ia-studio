@@ -1,6 +1,113 @@
 'use strict';
 // The provider adapter supplies data; all reading and writing stays in the mounted cockpit.
 const mailClient=(()=>{
+
+ // One durable, encrypted reader proposal per source message; no generation on reception.
+ const readerReplies=new Map();
+ function readerState(card){
+  const k=[me?.id,company?.id,card.action.connection_id||0,card.action.id].join(':');
+  if(!readerReplies.has(k))readerReplies.set(k,{key:k,uid:me.id,cid:company.id,aid:card.action.connection_id||0,mid:card.action.id,loaded:false,attempted:false,draft:null,busy:false,editing:false,error:'',version:0,savedVersion:0,timer:0,saving:null,sourceStatus:'draft'});
+  return readerReplies.get(k);
+ }
+ function readerApi(s,path,options){
+  if(me?.id!==s.uid||company?.id!==s.cid)throw Error('Le compte a changé. Rouvrez le message.');
+  return api('/api/companies/'+s.cid+'/mail/'+path+(path.includes('?')?'&':'?')+'account_id='+s.aid,options);
+ }
+ async function loadReaderReply(card){
+  const s=readerState(card);if(s.loaded)return s;
+  if(s.loading)return s.loading;
+  s.loading=(async()=>{const r=await readerApi(s,'unified/messages/'+s.mid+'/reader-reply');s.attempted=r.attempted;s.draft=r.draft;s.sourceStatus=r.source_status;s.loaded=true;s.version=s.savedVersion=0;return s;})().finally(()=>{s.loading=null;});
+  return s.loading;
+ }
+ function readerReplyActive(card){const s=readerState(card);return !!s.draft||s.busy;}
+ function readerReplyMarkup(card){
+  const s=readerState(card),d=s.draft;
+  const error=s.error?'<p class="reader-reply-status is-error" role="status">'+clean(s.error)+'</p>':'';
+  if(!d)return (s.busy?'<p class="reader-reply-status" role="status">Préparation de la réponse…</p>':'')+error;
+  const locked=d.status!=='draft';
+  const label=d.status==='sent'?'Réponse envoyée':locked?'Envoi à vérifier':s.editing?'Votre réponse · modification':'Réponse proposée · à vérifier';
+  return '<section class="reader-reply" aria-label="Votre réponse"><h3>'+label+'</h3><p class="reader-reply-to">À : '+clean(d.to)+'</p>'+
+   (s.editing&&!locked?'<label class="reader-reply-label">Votre réponse<textarea data-reader-reply rows="5" maxlength="30000" enterkeyhint="done" aria-label="Modifier la réponse proposée"'+(s.busy?' disabled':'')+'>'+clean(d.body)+'</textarea></label>':'<div class="reader-reply-text">'+clean(d.body)+'</div>')+
+   '<p class="reader-reply-status" data-reader-reply-status role="status">'+(s.busy?'Préparation en cours…':locked&&d.status!=='sent'?'Vérifiez les messages envoyés avant toute nouvelle tentative.':'')+'</p>'+error+'</section>';
+ }
+ async function persistReaderReply(s){
+  clearTimeout(s.timer);
+  if(s.saving){await s.saving;if(s.savedVersion===s.version)return s.draft;}
+  if(!s.draft||s.draft.status!=='draft'||s.savedVersion===s.version)return s.draft;
+  s.saving=(async()=>{
+   while(s.draft&&s.savedVersion!==s.version){
+    const version=s.version,d=s.draft,payload={id:d.id,revision:d.revision,reader:true,source_id:s.mid,mode:'reply',to:d.to,subject:d.subject,body:d.body,files:[],forwarded:[]};
+    const r=await readerApi(s,'unified/drafts',{method:'PUT',body:JSON.stringify(payload)});
+    Object.assign(d,r);s.savedVersion=version;
+   }
+   return s.draft;
+  })();
+  try{return await s.saving;}finally{s.saving=null;}
+ }
+ async function proposeReaderReply(card,changed){
+  const s=readerState(card);if(s.busy)return;
+  s.busy=true;s.error='';changed();
+  try{
+   await loadReaderReply(card);
+   if(s.sourceStatus!=='draft'||s.draft&&s.draft.status!=='draft')throw Error('Réponse déjà envoyée ou envoi à vérifier.');
+   await persistReaderReply(s);
+   const prior=s.draft,regenerate=s.attempted;
+   const path=(s.aid?'unified/boxes/'+s.aid+'/':'')+'messages/'+s.mid+'/analyse';
+   const r=await readerApi(s,path,{method:'POST',body:JSON.stringify({kind:'reply',regenerate})});
+   s.attempted=true;
+   const m=await readerApi(s,(s.aid?'unified/boxes/'+s.aid+'/':'')+'messages/'+s.mid);
+   const next={id:prior?.id||null,revision:prior?.revision||0,reader:true,source_id:s.mid,mode:'reply',to:m.reply_to,subject:(/^re\s*:/i.test(m.subject)?m.subject:'Re: '+m.subject).slice(0,300),body:r.text,files:[],forwarded:[],status:'draft'};
+   const saved=await readerApi(s,'unified/drafts',{method:'PUT',body:JSON.stringify(next)});
+   s.draft={...next,...saved};s.version=s.savedVersion=0;s.editing=false;
+  }catch(e){s.error=e.message;}finally{s.busy=false;changed(!!s.draft);}
+ }
+ async function discardReaderReply(card,changed){
+  const s=readerState(card);if(s.busy||!s.draft||s.draft.status!=='draft')return;
+  s.busy=true;s.error='';clearTimeout(s.timer);changed();
+  try{
+   if(s.saving)await s.saving.catch(()=>{});
+   await readerApi(s,'unified/drafts/'+s.draft.id,{method:'DELETE',body:JSON.stringify({revision:s.draft.revision,confirmed:true})});
+   s.draft=null;s.editing=false;s.attempted=true;s.version=s.savedVersion=0;
+  }catch(e){s.error=e.message;}finally{s.busy=false;changed();}
+ }
+ async function editReaderReply(card,changed){
+  const s=readerState(card);if(s.busy||!s.draft||s.draft.status!=='draft')return;
+  s.error='';
+  if(s.editing){s.busy=true;changed();try{await persistReaderReply(s);s.editing=false;}catch(e){s.error=e.message;}finally{s.busy=false;changed();}}
+  else{s.editing=true;changed(true);const field=document.querySelector('.home-reader [data-reader-reply]');field?.focus({preventScroll:true});}
+ }
+ async function sendReaderReply(card,changed){
+  const s=readerState(card);if(s.busy||!s.draft||s.draft.status!=='draft')return;
+  s.busy=true;s.error='';changed();
+  try{
+   await persistReaderReply(s);
+   const d=s.draft;
+   await readerApi(s,'unified/drafts/'+d.id+'/send',{method:'POST',body:JSON.stringify({revision:d.revision,confirmed:true})});
+   d.status='sent';s.sourceStatus='sent';s.editing=false;notify('Réponse envoyée.');
+  }catch(e){
+   s.error=e.message;
+   if(s.draft?.id)try{const d=await readerApi(s,'unified/drafts/'+s.draft.id);s.draft.status=d.status;s.draft.revision=d.revision;}catch{}
+  }finally{s.busy=false;changed();}
+ }
+ function readerReplyButtons(card,changed){
+  const s=readerState(card),d=s.draft;
+  if(s.busy)return [{label:'Veuillez patienter…',kind:'done',run:()=>{}}];
+  if(d&&d.status!=='draft'||s.loaded&&s.sourceStatus!=='draft')return [{label:d?.status==='sent'||s.sourceStatus==='sent'?'✓ Réponse envoyée':'Envoi à vérifier',kind:'done',run:()=>{}},{label:'Voir le fil',kind:'second',run:()=>openNotification(card,'thread')}];
+  const generate={label:s.attempted?'Autre proposition':'Proposer une réponse',kind:d?'second':'main',run:()=>proposeReaderReply(card,changed)};
+  if(!d)return null;
+  return [generate,{label:'Refuser',kind:'second',run:()=>discardReaderReply(card,changed)},{label:s.editing?'Terminer':'Modifier',kind:'second',run:()=>editReaderReply(card,changed)},{label:'Envoyer',kind:'main',run:()=>sendReaderReply(card,changed)}];
+ }
+ function proposalButton(card,changed){const s=readerState(card);return {label:s.attempted?'Autre proposition':'Proposer une réponse',kind:'second',run:()=>proposeReaderReply(card,changed)};}
+ function bindReaderReply(host,card){
+  const field=host.querySelector('[data-reader-reply]');if(!field)return;
+  const s=readerState(card);
+  field.oninput=()=>{
+   s.draft.body=field.value;s.version++;s.error='';clearTimeout(s.timer);
+   s.timer=setTimeout(()=>persistReaderReply(s).then(()=>{const status=host.querySelector('[data-reader-reply-status]');if(status&&host.isConnected)status.textContent='Brouillon enregistré.';}).catch(e=>{s.error=e.message;const status=host.querySelector('[data-reader-reply-status]');if(status&&host.isConnected)status.textContent=e.message;}),700);
+  };
+  field.onkeydown=e=>{if(e.key==='Escape'){field.blur();}};
+ }
+
  const activeAccounts=new Map(),accountEmails=new Map();
  const accountKey=()=>String(me?.id||'')+':'+String(company?.id||'');
  const selected=()=>{if(activeAccounts.has(accountKey()))return activeAccounts.get(accountKey());const q=new URLSearchParams(location.search);return Number(q.get('mail_company'))===company?.id?Math.max(0,Number(q.get('mail_account'))||0):0;};
@@ -48,6 +155,7 @@ const mailClient=(()=>{
   const attachments=Array.isArray(message.attachments)?message.attachments:JSON.parse(message.attachments||'[]');
   card.files=attachments.map(f=>({name:f.filename||'Pièce jointe',type:/^image\/(png|jpeg|gif|webp)$/.test(f.content_type)?'image':f.content_type==='application/pdf'?'pdf':'other',
    src:scopedUrl(`/api/companies/${company.id}/mail/unified/messages/${message.id}/attachments/${encodeURIComponent(f.id)}`,aid)}));
+  try{await loadReaderReply(card);}catch(e){readerState(card).error=e.message;}
  }
  async function openNotification(card,mode){
   try{const cid=company.id,message=await notificationMessage(card);if(company.id!==cid)return;
@@ -141,6 +249,6 @@ const mailClient=(()=>{
    const observer=new MutationObserver(()=>{if(!p.isConnected){URL.revokeObjectURL(url);observer.disconnect();}});observer.observe(document.body,{childList:true,subtree:true});
   }catch(e){notify(e.message);}
  }
- return {mailbox,thread,composer,connect,selected,selectAccount,scopedUrl,loadNotification,openNotification};
+ return {readerReplyActive,readerReplyMarkup,readerReplyButtons,proposalButton,bindReaderReply,mailbox,thread,composer,connect,selected,selectAccount,scopedUrl,loadNotification,openNotification};
 })();
 window.mailClient=mailClient;

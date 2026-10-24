@@ -41,6 +41,7 @@ class Send(BaseModel):
     confirmed:bool=False
 
 class MailAnalysis(BaseModel):
+    regenerate:bool=False
     kind:Literal['summary','reply']='summary'
 
 class TextOnly(HTMLParser):
@@ -212,9 +213,12 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
             digest=hashlib.sha256((data.kind+assistant_routes.model_name()+source).encode()).hexdigest()
             args=(uid,cid,mid,data.kind)
             cached=con.execute('SELECT * FROM mail_ai WHERE user_id=? AND company_id=? AND message_id=? AND kind=?',args).fetchone()
-            if cached and cached['source_hash']==digest and cached['payload']:
+            if cached and cached['source_hash']==digest and cached['payload'] and not (data.kind=='reply' and data.regenerate):
                 return {**assistant_routes.decode(cached['payload'],secret),'cached':True}
             if cached and cached['busy_until']>time.time():raise HTTPException(409,'Une analyse de ce message est déjà en cours.')
+            prior_text=''
+            if data.kind=='reply' and data.regenerate and cached and cached['payload']:
+                prior_text=assistant_routes.decode(cached['payload'],secret).get('text','')[:6000]
             key=assistant_routes.credentials(con,cid,secret)
             if not key:raise HTTPException(503,'Connectez l’IA depuis l’accueil avant d’analyser vos e-mails.')
             throttle('mail-ai:'+str(uid),20,3600)
@@ -226,6 +230,9 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
             if data.kind=='summary':instructions+=' Résume le message en trois rubriques : Résumé ; Actions demandées ; Dates et montants mentionnés. Signale les échéances inconnues. Reste bref.'
             else:instructions+=' Propose uniquement le corps d’une réponse professionnelle, sans objet. Appuie-toi sur le message et les échanges précédents fournis, sans considérer les brouillons non envoyés comme des faits. Les tarifs de vente fournis ont été validés par l’entreprise mais ne constituent ni des coûts de revient ni une autorisation de négocier. Tu peux citer un tarif seulement si la prestation et son unité correspondent sans ambiguïté à la demande ; conserve exactement montant, devise et unité. Ne transforme pas une devise, ne calcule pas de total ou de TVA, ne présente pas le prix comme HT ou TTC si cette information manque. Ne déduis pas le tarif d’un message ancien si le catalogue ne le confirme pas. Ne promets aucune remise, aucun délai ni aucune disponibilité. Si le tarif ou une condition manque, demande les précisions et annonce une confirmation par l’entreprise. Le texte devra être vérifié par l’utilisateur avant envoi.'
             if data.kind=='reply':instructions+=' Si plusieurs tarifs se contredisent pour une même prestation, demande une confirmation et ne choisis pas arbitrairement un prix.'
+            if data.kind=='reply' and data.regenerate:
+                instructions+=' Propose une autre formulation, réellement différente de la proposition précédente si fournie. Garde les mêmes faits vérifiés ; ne crée aucun nouvel engagement pour varier.'
+                source=json.dumps({**context,'previous_proposal':prior_text},ensure_ascii=False)
             text=await assistant_routes.provider_response(key,[{'role':'user','content':source}],instructions=instructions,max_tokens=900)
             result={'text':text,'kind':data.kind,'history_count':len(previous),'tariff_count':tariff_count,'tariffs_limited':tariffs_limited,'truncated':len(m['body'])>12000 or any(len(p['body'])>1500 or (p['send_status']=='sent' and len(p['reply_body'])>1500) for p in previous),'cached':False}
             with db() as con:

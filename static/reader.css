@@ -193,3 +193,17 @@ html:not([data-reader-screen="off"]) .reference-home :is(
  .reader-item-copy small,.reader-mail dt,.reader-muted,.reader-origin,
  .reader-hint,.reader-bar,.reader-pos,.reader-fact span,.reader-mail-files
 ){color:#CAD5DF}
+
+/* Received mail and its single editable proposal share the same reader scroll. */
+.reader-received-label,.reader-reply h3{font-size:12px;line-height:1.4;font-weight:700;letter-spacing:.02em;margin:0 0 6px;color:#D2DCE5}
+.reader-reply{margin:10px 0 0;padding:10px 0 0;border-top:1px solid #ffffff2b}
+.reader-reply h3{color:#87EAB1}
+.reader-reply-to{font-size:12px;color:#CAD5DF;margin:0 0 6px;overflow-wrap:anywhere}
+.reader-reply-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;color:var(--home-text,#F2F5F7)}
+.reader-reply-status{font-size:12px;line-height:1.4;margin:6px 0 0;color:#CAD5DF}
+.reader-reply-status:empty{display:none}
+.reader-reply-status.is-error{color:#FFB2B8}
+.reader-reply-label{display:block;font-size:12px;color:#CAD5DF}
+.reader-reply textarea{display:block;box-sizing:border-box;width:100%;min-height:130px;margin:6px 0 0;padding:10px;border:1px solid #ffffff38;border-radius:10px;background:#080e15b3;color:#F2F5F7;font:inherit;font-size:16px;line-height:1.45;resize:vertical}
+.reader-reply textarea:focus{outline:2px solid #4ADE80;outline-offset:-2px}
+.reader-reply textarea:disabled{opacity:.75}
