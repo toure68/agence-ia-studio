@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT RETRAIT NYLAS** | `sauvegarde/avant-retrait-nylas-v150` (v149) | Connexions via intermédiaire. Les anciennes autorisations devront être rétablies séparément si retour. |
 | **RETOUR AVANT LECTURE E-MAIL COMPACTE** | `sauvegarde/avant-lecture-email-compacte-v149` (v148) | Texte des e-mails affiché avec les grands espaces et lignes vides issus de leur mise en page. |
 | **RETOUR AVANT LECTEUR GMAIL COMPLET** | `sauvegarde/avant-lecteur-gmail-complet-v148` (v147) | Lecture rapide limitée aux messages Nylas ; ancienne connexion Gmail avec rappel générique et icône E-mails. |
 | **RETOUR AVANT E-MAILS DANS LE LECTEUR** | `sauvegarde/avant-emails-lecteur-v147` (v146) | Notifications e-mail limitées au rappel de brouillon, sans lecture ni réponse directe dans le lecteur. |

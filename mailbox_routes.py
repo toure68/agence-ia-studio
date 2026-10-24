@@ -25,7 +25,7 @@ from typing import Literal
 from decimal import Decimal
 import assistant_routes
 
-SCOPES='https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send'
+SCOPES='https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify'
 GMAIL='https://gmail.googleapis.com/gmail/v1/users/me'
 
 class MailSettings(BaseModel):
@@ -102,7 +102,7 @@ def init_schema(db):
         ''')
 
 
-    from unified_mail import init_schema as init_unified_schema
+    from native_mail import init_schema as init_unified_schema
     init_unified_schema(db)
 
 def install(app,db,require,own_company,utcnow,secret,throttle):
@@ -122,7 +122,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:own_company(con,cid)
         return user['id']
     def access(a):
-        if a.get('provider')!='gmail':raise HTTPException(409,'Cette boîte utilise la messagerie unifiée.')
+        if a.get('provider')!='gmail':raise HTTPException(409,'Autorisez directement votre compte Gmail.')
         if not a['token']:raise HTTPException(409,'Connectez Gmail.')
         try:refresh=cipher.decrypt(a['token'].encode()).decode()
         except InvalidToken:raise HTTPException(409,'Reconnectez Gmail.')
@@ -138,55 +138,15 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
             if r.status_code>=400:raise HTTPException(502,'Gmail a refusé la requête. Vérifiez la connexion et ses autorisations.')
             return r.json()
         except httpx.HTTPError:raise HTTPException(502,'Réponse Gmail indisponible.')
-    def synchronize(uid,cid):
-        with db() as con:
-            if account(con,uid,cid).get('provider')=='nylas':return unified['synchronize'](uid,cid)
-        with db() as con:
-            a=account(con,uid,cid)
-            if not a['token']:raise HTTPException(409,'Connectez Gmail.')
-            if a['syncing'] and time.time()-a['last_sync']<300:raise HTTPException(409,'Synchronisation déjà en cours.')
-            claimed=con.execute('UPDATE mail_accounts SET syncing=1,last_sync=?,error=? WHERE user_id=? AND company_id=? AND (syncing=0 OR last_sync<?)',(time.time(),'',uid,cid,time.time()-300))
-            if claimed.rowcount!=1:raise HTTPException(409,'Synchronisation déjà en cours.')
-        try:
-            token=access(a)
-            words=re.findall(r'[\wÀ-ÿ-]{2,}',a['keywords'])[:30]
-            if not words:raise HTTPException(422,'Ajoutez les mots-clés de votre activité.')
-            query='-in:spam -in:trash -in:sent {'+' '.join(words)+'}'
-            params={'maxResults':20,'q':query}
-            if a['cursor']:params['pageToken']=a['cursor']
-            listing=gmail('GET','/messages',token,params=params);count=0
-            for item in listing.get('messages',[]):
-                mid=str(item['id'])
-                with db() as con:
-                    exists=con.execute('SELECT 1 FROM mail_messages WHERE user_id=? AND company_id=? AND gmail_id=?',(uid,cid,mid)).fetchone()
-                if exists:continue
-                full=gmail('GET','/messages/'+quote(mid,safe=''),token,params={'format':'full'})
-                payload=full.get('payload',{});headers={h['name'].lower():h['value'] for h in payload.get('headers',[])}
-                sender=headers.get('from','')[:500];reply_to=parseaddr(headers.get('reply-to') or sender)[1]
-                if not re.fullmatch(r'[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+',reply_to):reply_to=''
-                subject=headers.get('subject','Sans objet')[:300];body=plain_body(payload) or full.get('snippet','')[:1000]
-                with db() as con:
-                    current=con.execute('SELECT token FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
-                    if not current or current['token']!=a['token']:raise HTTPException(409,'Connexion modifiée pendant le tri.')
-                    con.execute('INSERT OR IGNORE INTO mail_messages(user_id,company_id,gmail_id,thread_id,sender,reply_to,subject,body,received,category,message_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-                      (uid,cid,mid,str(full.get('threadId','')),sender,reply_to,subject,body,headers.get('date','')[:200],category(subject+' '+body[:4000]),headers.get('message-id','')[:300]))
-                count+=1
-            with db() as con:
-                con.execute('UPDATE mail_accounts SET cursor=?,error=? WHERE user_id=? AND company_id=?',(listing.get('nextPageToken',''),'',uid,cid))
-            return {'imported':count,'more':bool(listing.get('nextPageToken'))}
-        except HTTPException as e:
-            with db() as con:con.execute('UPDATE mail_accounts SET error=? WHERE user_id=? AND company_id=?',(str(e.detail),uid,cid))
-            raise
-        finally:
-            with db() as con:con.execute('UPDATE mail_accounts SET syncing=0 WHERE user_id=? AND company_id=?',(uid,cid))
+    def synchronize(uid,cid,aid=0):return unified['synchronize'](uid,cid,aid)
 
     @app.get('/api/companies/{cid}/mail/status')
     def status(cid:int,req:Request):
         uid=scope(req,cid)
         with db() as con:
-            row=con.execute('SELECT email,keywords,automatic,last_sync,error,token FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
+            row=con.execute('SELECT email,keywords,automatic,last_sync,error,token,provider,auth_invalid FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid)).fetchone()
         value=dict(row) if row else {'email':'','keywords':'','automatic':0,'last_sync':0,'error':''}
-        value['connected']=bool(value.pop('token',''));value['configured']=all(config());return value
+        value['connected']=bool(value.pop('token','')) and value.pop('provider','gmail')=='gmail' and not value.pop('auth_invalid',0);value['configured']=all(config());return value
 
     @app.put('/api/companies/{cid}/mail/settings')
     def settings(cid:int,data:MailSettings,req:Request):
@@ -196,46 +156,6 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
             con.execute('INSERT INTO mail_accounts(user_id,company_id,keywords,automatic) VALUES (?,?,?,?) ON CONFLICT(user_id,company_id) DO UPDATE SET keywords=excluded.keywords,automatic=excluded.automatic,cursor=\'\'',(uid,cid,data.keywords,int(data.automatic)))
         return {'ok':True}
 
-    @app.post('/api/companies/{cid}/mail/connect')
-    def connect(cid:int,req:Request):
-        uid=scope(req,cid,True)
-        if not all(config()):raise HTTPException(409,'Connexion Google à configurer : identifiants OAuth manquants sur le serveur.')
-        client_id,_,redirect=config();state=secrets.token_urlsafe(40)
-        with db() as con:
-            account(con,uid,cid)
-            con.execute('DELETE FROM mail_oauth_states WHERE expires<?',(time.time(),))
-            con.execute('INSERT INTO mail_oauth_states VALUES (?,?,?,?)',(hashlib.sha256(state.encode()).hexdigest(),uid,cid,time.time()+600))
-        return {'url':'https://accounts.google.com/o/oauth2/v2/auth?'+urlencode({'client_id':client_id,'redirect_uri':redirect,'response_type':'code','scope':SCOPES,'state':state,'access_type':'offline','prompt':'consent'})}
-
-    @app.get('/api/mail/gmail/callback')
-    def callback(req:Request,state:str='',code:str='',error:str=''):
-        user=require(req)
-        digest=hashlib.sha256(state.encode()).hexdigest()
-        with db() as con:
-            row=con.execute('SELECT * FROM mail_oauth_states WHERE state=? AND user_id=? AND expires>?',(digest,user['id'],time.time())).fetchone()
-            if not row:raise HTTPException(400,'Autorisation expirée ou invalide. Recommencez la connexion.')
-            cid=row['company_id'];require(req,tenant_id=cid)
-            claimed=con.execute('DELETE FROM mail_oauth_states WHERE state=?',(digest,))
-            if claimed.rowcount!=1:raise HTTPException(400,'Autorisation déjà utilisée.')
-        if error or not code:raise HTTPException(400,'Connexion Google annulée.')
-        client_id,client_secret,redirect=config()
-        try:r=httpx.post('https://oauth2.googleapis.com/token',data={'code':code,'client_id':client_id,'client_secret':client_secret,'redirect_uri':redirect,'grant_type':'authorization_code'},timeout=20)
-        except httpx.HTTPError:raise HTTPException(502,'Connexion Google indisponible.')
-        tokens=r.json()
-        if r.status_code!=200 or not tokens.get('refresh_token'):raise HTTPException(409,'Autorisation Gmail incomplète. Reconnectez la boîte.')
-        granted=set(tokens.get('scope','').split())
-        if not set(SCOPES.split()).issubset(granted):raise HTTPException(409,'Les accès de lecture et d’envoi doivent être autorisés.')
-        profile=gmail('GET','/profile',tokens['access_token'])
-        with db() as con:
-            old=account(con,user['id'],cid)
-            if old.get('provider')!='gmail' or (old['email'] and old['email']!=profile['emailAddress']):
-                con.execute('DELETE FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=0',(user['id'],cid))
-                con.execute('DELETE FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=0',(user['id'],cid))
-                con.execute('DELETE FROM mail_ai WHERE user_id=? AND company_id=? AND message_id NOT IN (SELECT id FROM mail_messages WHERE connection_id<>0)',(user['id'],cid))
-            con.execute("UPDATE mail_accounts SET provider='gmail',grant_hash='',email=?,token=?,cursor=?,error=? WHERE user_id=? AND company_id=?",
-              (profile['emailAddress'],cipher.encrypt(tokens['refresh_token'].encode()).decode(),'','',user['id'],cid))
-        return RedirectResponse(f'/?mail_company={cid}#/emails',status_code=303)
-
     @app.post('/api/companies/{cid}/mail/sync')
     def sync(cid:int,req:Request):return synchronize(scope(req,cid,True),cid)
 
@@ -244,10 +164,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         uid=scope(req,cid,True)
         with db() as con:
             a=account(con,uid,cid)
-        if a.get('provider')=='nylas':unified['disconnect'](uid,cid,a)
-        elif a['token']:
-            try:httpx.post('https://oauth2.googleapis.com/revoke',data={'token':cipher.decrypt(a['token'].encode()).decode()},timeout=10)
-            except (httpx.HTTPError,InvalidToken):pass
+        unified['disconnect'](uid,cid,a)
         with db() as con:
             con.execute('DELETE FROM mail_oauth_states WHERE user_id=? AND company_id=?',(uid,cid))
             con.execute('DELETE FROM mail_accounts WHERE user_id=? AND company_id=?',(uid,cid))
@@ -267,15 +184,17 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:return message(con,uid,cid,mid)
 
     @app.post('/api/companies/{cid}/mail/messages/{mid}/analyse')
-    async def analyse(cid:int,mid:int,data:MailAnalysis,req:Request):
+    @app.post('/api/companies/{cid}/mail/unified/boxes/{aid}/messages/{mid}/analyse')
+    async def analyse(cid:int,mid:int,data:MailAnalysis,req:Request,aid:int=0):
         uid=scope(req,cid,True);claim=secrets.token_hex(16)
         with db() as con:
             con.execute('BEGIN IMMEDIATE')
             m=message(con,uid,cid,mid);firm=dict(own_company(con,cid))
+            if m['connection_id']!=aid:raise HTTPException(404,'E-mail introuvable dans cette boîte.')
             if data.kind=='reply' and m['send_status']!='draft':raise HTTPException(409,'Cette réponse est déjà envoyée ou à vérifier dans Gmail.')
             previous=[]
             if data.kind=='reply' and m['reply_to']:
-                previous=[dict(r) for r in con.execute("SELECT id,subject,body,reply_body,send_status FROM mail_messages WHERE user_id=? AND company_id=? AND reply_to=? AND id<? ORDER BY id DESC LIMIT 6",(uid,cid,m['reply_to'],mid))]
+                previous=[dict(r) for r in con.execute("SELECT id,subject,body,reply_body,send_status FROM mail_messages WHERE user_id=? AND company_id=? AND connection_id=? AND reply_to=? AND id<? ORDER BY id DESC LIMIT 6",(uid,cid,aid,m['reply_to'],mid))]
             context={'company':firm['name'],'message':{'subject':m['subject'],'body':m['body'][:12000]},'previous':[{'subject':p['subject'],'body':p['body'][:1500],'sent_reply':p['reply_body'][:1500] if p['send_status']=='sent' else ''} for p in reversed(previous)]}
             tariff_count=0;tariffs_limited=False
             if data.kind=='reply':
@@ -333,6 +252,7 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         if not data.confirmed:raise HTTPException(422,'Validation explicite obligatoire avant envoi.')
         with db() as con:
             m=message(con,uid,cid,mid);a=account(con,uid,cid)
+            if m['provider']!='gmail' or m['connection_id']!=0:raise HTTPException(409,'Utilisez le lecteur et la réponse de cette boîte.')
             if m['revision']!=data.revision or not m['reply_body'] or not m['reply_to']:raise HTTPException(409,'Vérifiez et enregistrez la réponse avant envoi.')
             if m['send_status']!='draft':raise HTTPException(409,'Envoi déjà effectué ou à vérifier dans Gmail.')
         token=access(a)
@@ -352,17 +272,18 @@ def install(app,db,require,own_company,utcnow,secret,throttle):
         with db() as con:con.execute("UPDATE mail_messages SET send_status='sent',sent_id=? WHERE id=?",(result['id'],mid))
         return {'sent':True}
 
-    from unified_mail import install as install_unified
-    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle,{'access':access,'request':gmail})
-    app.state.unified_mail=unified
+    from native_mail import install as install_unified
+    unified=install_unified(app,db,require,own_company,cipher,account,message,scope,category,TextOnly,throttle,{'access':access,'request':gmail,'plain_body':plain_body})
+    app.state.native_mail=unified
 
     async def worker():
         while True:
             await asyncio.sleep(60)
             with db() as con:
-                accounts=[dict(r) for r in con.execute("SELECT user_id,company_id FROM mail_accounts WHERE automatic=1 AND auth_invalid=0 AND token<>'' AND last_sync<?",(time.time()-900,))]
+                accounts=[dict(r) for r in con.execute("SELECT user_id,company_id,0 AS connection_id FROM mail_accounts WHERE provider='gmail' AND automatic=1 AND auth_invalid=0 AND token<>'' AND last_sync<?",(time.time()-900,))]
+                accounts += [dict(r) for r in con.execute("SELECT user_id,company_id,id AS connection_id FROM mail_connections WHERE provider='gmail' AND automatic=1 AND auth_invalid=0 AND token<>'' AND last_sync<?",(time.time()-900,))]
             for a in accounts:
-                try:await asyncio.to_thread(synchronize,a['user_id'],a['company_id'])
+                try:await asyncio.to_thread(synchronize,a['user_id'],a['company_id'],a['connection_id'])
                 except Exception:pass
     running={}
     async def start():running['task']=asyncio.create_task(worker())

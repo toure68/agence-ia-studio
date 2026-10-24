@@ -61,7 +61,7 @@ def connect_mail(c,h,monkeypatch):
     state=parse_qs(urlparse(connect['url']).query)['state'][0]
     assert c.get('/api/mail/gmail/callback?state=wrong&code=test').status_code==400
     result=c.get('/api/mail/gmail/callback',params={'state':state,'code':'code-test'},follow_redirects=False)
-    assert result.status_code==303,result.text
+    assert result.status_code==200,result.text
     assert c.get('/api/mail/gmail/callback',params={'state':state,'code':'code-test'}).status_code==400
     return base,calls
 

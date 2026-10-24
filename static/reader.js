@@ -56,7 +56,7 @@ const homeReader=(()=>{
    {label:'Répondre',kind:'main',run:()=>mailClient.openNotification(c,'reply')},
    {label:'Transférer',kind:'second',run:()=>mailClient.openNotification(c,'forward')},
    {label:'Voir le fil',kind:'second',run:()=>mailClient.openNotification(c,'thread')},
-   ...(c.action.provider==='nylas'?[{label:'Plus',kind:'second',run:()=>mailClient.openNotification(c,'actions')}]:[])];
+   ...(c.action.provider==='gmail'?[{label:'Plus',kind:'second',run:()=>mailClient.openNotification(c,'actions')}]:[])];
   const inline=typeof inlineActions!=='undefined'&&inlineActions.has(c)?inlineActions.buttons(c):[];
   const list=inline.map((b,i)=>({label:b.label,kind:i?'second':'main',run:()=>finish(c,b)}));
   list.push({label:inline.length?'Détail':(verbs[c.action?.type]||'Ouvrir'),kind:inline.length?'second':'main',run:()=>openAction(c)});
