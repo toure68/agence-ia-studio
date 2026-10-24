@@ -141,6 +141,8 @@ jobs:
         run: node tests/reader_action_widths.cjs
       - name: Compact reader and responsive function icons
         run: node tests/compact_reader.cjs
+      - name: Content-sized reader expansion and collapse
+        run: node tests/reader_expand.cjs
       - name: Reader single-finger scroll and discreet indicator
         run: node tests/reader_scroll.cjs
       - name: Continuous magnetic notification pile

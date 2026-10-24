@@ -204,7 +204,7 @@ const homePages=(()=>{
   // Home and reader share an active bottom surface, below the list/files only.
   let z=home.querySelector('.home-back-zone');
   const files=home.querySelector('.reader-files');
-  if(el)el.hidden=!!files; // The thumbnail strip uses this decorative edge's room too.
+  if(el)el.hidden=!!files||!!home.querySelector('.home-reader.is-expanded'); // The thumbnail strip uses this decorative edge's room too.
   const zTop=files?files.getBoundingClientRect().bottom:lr?lr.bottom:top,zBottom=reading?(home.querySelector('.home-action-row')?.getBoundingClientRect().top||pr.top):pr.top;
   if(zBottom-zTop>0){
    if(!z){z=document.createElement('button');z.type='button';z.className='home-back-zone';home.append(z);}

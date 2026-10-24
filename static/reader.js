@@ -19,7 +19,7 @@ const homeReader=(()=>{
  const doneSet=()=>{try{return new Set(JSON.parse(sessionStorage.getItem(doneKey())||'[]'));}catch{return new Set();}};
  const markDone=key=>{const s=doneSet();s.add(key);try{sessionStorage.setItem(doneKey(),JSON.stringify([...s]));}catch{}};
  let railCleanup=()=>{};
- let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false,full:false,editing:null,draft:{},file:-1};
+ let view={cards:[],focus:-1,host:null,cid:null,treasuryH:0,keepKey:null,busy:false,full:false,expanded:false,editing:null,draft:{},file:-1};
  // Messages d'essai (reader-samples.js): off by default, switch in the account menu, buttons simulated.
  const SAMPLES='aia-reader-samples';
  const samplesOn=()=>{try{return localStorage.getItem(SAMPLES)==='on';}catch{return false;}};
@@ -237,10 +237,10 @@ const homeReader=(()=>{
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
   if(view.focus<0&&doneCards.length&&!view.busy){doneCards.length=0;view.keepKey=null;setTimeout(()=>renderPriorities().catch(()=>{}),0);}
-  if(view.focus<0){view.file=-1;view.keepKey=null;view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
+  if(view.focus<0){view.expanded=false;view.file=-1;view.keepKey=null;view.host?.querySelector('.reader-files')?.remove();view.host?.querySelector('.reader-queue')?.classList.remove('has-files');if(typeof homeActions!=='undefined')homeActions.hide();home.classList.remove('reader-active');if(card)card.hidden=true;host.querySelectorAll('.reader-item').forEach(el=>el.classList.remove('is-read'));fitList();hint();return;}
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
-  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.full=false;view.editing=null;view.file=-1;}view.keepKey=c.key;
+  const c=view.cards[view.focus];if(view.keepKey!==c.key){view.expanded=false;view.full=false;view.editing=null;view.file=-1;}view.keepKey=c.key;
   if(c.mail_received&&!c._mailLoaded&&!c._mailLoading&&window.mailClient){
    c._mailLoading=true;const cid=view.cid;
    mailClient.loadNotification(c).then(()=>{if(view.cid===cid&&view.cards[view.focus]===c)showReader();}).catch(error=>{c.raw=error.message;c._mailLoaded=true;if(view.cid===cid&&view.cards[view.focus]===c)showReader();}).finally(()=>{c._mailLoading=false;});
@@ -250,9 +250,10 @@ const homeReader=(()=>{
   card.hidden=false;card.style.height=editing?'auto':readerHeight()+'px';
   card.className='home-reader state-'+presentation(c).state+(editing?' is-editing':'')+(view.full&&c.sample?' is-full':'')+(c._done?' is-done':'')+(view.file>=0?' is-image':'');
   card.innerHTML=readerMarkup(c);home.classList.add('reader-active');
-  // 22/10 (user): a small closing grip at the bottom middle of the reader (retractable container): tap or swipe up = close.
-  if(ios()){const g=document.createElement('button');g.type='button';g.className='reader-grip';g.setAttribute('aria-label','Fermer le lecteur');g.onclick=closeReader;
-   let gy=null;g.addEventListener('touchstart',e=>{gy=e.touches[0].clientY;},{passive:true});g.addEventListener('touchend',e=>{if(gy!==null&&gy-e.changedTouches[0].clientY>25)closeReader();gy=null;},{passive:true});card.append(g);}
+  // Long text: the same grip expands/retracts the reader. Short text keeps the direct return home.
+  if(ios()){const g=document.createElement('button');g.type='button';g.className='reader-grip';g.setAttribute('aria-label','Fermer le lecteur');g.setAttribute('aria-expanded','false');g.onclick=toggleReadingSpace;
+   let gy=null;g.addEventListener('touchstart',e=>{gy=e.touches.length===1?e.touches[0].clientY:null;},{passive:true});
+   g.addEventListener('touchend',e=>{if(gy!==null){const dy=e.changedTouches[0].clientY-gy;if(Math.abs(dy)>25){e.preventDefault();if(dy>0){if(!view.expanded&&g.dataset.expandable==='true')toggleReadingSpace();}else if(view.expanded)toggleReadingSpace();else closeReader();}}gy=null;},{passive:false});g.addEventListener('touchcancel',()=>{gy=null;},{passive:true});card.append(g);}
   if(typeof homeTop!=='undefined')card.dataset.date=homeTop.dateLabel();
   card.classList.remove('is-in');void card.offsetWidth;card.classList.add('is-in');
   const btns=buttons(c);
@@ -288,6 +289,35 @@ const homeReader=(()=>{
   const limit=card&&pg?pg.getBoundingClientRect().top-card.getBoundingClientRect().top-reserve:Infinity;
   return Math.max(180,Math.min(base+step,limit));
  }
+ // Measure actual text, not the flexible body's allocated height: medium messages stop at their last line.
+ function textHeight(body){
+  const range=document.createRange();range.selectNodeContents(body);const rect=range.getBoundingClientRect();
+  const last=body.lastElementChild,margin=last?parseFloat(getComputedStyle(last).marginBottom)||0:0;
+  return Math.ceil(rect.height+margin);
+ }
+ function fitReadingSpace(card){
+  const body=card.querySelector('.reader-body'),grip=card.querySelector('.reader-grip');if(!body||!grip)return;
+  const compact=readerHeight(),chrome=card.offsetHeight-body.clientHeight,needed=chrome+textHeight(body);
+  const actions=document.querySelector('#content .home-action-row'),pages=document.querySelector('#content .home-pages');
+  const bar=view.host.querySelector('.reader-bar'),files=view.host.querySelector('.reader-files');
+  const edge=actions?.getBoundingClientRect().top||pages?.getBoundingClientRect().top||innerHeight;
+  // Keep the counter, attachments and actions outside the reader; the queue may relinquish every card slot.
+  const reserve=8+(bar?.offsetHeight||26)+8+(files?58:0);
+  const max=Math.max(compact,edge-card.getBoundingClientRect().top-reserve);
+  const expandable=needed>compact+2&&max>compact+2;
+  if(!expandable)view.expanded=false;
+  const height=view.expanded?Math.min(needed,max):compact,value=Math.ceil(height)+'px';
+  if(card.style.height!==value)card.style.height=value;
+  card.classList.toggle('is-expanded',view.expanded);grip.dataset.expandable=String(expandable);
+  grip.setAttribute('aria-expanded',String(view.expanded));
+  const label=view.expanded?'Réduire le lecteur':expandable?'Agrandir le lecteur':'Fermer le lecteur';
+  grip.setAttribute('aria-label',label);grip.title=label;
+ }
+ function toggleReadingSpace(){
+  const card=view.host?.querySelector('.home-reader'),grip=card?.querySelector('.reader-grip');if(!card||!grip)return;
+  if(!view.expanded&&grip.dataset.expandable!=='true'){closeReader();return;}
+  view.expanded=!view.expanded;fitList();hint();syncRail(card);requestAnimationFrame(()=>window.homePages?.stack());
+ }
  // While reading, the box keeps its size (21/10) down to the last message: the end of the list is never cut.
  function fitList(){
   const list=view.host?.querySelector('.reader-list'),card=view.host?.querySelector('.home-reader');if(!list)return;
@@ -298,15 +328,15 @@ const homeReader=(()=>{
    if(reading){
     const pg=document.querySelector('#content .home-pages'),files=view.host.querySelector('.reader-files'),queue=list.parentElement;
     const editing=card.classList.contains('is-editing');
-    if(!editing)card.style.height=readerHeight()+'px'; // start from the same base, never accumulate spare pixels
+    if(!editing){if(view.file<0)fitReadingSpace(card);else{view.expanded=false;card.style.height=readerHeight()+'px';card.classList.remove('is-expanded');const grip=card.querySelector('.reader-grip');if(grip){grip.dataset.expandable='false';grip.setAttribute('aria-expanded','false');grip.setAttribute('aria-label','Fermer le lecteur');}}}
     if(pg){
      // Queue cards retain the home height and pitch. Spare room belongs to the
      // image carousel, or stays between the queue and the action buttons.
-     const stack=view.cards.length>1?9:0,space=8;
+     const stack=view.cards.length>1&&!view.expanded?9:0,space=8;
      const room=Math.max(0,pg.getBoundingClientRect().top-list.getBoundingClientRect().top);
      const basePitch=Number(document.body.dataset.readerPitch)||69,cardH=basePitch-gap;
      // Attachment presence never changes the number of notification slots.
-     const tail=stack+space;
+     const tail=stack+space+(view.expanded&&files?58:0);
      n=editing?0:Math.max(0,Math.min(cap(),Math.floor((room-tail+gap)/basePitch)));
      const used=Math.max(0,n*basePitch-(n?gap:0));
      const oldPitch=pitch();
@@ -328,11 +358,12 @@ const homeReader=(()=>{
  }
  function hint(){
   const el=view.host?.querySelector('.reader-hint');if(!el)return;
-  const n=view.cards.length,below=n-(view.focus+1)-cap();
+  const n=view.cards.length,list=view.host?.querySelector('.reader-list'),gap=parseFloat(getComputedStyle(document.body).getPropertyValue('--reader-gap'))||9;
+  const slots=ios()&&list?Math.floor((list.clientHeight+gap)/pitch()):cap(),below=n-(view.focus+1)-slots;
   el.textContent=view.focus>=n-1?'Dernier message · ↓ Glissez pour revoir':(below>0?`${below} autre${below>1?'s':''} en dessous · `:'')+'↑ Glissez pour lire';
  }
  // Image mode: swipe sideways = next / previous file (same order as the thumbnails); a PDF with a link opens on tap.
- function showFile(i){view.file=i;showReader();}
+ function showFile(i){view.expanded=false;view.file=i;showReader();}
  function wireStage(card,c){
   const st=card.querySelector('[data-reader-stage]');if(!st)return;
   st.addEventListener('click',e=>{const f=c.files?.[view.file];if(e.target.closest('[data-open]')&&f?.src)window.open(f.src,'_blank','noopener');});
