@@ -289,11 +289,14 @@ const homeReader=(()=>{
   const limit=card&&pg?pg.getBoundingClientRect().top-card.getBoundingClientRect().top-reserve:Infinity;
   return Math.max(minimum,Math.min(base+step,limit));
  }
- // Measure actual text, not the flexible body's allocated height: medium messages stop at their last line.
+ // Include complete line boxes and the bottom inset, even when the body is already scrolled.
  function textHeight(body){
-  const range=document.createRange();range.selectNodeContents(body);const rect=range.getBoundingClientRect();
-  const last=body.lastElementChild,margin=last?parseFloat(getComputedStyle(last).marginBottom)||0:0;
-  return Math.ceil(rect.height+margin);
+  const range=document.createRange();range.selectNodeContents(body);
+  const rect=range.getBoundingClientRect(),box=body.getBoundingClientRect(),style=getComputedStyle(body);
+  const last=body.lastElementChild,bottom=Math.max(rect.bottom,last?.getBoundingClientRect().bottom||rect.bottom);
+  const margin=last?Math.max(0,parseFloat(getComputedStyle(last).marginBottom)||0):0;
+  const leading=Math.max(0,(parseFloat(style.lineHeight)||21)-(parseFloat(style.fontSize)||14));
+  return Math.ceil(bottom-box.top+body.scrollTop+margin+leading+(parseFloat(style.paddingBottom)||0));
  }
  function fitReadingSpace(card){
   const body=card.querySelector('.reader-body'),grip=card.querySelector('.reader-grip');if(!body||!grip)return;
@@ -306,8 +309,14 @@ const homeReader=(()=>{
   const max=Math.max(compact,edge-card.getBoundingClientRect().top-reserve);
   const expandable=needed>compact+2&&max>compact+2;
   // Keep the requested expanded state across orientation changes, even if the wider text already fits.
-  const height=view.expanded?Math.min(needed,max):compact,value=Math.ceil(height)+'px';
+  const height=view.expanded?Math.min(Math.max(compact,needed),Math.floor(max)):compact;
+  let value=Math.ceil(height)+'px';
   if(card.style.height!==value)card.style.height=value;
+  // Flex rounding on iPhone must not leave a clipped last line when room is still available.
+  if(view.expanded&&height<Math.floor(max)){
+   const missing=body.scrollHeight-body.clientHeight;
+   if(missing>0){value=Math.min(Math.floor(max),Math.ceil(height+missing+2))+'px';if(card.style.height!==value)card.style.height=value;}
+  }
   card.classList.toggle('is-expanded',view.expanded);grip.dataset.expandable=String(expandable);
   grip.setAttribute('aria-expanded',String(view.expanded));
   const label=view.expanded?'Réduire le lecteur':expandable?'Agrandir le lecteur':'Fermer le lecteur';
