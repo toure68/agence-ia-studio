@@ -195,3 +195,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - 24/10 (user): account settings expose « Effet écran du lecteur » on/off, applied instantly without redrawing the message. Default on; off restores exactly the pre-frame reader shadows. Persist in users.prefs.reader_screen and sync across sign-ins. No tests requested. Keyword « RETOUR AVANT RÉGLAGE EFFET ÉCRAN ».
 
 - 24/10 (user): reader attachment images adapt to the actual reader area with centered contain sizing, preserving the complete photo and its proportions. Reserve a small inset from rounded screen corners and keep the iPhone grip clear of the image. Keep carousel, reader height and gestures. No tests requested. Keyword « RETOUR AVANT IMAGES AJUSTÉES ».
+
+- 24/10 (user): the existing « Effet écran du lecteur » switch also controls brighter secondary reader/notification text and softer function-icon highlights. All enhancements use the same data-reader-screen gate; off restores the previous colors and gloss. Preserve brand logos, status colors, alert/reading rims, geometry and behavior. No tests requested. Keyword « RETOUR AVANT SOBRIÉTÉ ÉCRAN ».

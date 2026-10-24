@@ -325,3 +325,11 @@ html.home-ios body #contextPanel[data-module="assistant"],html.home-ios body.kb-
 @media(orientation:landscape) and (max-height:500px){
  html.home-ios .reference-home .home-page.module-grid[data-columns]>.module-card{height:var(--function-cell,44px)!important;--ios-icon:var(--function-cell,44px)}
 }
+
+/* Screen setting: softer function icon highlights, preserving brand logos and status rims. */
+html.home-ios:not([data-reader-screen="off"]) .reference-home .home-page.module-grid[data-columns] .module-icon:not(.mail-brand):not(.reader-mail-brand){
+ background:linear-gradient(155deg,
+  color-mix(in srgb,var(--tile-accent,#5BB0FF) 92%,#fff),
+  color-mix(in srgb,var(--tile-accent,#5BB0FF) 83%,#101923))!important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.18);
+}
