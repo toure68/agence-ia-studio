@@ -138,7 +138,7 @@ html.home-ios .home-reader.is-image{padding-bottom:0}
 .reader-thumb.is-on img,.reader-thumb.is-on .reader-file-kind{border:2px solid #fff}
 .reader-thumb{opacity:1}
 
-/* 22/10: closing grip at the bottom middle of the reader (tap or swipe up = close). */
+/* Centered reader grip: long text expands/retracts; compact upward swipe returns home. */
 html.home-ios .home-reader{position:relative;padding-bottom:22px}
 .reader-grip{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:64px;height:20px;padding:0;border:0;background:transparent;cursor:pointer;z-index:3;-webkit-tap-highlight-color:transparent}
 .reader-grip::before{content:"";position:absolute;left:50%;top:50%;width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
@@ -153,3 +153,9 @@ html.home-ios .home-reader .reader-card>.module-icon.reader-mail-brand svg{width
 .reference-home .reader-list.is-virtual{display:block;overflow-anchor:none}
 .reader-space{position:relative;width:100%;flex:none}
 .reader-space>.reader-item{position:absolute;left:0;right:0;margin:0}
+
+/* Long-message grip: same centered control, showing expansion direction without adding a text row. */
+.reader-grip{touch-action:none}
+.reader-grip[data-expandable="true"]::before{width:22px;height:3px;transform:translate(-50%,-50%) rotate(0);top:7px}
+.reader-grip[data-expandable="true"]::after{content:"";position:absolute;left:50%;top:10px;width:5px;height:5px;border:solid rgba(255,255,255,.65);border-width:0 1.5px 1.5px 0;transform:translateX(-50%) rotate(45deg)}
+.reader-grip[aria-expanded="true"]::after{top:11px;transform:translateX(-50%) rotate(225deg)}

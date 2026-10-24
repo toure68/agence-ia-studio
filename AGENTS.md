@@ -181,3 +181,5 @@ Preserve working behavior and approved design. A request to add a feature does n
 - 24/10 (user): use the approved Coo cyan/blue/violet rounded four-point star as the installable application icon and favicon, with a white wordmark and opaque dark backing for iOS. Keep the application name and all module icons/routes unchanged. Keyword « RETOUR AVANT ICÔNE COO ».
 
 - 24/10 (user correction): Coo favicon and general manifest icons keep true transparency around the approved star. The dedicated Safari apple-touch-icon uses a very pale blue opaque backing to avoid black transparency compositing. Keep the shape, white wordmark and gradient. Keyword « RETOUR AVANT FOND CLAIR COO ».
+
+- 24/10 (user): the reader’s centered bottom grip expands overflowing text only to its actual content height, capped above the fixed message actions/counter/attachment strip. Queue slots yield while expanded; remaining text scrolls natively. The same grip retracts without closing the message; short-text grip and upward swipe on the compact reader retain home return. New messages start compact. No extra empty expanded reader, no grid movement. Keyword « RETOUR AVANT LECTEUR DÉPLOYABLE ».

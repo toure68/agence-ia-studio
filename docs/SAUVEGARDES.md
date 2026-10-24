@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT LECTEUR DÉPLOYABLE** | `sauvegarde/avant-lecteur-deployable-v155` (v154) | Lecteur fixe ; poignée centrale uniquement pour fermer. |
 | **RETOUR AVANT FOND CLAIR COO** | `sauvegarde/avant-fond-icone-coo-v154` (v153) | Étoile Coo sur fond sombre pour tous les formats. |
 | **RETOUR AVANT ICÔNE COO** | `sauvegarde/avant-icone-coo-v153` (v152) | Ancienne icône verte de l’application et favicon. |
 | **RETOUR AVANT CONFIGURATION GMAIL** | `sauvegarde/avant-configuration-gmail-v152` (v151) | Adresse de reconnexion non modifiable, raccourci mailto et configuration Google uniquement sur l’hébergement. |
