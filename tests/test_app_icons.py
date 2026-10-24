@@ -27,14 +27,19 @@ def test_app_installation_metadata_and_supplied_image_icons(env):
     paths.update({i['src']:tuple(map(int,i['sizes'].split('x'))) for i in manifest['icons']})
     for path,size in paths.items():
         r=c.get(path);assert r.status_code==200 and r.headers['content-type']=='image/png'
-        img=Image.open(io.BytesIO(r.content));assert img.size==size and img.mode=='RGB'
-        # Approved Coo artwork: opaque dark corners, cyan/blue/violet star and white wordmark.
+        img=Image.open(io.BytesIO(r.content));assert img.size==size
+        apple=path==head.links['apple-touch-icon']['href']
+        assert img.mode==('RGB' if apple else 'RGBA')
+        # Safari gets opaque pale corners; general icons retain genuine transparency.
         w,h=img.size
-        assert max(img.getpixel((0,0)))<45
-        pixels=list(img.getdata())
+        if apple:assert min(img.getpixel((0,0)))>230
+        else:
+            assert img.getpixel((0,0))[3]==0
+            assert img.getchannel('A').getextrema()==(0,255)
+        pixels=list(img.convert('RGB').getdata())
         assert sum(1 for red,green,blue in pixels if blue>150 and blue>red*1.15)>w*h*.15
         assert sum(1 for red,green,blue in pixels if min(red,green,blue)>225)>w*h*.03
-    assert all('-v8.png' in path for path in paths)
+    assert all('-v9.png' in path for path in paths)
     assert head.links['apple-touch-icon']['sizes']=='180x180'
     assert c.get('/api/companies').status_code==401
 
