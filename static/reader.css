@@ -179,3 +179,11 @@ html:not([data-reader-screen="off"]) .reference-home .home-reader{
             inset 0 -12px 20px -16px rgba(0,0,0,.65),
             0 6px 22px rgba(0,0,0,.28)!important;
 }
+
+/* 24/10: entire attachment inside the screen, clear of rounded corners and the grip. */
+.home-reader.is-image{padding:8px!important}
+html.home-ios .home-reader.is-image{padding:8px 8px 22px!important}
+.home-reader.is-image .reader-stage{min-width:0;min-height:0;width:100%;align-self:stretch}
+.home-reader.is-image .reader-stage-img{
+ box-sizing:border-box;object-fit:contain;object-position:50% 50%;border-radius:0;
+}
