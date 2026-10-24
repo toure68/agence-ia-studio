@@ -231,6 +231,8 @@ async def headers(request: Request, call_next):
     elif response.headers.get('content-type', '').startswith('text/html'):
         # Pages are checked on every opening, so a new version shows at once (scripts and styles are versioned).
         response.headers['Cache-Control'] = 'no-cache'
+    elif response.status_code in (200,304) and request.url.path.startswith('/static/') and re.fullmatch(r'prio-v\d+-\d{8}',request.query_params.get('v','')):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     else:
         response.headers['Cache-Control'] = 'public, max-age=300'
     return response

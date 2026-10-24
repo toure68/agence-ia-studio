@@ -123,7 +123,7 @@ const homePages=(()=>{
   // 22/10 step 2 (user): the Assistant window opens over the functions, right above the bar (nothing is pushed).
   {const t=home.querySelector('.home-topbar'),pg=home.querySelector('.home-pages');if(t&&pg){const dt=t.getBoundingClientRect().top,pt=pg.getBoundingClientRect().top;document.body.style.setProperty('--sheet-bottom',Math.round(innerHeight-dt+8)+'px');document.body.style.setProperty('--sheet-top',Math.round(Math.max(60,Math.min(pt-8,dt-8-380)))+'px');}}
   const b=document.body;
-  if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list&&typeof renderPriorities==='function')renderPriorities().catch(()=>{});}
+  if(b.dataset.readerSlots!==String(slots)||b.dataset.readerPitch!==step){b.dataset.readerSlots=String(slots);b.dataset.readerPitch=step;b.style.setProperty('--reader-card-h',cardH+'px');if(list)window.homeReader?.resize();}
  }
  // Waiting cards peek out right under the last visible card, like an iPhone notification stack (widest edge on
  // top, narrower below); it moves up a little each time a card comes up. Laid over: the grid never moves.
@@ -160,7 +160,7 @@ const homePages=(()=>{
  // Bottom of the last visible thing in the cards block (e.g. the single replacement card), or its top when empty.
  function lastBottom(block){if(!block)return 0;const kids=[...block.querySelectorAll('.priority-card,.priority-stack>*,article')].filter(e=>e.offsetParent&&!e.closest('.home-filler'));return kids.length?Math.max(...kids.map(e=>e.getBoundingClientRect().bottom)):block.getBoundingClientRect().top;}
  let lastRest=-1,dismissedReminder=null;
- function dismissReminder(){dismissedReminder=new Set([...document.querySelectorAll('.reader-item')].map(e=>e.dataset.readerKey));requestAnimationFrame(stack);}
+ function dismissReminder(){const cards=window.homeReader?.queueSnapshot().cards||[];dismissedReminder={cards,keys:new Set(cards.map(c=>c.key))};requestAnimationFrame(stack);}
 
  function stack(){
   const home=document.querySelector('#content .reference-home');if(!home||!on())return;
@@ -169,18 +169,19 @@ const homePages=(()=>{
   if(!pages||list?.dataset.pileMotion==='1')return;
   const hr=home.getBoundingClientRect(),pr=pages.getBoundingClientRect();
   const items=[...home.querySelectorAll('.reader-list .reader-item')];
+  const queue=window.homeReader?.queueSnapshot(),total=queue?.total??items.length;
   const lr=list?.getBoundingClientRect();
   const shown=lr?items.filter(e=>{const r=e.getBoundingClientRect();return r.bottom>lr.top+2&&r.top<lr.bottom-2;}).length:0;
   const reading=home.classList.contains('reader-active');
   const invitation=list?.querySelector('.reader-invitation'),end=list?.querySelector('.reader-end');
-  if(dismissedReminder&&items.some(e=>!dismissedReminder.has(e.dataset.readerKey)))dismissedReminder=null;
+  if(dismissedReminder&&queue&&dismissedReminder.cards!==queue.cards){if(queue.cards.some(c=>!dismissedReminder.keys.has(c.key)))dismissedReminder=null;else dismissedReminder.cards=queue.cards;}
   if(invitation&&end){
    const markup=reminderCard();if(invitation._markup!==markup){invitation._markup=markup;invitation.innerHTML=markup;}
    const er=end.getBoundingClientRect(),available=Math.min(lr.bottom,er.bottom)-Math.max(lr.top,er.top);
-   invitation.hidden=!!dismissedReminder||available<(reading?110:64);
+   const hidden=!!dismissedReminder||available<(reading?110:64);if(invitation.hidden!==hidden)invitation.hidden=hidden;
   }
-  const read=reading?home.querySelectorAll('.reader-list .reader-item.is-read').length:0;
-  const rest=Math.max(0,items.length-read-shown);
+  const read=reading?(queue?.read||0):0;
+  const rest=Math.max(0,total-read-shown);
   // Stack above the grid.
   let el=home.querySelector('.home-stack');
   if(rest){
@@ -225,11 +226,12 @@ const homePages=(()=>{
    f.style.top=(top-hr.top)+'px';f.style.height=room+'px';
   }else f?.remove();
  }
- let watcher=null,stackWatch=null;
+ let watcher=null,stackWatch=null,stackFrame=0;
+ function scheduleStack(){if(!stackFrame)stackFrame=requestAnimationFrame(()=>{stackFrame=0;stack();});}
  function sync(){if(!on())return;wirePages();setTimeout(()=>window.homeActions?.place(),0);requestAnimationFrame(fit);setTimeout(fit,350);setTimeout(stack,400);
   const block=document.querySelector('#content #priorityBlock');
-  if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch=new MutationObserver(()=>requestAnimationFrame(stack));stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
-   block.addEventListener('scroll',()=>requestAnimationFrame(stack),{capture:true,passive:true});
+  if(block&&!block.dataset.stackWatch){block.dataset.stackWatch='1';stackWatch?.disconnect();stackWatch=new MutationObserver(records=>{if(records.some(r=>!r.target.closest?.('.reader-invitation')))scheduleStack();});stackWatch.observe(block,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
+   block.addEventListener('scroll',scheduleStack,{capture:true,passive:true});
 }
   // Re-fit when a block changes height (treasury folded/unfolded, grid sized, settings shown…).
   const home=document.querySelector('#content .reference-home');if(!home||typeof ResizeObserver!=='function')return;
@@ -241,7 +243,7 @@ const homePages=(()=>{
   // Folding/unfolding the treasury re-lays the panel at once (no frame where it pushes the cards).
   if(typeof bankDialSetOpen==='function'){const baseFold=bankDialSetOpen;window.bankDialSetOpen=bankDialSetOpen=function(host,open){baseFold(host,open);fit();requestAnimationFrame(fit);};}
   const base=homeModulesMarkup;
-  window.homeModulesMarkup=homeModulesMarkup=function(workspace,state){homeLayout.workspace=workspace;homeLayout.state=state;requestAnimationFrame(observeHomeGrids);setTimeout(sync,0);return pagesMarkup(base,workspace,state);};
+  window.homeModulesMarkup=homeModulesMarkup=function(workspace,state){homeLayout.workspace=workspace;homeLayout.state=state;return pagesMarkup(base,workspace,state);};
   const baseUpdate=updateHomeGrid;
   window.updateHomeGrid=updateHomeGrid=function(workspace,state){
    const box=document.querySelector('#content .home-pages');if(!box)return baseUpdate(workspace,state);

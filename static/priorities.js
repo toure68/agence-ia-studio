@@ -48,15 +48,29 @@ function priorityMarkup(cards){
 let priorityCards = [];
 let priorityRequest = 0;
 
+// Conditional reads keep the server authoritative without retransmitting an unchanged queue.
+// Memory only, isolated by signed-in user, company and demo; authentication still runs on every request.
+const prioritySnapshots=new Map();
+async function loadPriorityCards(cid){
+ const demo=document.body.dataset.publicDemo==='true',id=String(me?.id||'demo')+':'+cid+':'+demo,cached=prioritySnapshots.get(id);
+ const response=await fetch((demo?'/demo':'')+`/api/companies/${cid}/priorities`,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json',...(cached?.etag?{'If-None-Match':cached.etag}:{})}});
+ if(response.status===304&&cached)return structuredClone(cached.cards);
+ const cards=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(typeof cards.detail==='string'?cards.detail:'Impossible de charger les notifications.');
+ if(!Array.isArray(cards))throw Error('Réponse des notifications invalide.');
+ const etag=response.headers.get('ETag');if(etag){if(prioritySnapshots.size>12)prioritySnapshots.clear();prioritySnapshots.set(id,{etag,cards});}
+ return structuredClone(cards);
+}
+
 async function renderPriorities(initial={}) {
   const host = document.querySelector('#priorityBlock');
-  const cid = company?.id;
+  const cid = company?.id,uid=me?.id;
   if (!host || !cid) return;
   const request=++priorityRequest;
-  const [actualCards,cockpit,workspace] = await Promise.all([api(`/api/companies/${cid}/priorities`),initial.cockpit||api(`/api/companies/${cid}/cockpit`),initial.workspace||api(`/api/companies/${cid}/workspace`)]);
+  const [actualCards,cockpit,workspace] = await Promise.all([initial.priorities||loadPriorityCards(cid),initial.cockpit||api(`/api/companies/${cid}/cockpit`),initial.workspace||api(`/api/companies/${cid}/workspace`)]);
   actualCards.sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
   const cards = actualCards.length ? actualCards : await routinePriorities(cid);
-  if (!host.isConnected || company?.id !== cid || request!==priorityRequest) return;
+  if (!host.isConnected || company?.id !== cid || me?.id!==uid || request!==priorityRequest) return;
   // The badges and action cards share one queue, including actions outside the first three cards.
   cockpit.action_counts={};
   for(const group of groupPriorityCards(actualCards))cockpit.action_counts[group.module]=group.members.filter(c=>!c.example&&!c.fallback).length;
@@ -131,12 +145,16 @@ function openPriorityGroup(group,cid){
 }
 async function renderPriorityGroupPanel(){
  const names={all:'Toutes les actions',activities:'Activités',calendar:'Agenda',clients:'Clients',scanner:'Documents',leads:'Devis',emails:'E-mails',equipment:'Matériel',material:'Matériel',risks:'Prévention',social:'Publications',prospects:'Prospection',requests:'Demandes'};
- if(!priorityCards.length&&company)priorityCards=(await api(`/api/companies/${company.id}/priorities`)).sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
+ if(!priorityCards.length&&company)priorityCards=(await loadPriorityCards(company.id)).sort((a,b)=>a.rank-b.rank||(a.due||'').localeCompare(b.due||''));
  const view=priorityGroupView&&priorityGroupView.cid===company?.id?priorityGroupView:{module:'all',keys:null};
- const members=view.keys?view.keys.map(k=>priorityCards.find(c=>c.key===k)).filter(Boolean):priorityCards.filter(c=>!c.fallback&&!c.example);
- $('#content').innerHTML=`<h1>${clean(names[view.module]||'Actions à faire')}</h1><p class="sub">${members.length} action${members.length>1?'s':''} à traiter</p><div class="task-list priority-group-list">${members.map((card,i)=>`<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}${card.description?' · '+clean(priorityFriendly(card.description)):''}</small></span><span aria-hidden="true">›</span></button>`).join('')||'<p class="sub">Rien à traiter pour le moment.</p>'}</div>`;
+ const byKey=new Map(priorityCards.map(c=>[c.key,c]));
+ const members=view.keys?view.keys.map(k=>byKey.get(k)).filter(Boolean):priorityCards.filter(c=>!c.fallback&&!c.example);
+ let page=0;const host=$('#content');
+ function draw(){host.innerHTML=`<h1>${clean(names[view.module]||'Actions à faire')}</h1><p class="sub">${members.length} action${members.length>1?'s':''} à traiter</p><div class="task-list priority-group-list">${members.slice(page*50,(page+1)*50).map((card,at)=>{const i=page*50+at;return `<button type="button" class="task-row" data-priority-item-open="${i}"><span><strong>${clean(card.title)}</strong><small>${clean(priorityPresentation(card).label)}${card.description?' · '+clean(priorityFriendly(card.description)):''}</small></span><span aria-hidden="true">›</span></button>`;}).join('')||'<p class="sub">Rien à traiter pour le moment.</p>'}</div>${members.length>50?`<nav class="row" aria-label="Pages des actions"><button class="btn" data-action-page="-1" ${page===0?'disabled':''}>Précédentes</button><span>${page+1}/${Math.ceil(members.length/50)}</span><button class="btn" data-action-page="1" ${(page+1)*50>=members.length?'disabled':''}>Suivantes</button></nav>`:''}`;
  $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>{if(typeof rowSwipe!=='undefined')rowSwipe.attach(btn,members[Number(btn.dataset.priorityItemOpen)]);});
  $('#content').querySelectorAll('[data-priority-item-open]').forEach(btn=>btn.onclick=()=>{const card=members[Number(btn.dataset.priorityItemOpen)];if(typeof inlineActions!=='undefined'&&inlineActions.toggle(btn,card))return;openPriorityAction(card);});
+ host.querySelectorAll('[data-action-page]').forEach(b=>b.onclick=()=>{page+=Number(b.dataset.actionPage);draw();host.closest('.context-scroll')?.scrollTo({top:0});});
+ }draw();
 }
 
 function renderCalendarPage(html) {
