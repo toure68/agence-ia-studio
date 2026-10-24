@@ -227,7 +227,7 @@
   "/api/companies/1/mail/messages": [
     {
       "id": 99001,
-      "provider": "nylas",
+      "provider": "gmail",
       "subject": "Photos et devis du chantier — exemple",
       "sender": "Client exemple <client@example.test>",
       "received": "2026-10-23T09:00:00+00:00",
@@ -1131,14 +1131,14 @@
     "configured": false,
     "connected": true,
     "email": "essai@example.test",
-    "provider": "nylas",
+    "provider": "gmail",
     "error": "",
     "last_sync": 0,
     "realtime": false
   },
   "/api/companies/1/mail/messages/99001": {
     "id": 99001,
-    "provider": "nylas",
+    "provider": "gmail",
     "subject": "Photos et devis du chantier — exemple",
     "sender": "Client exemple <client@example.test>",
     "reply_to": "client@example.test",
@@ -1162,7 +1162,7 @@
     "messages": [
       {
         "id": 99001,
-        "provider": "nylas",
+        "provider": "gmail",
         "subject": "Photos et devis du chantier — exemple",
         "sender": "Client exemple <client@example.test>",
         "reply_to": "client@example.test",

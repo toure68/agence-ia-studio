@@ -1,38 +1,15 @@
-# Messagerie unifiée — activation et vérification
+# Messagerie directe
 
-La version v144 ajoute l’adaptateur Nylas, la réponse dans le fil, la rédaction superposée, le transfert, les pièces jointes et le menu « … ». La boîte Gmail déjà connectée reste utilisable tant qu’une nouvelle connexion n’est pas validée. Plusieurs boîtes par utilisateur et entreprise peuvent être connectées, y compris chez un même fournisseur. La connexion historique reste la boîte principale (identifiant 0), les nouvelles sont conservées séparément. Aucun fournisseur payant n’est activé par le code.
+Gmail / Google Workspace utilise directement les API Google. Aucun appel à Nylas, aucun webhook ni worker de cet intermédiaire. Les noms de routes `/mail/unified` restent stables pour le client existant.
 
-## Activation côté serveur
+Configurer GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET et GMAIL_REDIRECT_URI dans les variables privées du serveur. Enregistrer exactement le callback HTTPS `/api/mail/gmail/callback` dans Google Cloud, activer Gmail API et publier/vérifier le consentement selon les exigences Google. Les droits demandés sont lecture, envoi et classement. Une ancienne autorisation sans classement peut nécessiter une nouvelle autorisation Google pour les actions de classement.
 
-1. Créer ou utiliser un compte Nylas et vérifier son offre et son coût avant abonnement. La facturation Nylas est distincte de ChatGPT et des appels IA.
-2. Configurer les connecteurs Google/Microsoft et leurs autorisations de lecture, envoi et classement selon la documentation Nylas. L’API unifie les opérations ; les consentements des fournisseurs restent nécessaires.
-3. Choisir la région EU ou US et définir `NYLAS_REGION`, `NYLAS_API_KEY`, `NYLAS_CLIENT_ID` dans les variables privées de l’hébergement. Ne jamais envoyer une clé dans le chat ou la committer.
-4. Enregistrer le callback HTTPS `/api/mail/unified/callback`, puis définir sa même URL exacte dans `NYLAS_REDIRECT_URI`.
-5. Enregistrer une notification vers `/api/mail/unified/webhook` : `message.created`, `message.updated`, `message.deleted`, `grant.expired`, `grant.deleted`. Récupérer le secret propre à cette notification et le placer dans `NYLAS_WEBHOOK_SECRET`. Les variantes `.truncated` sont acceptées ; le serveur recharge le message complet.
-6. Depuis E-mails, choisir « Connecter Gmail ou Outlook ». La connexion se fait dans une fenêtre de consentement ; l’accueil d’origine reste monté. Si le navigateur coupe le lien avec la fenêtre d’origine, le callback propose un lien de retour.
-7. Autoriser une boîte d’essai et vérifier lecture, synchronisation, réception d’un nouveau message, archivage, changement de dossier, téléchargement et envoi explicitement confirmé. Ces vérifications avec un vrai compte restent nécessaires : les tests automatiques utilisent un fournisseur simulé.
+Plusieurs comptes Gmail par utilisateur/entreprise sont séparés. La reconnexion doit utiliser la même adresse et conserve les messages et brouillons. Ajouter une autre adresse crée un compte séparé. Le profil renvoyé par Google fait foi, jamais l’adresse indicative du formulaire.
 
-## Comportement et limites
+Les anciennes autorisations de l’intermédiaire sont désactivées lors de la migration, leurs jetons effacés et leurs messages conservés comme copies importées. Une autorisation directe est nécessaire pour reprendre l’envoi. Une réponse à une copie importée utilise le compte Google réautorisé à la même adresse, sans transmettre les identifiants opaques de l’ancien intermédiaire. Les anciens fichiers distants doivent être retrouvés via Gmail ; les fichiers déjà enregistrés dans les brouillons chiffrés restent conservés.
 
-- La réponse courte vit sous le fil. Une réponse longue, un transfert ou un nouveau message utilise le panneau superposé. Fermer la rédaction révèle le fil existant.
-- Les brouillons enregistrés et leurs fichiers sont chiffrés dans SQLite. Le texte non enregistré reste en mémoire pendant la session. Il faut enregistrer pour le retrouver après un rechargement.
-- Destinataire unique ; pas encore de CC/BCC. 4 nouveaux fichiers au maximum, 8 Mo chacun, 16 Mo au total avec les fichiers transférés. Les gros fichiers au-delà de ces limites ne sont pas pris en charge, même si le fournisseur accepte plus.
-- La consultation affiche du texte inerte, sans exécuter les scripts ni charger les images distantes du message. Les images jointes PNG/JPEG/GIF/WebP et PDF ont un aperçu isolé ; les autres fichiers passent par Enregistrer/Partager. Le téléchargement est borné à 16 Mo.
-- Les notifications sont vérifiées par signature HMAC et placées dans une file persistante, traitée toutes les cinq secondes avec reprises bornées. La réception dépend aussi du fournisseur et du réseau ; elle n’est pas instantanée garantie. L’interface vérifie les nouveautés toutes les vingt secondes lorsqu’elle est visible, sans remplacer une saisie en cours. Le fil propose Actualiser.
-- La synchronisation complète charge cinquante messages par passage avec pagination. Un secours toutes les quinze minutes reste disponible. Le fil peut actualiser cinquante messages supplémentaires de la conversation ; les longues conversations peuvent nécessiter la synchronisation générale.
-- Les dossiers sont listés dans la limite des deux cents premiers ; une boîte avec davantage de dossiers nécessite un complément avant généralisation.
-- Aucun envoi depuis la synchronisation ou les notifications. L’utilisateur enregistre, relit puis clique « Confirmer et envoyer ». Une révision verrouille l’envoi ; la clé d’idempotence est stable. Un envoi incertain est bloqué et ne se relance jamais automatiquement : vérifier le dossier Envoyés.
-- Les icônes Gmail/Google Workspace, Outlook/Microsoft 365/Hotmail, iCloud, Yahoo, Zoho, Orange/Wanadoo, SFR/Neuf, Free/Zimbra, La Poste.net, OVHcloud, IONOS, GMX, AOL, Fastmail et Infomaniak/kMail rejoignent les pages de fonctions. Gris = à connecter ; couleur + point vert = connecté ; gris + alerte = autorisation expirée. Le bouton Autre messagerie permet de choisir un fournisseur ou de saisir une adresse professionnelle compatible IMAP. Il ne garantit pas la prise en charge de toutes les messageries : les protocoles fermés sans IMAP externe ne sont pas compatibles. Les noms et symboles servent uniquement à identifier les fournisseurs.
-- Ajouter un compte ne remplace aucune boîte. Le choix du fournisseur utilise Hosted Auth (google/microsoft/icloud/yahoo ou fournisseur IMAP) ; les connecteurs correspondants restent à configurer dans Nylas, y compris IMAP pour les domaines professionnels. L’utilisateur saisit un éventuel mot de passe d’application et ses serveurs uniquement dans la fenêtre Nylas. Aucune clé ni mot de passe de messagerie dans le formulaire de l’application. Une autorisation répétée du même grant conserve la même boîte et ses brouillons.
-- Les messages, fils, fichiers, brouillons, synchronisations et notifications sont séparés par connexion. La revue d’envoi montre l’adresse expéditrice. Déconnecter une boîte ne supprime pas les autres. Un grant partagé entre entreprises n’est révoqué que lorsque sa dernière référence disparaît.
-- Remplacer la connexion principale par une autre boîte demande une confirmation. Les anciennes copies locales et brouillons sont retirés, les originaux restent chez le fournisseur. Déconnexion : révocation du grant puis suppression locale ; en cas d’échec de révocation, l’application garde les références pour permettre une nouvelle tentative.
+Synchronisation manuelle par lots de 20 messages filtrés par mots-clés et secours facultatif toutes les quinze minutes. Pas de notification instantanée garantie. Corps complet chargé à la sélection ; texte inerte. Lecture, fil local, réponse, transfert, pièces jointes Gmail. Pas de CC/BCC. 4 nouveaux fichiers maximum, 8 Mo chacun et 16 Mo au total. Brouillons chiffrés, vérification puis confirmation explicite, verrouillage des révisions et blocage des envois incertains. Aucun envoi pendant une synchronisation.
 
-## Sources techniques
+Outlook, iCloud et les autres fournisseurs restent identifiés dans les icônes, avec connexion directe indisponible. Ne pas annoncer ces services comme fonctionnels. Retirer une intégration de l’application ne résilie pas un éventuel abonnement externe.
 
-- https://developer.nylas.com/docs/v3/auth/hosted-oauth-apikey/
-- https://developer.nylas.com/docs/v3/email/attachments/
-- https://developer.nylas.com/docs/reference/api/messages/send-message/
-- https://developer.nylas.com/docs/cookbook/email/organize-folders/
-- https://developer.nylas.com/docs/cookbook/use-cases/build/verify-webhook-signatures/
-
-Mot-clé de retour : **RETOUR AVANT MESSAGERIE UNIFIÉE**. Restaurer la sauvegarde de code ne restaure pas une ancienne autorisation OAuth remplacée par l’utilisateur : reconnecter la boîte si nécessaire.
+Références : https://developers.google.com/identity/protocols/oauth2/web-server et https://developers.google.com/workspace/gmail/api/guides/sending

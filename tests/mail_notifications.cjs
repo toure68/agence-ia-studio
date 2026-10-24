@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
 const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-gpu'],...(process.env.HOME_TEST_CHROME?{executablePath:process.env.HOME_TEST_CHROME}:{})});
- try{for(const [width,height,provider] of [[375,667],[390,844],[430,932]].flatMap(size=>['nylas','gmail'].map(provider=>[...size,provider]))){
+ try{for(const [width,height,provider] of [[375,667],[390,844],[430,932]].flatMap(size=>['imported','gmail'].map(provider=>[...size,provider]))){
   const p=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion:'reduce'});p.setDefaultTimeout(12000);
   const errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.addInitScript(()=>{localStorage.setItem('aia-reader','on');localStorage.removeItem('aia-reader-samples');});

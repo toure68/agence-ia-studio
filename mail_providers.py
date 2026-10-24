@@ -1,4 +1,4 @@
-"""Known mail brands; hosted authentication stays with Nylas/the provider."""
+"""Mail brand identifiers; direct support is advertised separately."""
 PROVIDERS={
  'gmail':{'name':'Gmail / Google Workspace','short':'Gmail','provider':'google'},
  'outlook':{'name':'Outlook / Microsoft 365 / Hotmail','short':'Outlook','provider':'microsoft'},
