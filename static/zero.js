@@ -21,14 +21,15 @@ function refreshHomeBadges(badges,riskCards=[],states={}){
 }
 
 async function zeroDashboard(){
- const cid=company.id;
- const [state,workspace]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`)]);
+ const cid=company.id,uid=me?.id;
+ const [state,workspace,priorities]=await Promise.all([api(`/api/companies/${cid}/cockpit`),api(`/api/companies/${cid}/workspace`),loadPriorityCards(cid)]);
+ if(company?.id!==cid||me?.id!==uid)return;
  $('#content').innerHTML=`<div class="reference-home"><div class="home-topbar">${assistantDockMarkup()}<span class="home-account-slot"></span></div><section id="homeTreasury" aria-label="Trésorerie">${homeTreasuryMarkup(state)}</section><section id="priorityBlock" aria-label="Priorités à traiter"></section><div class="home-modules-heading"><h2>Vos modules</h2><a class="btn" data-go="module-library" href="#/module-library">Grille · ${workspace.columns||2}</a></div>${homeModulesMarkup(workspace,state)}</div>`;
  $('#homeTreasury').addEventListener('click',e=>{const command=e.target.closest('[data-home-cash]');if(command){e.preventDefault();openCommand('movement',command.dataset.homeCash);return;}if(e.target.closest('[data-treasury-mode]')){e.preventDefault();openTab('treasury');}});
  const gridButton=$('.home-modules-heading [data-go="module-library"]');gridButton.setAttribute('aria-label','Choisir le nombre de colonnes');gridButton.title='Choisir le nombre de colonnes';gridButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
  mountColumnChooser(gridButton,workspace,state);
  if(typeof homeTop!=='undefined')homeTop.sync();
- await Promise.all([renderPriorities({cockpit:state,workspace}),mountAssistant()]);
+ await Promise.all([renderPriorities({cockpit:state,workspace,priorities}),mountAssistant()]);
 }
 
 function toolLinks(items){return `<div class="tool-list">${items.map(([route,title,icon,id])=>`<a class="task-row" href="#/${route}${id?'/'+id:''}" data-go="${route}"${id?` data-company-id="${id}"`:''}><span class="tool-icon" aria-hidden="true">${typeof moduleIcon==='function'?moduleIcon(route):icon}</span><span><strong>${title}</strong></span><span aria-hidden="true">›</span></a>`).join('')}</div>`;}

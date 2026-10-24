@@ -113,6 +113,28 @@ const homeReader=(()=>{
   if(c._done)return `<button type="button" class="reader-item is-done" data-reader-item="${i}" data-reader-key="${clean(c.key)}" aria-label="${clean(cp.title)} · traité"><span class="${iconClass(c)}" aria-hidden="true">${iconOf(c)}</span><span class="reader-item-copy"><strong>${clean(cp.title)}</strong><small><span class="reader-done-tag">✓ Traité</span> · ${clean(c._done)}</small></span></button>`;
   return `<button type="button" class="reader-item state-${p.state}" data-reader-item="${i}" data-reader-key="${clean(c.key)}" aria-label="${clean(cp.title)} · ${clean(p.label)}"><span class="${iconClass(c)}" aria-hidden="true">${iconOf(c)}</span><span class="reader-item-copy"><strong>${c.sample?'<span class="reader-tag">Essai</span>':''}${clean(cp.title)}</strong><small><span class="reader-state">${clean(p.label)}</span>${cp.amount?' · '+moneyChip(c,cp.amount):''}${c.source?' · '+clean(c.source):''}${cp.detail?' · '+clean(cp.detail):''}</small></span></button>`;
  }
+ // Large queues retain every record in memory, but mount only the nearby cards.
+ // Their absolute offsets keep the exact native scroll range and the terminal card.
+ function renderWindow(at=null){
+  const list=view.host?.querySelector('.reader-list.is-virtual'),space=list?.querySelector('.reader-space');if(!space)return;
+  const step=pitch(),start=Math.max(0,Math.floor((at??list.scrollTop)/step)-2),end=Math.min(view.cards.length,start+cap()+6);
+  space.style.height=(view.cards.length*step)+'px';
+  const sig=start+':'+end+':'+step;if(space.dataset.window===sig)return;space.dataset.window=sig;
+  // Reuse surviving nodes, including keyboard focus, rather than recreating the window.
+  const live=new Map([...space.children].map(el=>[Number(el.dataset.readerItem),el]));
+  for(const [i,el] of live)if(i<start||i>=end)el.remove();
+  for(let i=start;i<end;i++){
+   let el=live.get(i);if(!el){const t=document.createElement('template');t.innerHTML=small(view.cards[i],i);el=t.content.firstElementChild;}
+   const next=space.children[i-start];if(next!==el)space.insertBefore(el,next||null);
+   el.style.top=(i*step)+'px';el.setAttribute('aria-posinset',String(i+1));el.setAttribute('aria-setsize',String(view.cards.length));
+   el.classList.toggle('is-read',i<=view.focus);
+  }
+ }
+ function queueSnapshot(){return {cards:view.cards,total:view.cards.length,read:Math.max(0,view.focus+1)};}
+ function resize(){
+  const list=view.host?.querySelector('.reader-list');if(!list)return;
+  fitList();renderWindow();list.classList.toggle('has-more',view.cards.length>cap());hint();
+ }
  function readerMarkup(c){
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
   const pos=view.focus+1,total=view.cards.length;
@@ -210,6 +232,7 @@ const homeReader=(()=>{
   requestAnimationFrame(()=>{if(card.isConnected)syncRail(card);});
  }
  function showReader(){
+  renderWindow(ios()?(view.focus+1)*pitch():null);
   railCleanup();railCleanup=()=>{};
   const home=document.querySelector('#content .reference-home'),host=view.host;if(!home||!host)return;
   let card=host.querySelector('.home-reader');
@@ -247,7 +270,7 @@ const homeReader=(()=>{
   card.querySelectorAll('[data-draft]').forEach(f=>f.oninput=()=>{view.draft[f.dataset.draft]=f.value;});
   card.querySelector('[data-draft]')?.focus({preventScroll:true});
   if(card.querySelector('.reader-body'))wireRail(card);
-  host.querySelectorAll('.reader-list .reader-item').forEach((el,i)=>el.classList.toggle('is-read',i<=view.focus));
+  host.querySelectorAll('.reader-list .reader-item').forEach(el=>el.classList.toggle('is-read',Number(el.dataset.readerItem)<=view.focus));
   syncFiles();
   fitList();
   hint();
@@ -335,7 +358,7 @@ const homeReader=(()=>{
   list.dataset.pileMotion='1';
   const height=list.clientHeight,step=pitch(),cardH=parseFloat(list.style.getPropertyValue('--reader-card-h'))||60;
   list.querySelectorAll('.reader-item,.reader-end').forEach((el,i)=>{
-   const h=el.classList.contains('reader-end')?height:cardH,base=i*step-list.scrollTop,y=base+offset;
+   const terminal=el.classList.contains('reader-end'),h=terminal?height:cardH,index=terminal?view.cards.length:Number(el.dataset.readerItem),base=index*step-list.scrollTop,y=base+offset;
    const fold=Math.max(0,Math.min(1,(y+h)/h,(height-Math.max(0,y))/h));
    if(fold<.015){el.style.visibility='hidden';el.style.transform='';return;}
    el.style.visibility='visible';el.style.transformOrigin='50% 0';
@@ -399,10 +422,17 @@ const homeReader=(()=>{
  }
 
  function render(host,cards,actual,cid){
-  clearPile();
+  const scope=(typeof me!=='undefined'?me?.id:'demo')+':'+cid;
+  if(view.scope!==scope){doneCards.length=0;view.cards=[];view.focus=-1;view.keepKey=null;view.signature=null;view.scope=scope;}
   view.host=host;view.cid=cid;
-  const pending=[...samples(),...actual.filter(c=>!c.example)].filter(c=>!doneCards.some(d=>d.c.key===c.key));
-  const real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
+  const doneKeys=new Set(doneCards.map(d=>d.c.key));
+  const pending=[...samples(),...actual.filter(c=>!c.example)].filter(c=>!doneKeys.has(c.key));
+  let real=pending.length||doneCards.length?[...doneCards.map(d=>({...d.c,_done:d.label})),...pending]:[];
+  const signature=JSON.stringify(real.map(c=>{if(!c.mail_received)return c;const {raw,files,_mailLoaded,_mailLoading,...summary}=c;return summary;}));
+  if(view.signature===signature&&host.querySelector('.reader-list'))return true;
+  clearPile();view.signature=signature;
+  const previous=new Map(view.cards.map(c=>[c.key,c]));
+  real=real.map(c=>{const old=previous.get(c.key);return old?Object.assign(old,c):c;});
   const home=document.querySelector('#content .reference-home');
   // Nothing left: one single replacement card keeps the middle filled (the routine/first card), no reader.
   if(!real.length){if(typeof homeActions!=='undefined')homeActions.hide();home?.classList.remove('reader-active');view.cards=[];view.focus=-1;host.classList.remove('reader-host');return false;}
@@ -411,21 +441,22 @@ const homeReader=(()=>{
   view.cards=real;
   const n=real.length,h=Math.min(n,cap())*pitch()-8;
   host.classList.add('reader-host');
-  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button><div class="reader-invitation" hidden></div></div></div></div>`;
-  const list=host.querySelector('.reader-list');
+  host.innerHTML=`<h2 class="home-section-title">À faire maintenant</h2><article class="home-reader" hidden aria-live="polite"></article><div class="reader-queue"><div class="reader-bar">${counter()}<span class="reader-hint"></span></div><div class="reader-list${n>cap()?' has-more':''}" style="height:${h}px" aria-label="Messages à traiter">${n>40?`<div class="reader-space" style="height:${n*pitch()}px"></div>`:real.map(small).join('')}<div class="reader-end" style="height:${h}px"><button type="button" class="reader-end-btn" data-reader-top aria-label="Fin de la liste · revenir à l’accueil">✓ Fin de la liste <span aria-hidden="true">· Accueil ↑</span></button><div class="reader-invitation" hidden></div></div></div></div>`;
+  const list=host.querySelector('.reader-list');list.classList.toggle('is-virtual',n>40);
   // The terminal invitation remains outside the messages and shares list gestures.
   host.querySelector('.reader-end').onclick=e=>{const target=e.target.closest('[data-filler]');if(target)window.homePages?.openFiller(target.dataset.filler);else closeReader();};
-  host.querySelectorAll('[data-reader-item]').forEach(b=>b.onclick=()=>goTo(Number(b.dataset.readerItem)));
+  list.addEventListener('click',e=>{const b=e.target.closest('[data-reader-item]');if(b)goTo(Number(b.dataset.readerItem));});
   // Keep the place after a refresh: same card if it is still there, otherwise the one that took its place.
   let focus=-1;
   if(prevFocus>=0){const k=prevKey?real.findIndex(c=>c.key===prevKey):-1;focus=k>=0?k:Math.min(prevFocus,n-1);}
   view.focus=focus;
   list.scrollTop=(focus+1)*pitch();
-  showReader();
+  renderWindow();showReader();
   bindSurface(list,true);
   let raf=0;
   list.addEventListener('scroll',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
-   const f=Math.min(n-1,Math.round(list.scrollTop/pitch())-1);
+   renderWindow();
+   const f=Math.min(n-1,Math.max(-1,Math.round(list.scrollTop/pitch())-1));
    if(ios()){if(f!==view.focus)goTo(f);else if(Math.abs(list.scrollTop-(f+1)*pitch())>.5)list.scrollTop=(f+1)*pitch();}
    else if(f!==view.focus){view.focus=f;showReader();}
   });},{passive:true});
@@ -454,6 +485,6 @@ const homeReader=(()=>{
   return out;
  }
  function reflow(){if(view.focus>=0){fitList();fileOverflow(view.host?.querySelector('.reader-files'));requestAnimationFrame(()=>window.homePages?.stack());}}
- return {enabled,render,setEnabled,setSamples,readingModules,bindSurface,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
+ return {enabled,render,resize,queueSnapshot,setEnabled,setSamples,readingModules,bindSurface,step,close:closeReader,showFile,fileShown:()=>view.file,reflow};
 })();
 window.homeReader=homeReader;

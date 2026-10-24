@@ -148,3 +148,8 @@ html.home-ios .reader-item .module-icon.reader-mail-brand,
 html.home-ios .home-reader .reader-card>.module-icon.reader-mail-brand{padding:0!important;background:transparent!important;border-radius:26%;border:0!important;box-shadow:none!important;overflow:hidden}
 html.home-ios .reader-item .module-icon.reader-mail-brand svg,
 html.home-ios .home-reader .reader-card>.module-icon.reader-mail-brand svg{width:100%!important;height:100%!important;stroke:none;filter:none}
+
+/* Virtual queues preserve the same card dimensions, pitch and scroll range. */
+.reference-home .reader-list.is-virtual{display:block;overflow-anchor:none}
+.reader-space{position:relative;width:100%;flex:none}
+.reader-space>.reader-item{position:absolute;left:0;right:0;margin:0}

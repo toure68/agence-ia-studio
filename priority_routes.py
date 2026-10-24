@@ -8,6 +8,7 @@ import hashlib
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from business_routes import client_revision
 import json
@@ -191,7 +192,12 @@ def install(app, db, require, own_company, utcnow):
         user = require(req, tenant_id=cid)
         with db() as con:
             own_company(con, cid)
-            return cards_for(con, cid, user)
+            cards=cards_for(con, cid, user)
+        response=JSONResponse(cards)
+        etag='"'+hashlib.sha256(response.body).hexdigest()+'"'
+        if req.headers.get('if-none-match')==etag:return Response(status_code=304,headers={'ETag':etag})
+        response.headers['ETag']=etag
+        return response
 
     @app.post('/api/companies/{cid}/priorities/dismiss')
     def dismiss(cid: int, data: DismissInput, req: Request):
