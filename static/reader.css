@@ -187,3 +187,9 @@ html.home-ios .home-reader.is-image{padding:8px 8px 22px!important}
 .home-reader.is-image .reader-stage-img{
  box-sizing:border-box;object-fit:contain;object-position:50% 50%;border-radius:0;
 }
+
+/* Screen setting also improves secondary text contrast; off restores the original palette. */
+html:not([data-reader-screen="off"]) .reference-home :is(
+ .reader-item-copy small,.reader-mail dt,.reader-muted,.reader-origin,
+ .reader-hint,.reader-bar,.reader-pos,.reader-fact span,.reader-mail-files
+){color:#CAD5DF}

@@ -5,6 +5,7 @@ Quand Mohamed écrit un de ces mots-clés, remettre l'application exactement dan
 
 | Mot-clé | Branche | État sauvegardé |
 |---|---|---|
+| **RETOUR AVANT SOBRIÉTÉ ÉCRAN** | `sauvegarde/avant-sobriete-ecran-v162` (v161) | Effet écran limité au cadre ; textes secondaires gris et icônes plus brillantes. |
 | **RETOUR AVANT IMAGES AJUSTÉES** | `sauvegarde/avant-images-ajustees-v161` (v160) | Images au bord du lecteur, sous les coins arrondis et la poignée. |
 | **RETOUR AVANT RÉGLAGE EFFET ÉCRAN** | `sauvegarde/avant-reglage-effet-ecran-v160` (v159) | Effet écran du lecteur actif sans interrupteur dans les réglages. |
 | **RETOUR AVANT LECTEUR ÉCRAN** | `sauvegarde/avant-lecteur-ecran-v159` (v158) | Apparence du lecteur avant le cadre discret façon écran. |
