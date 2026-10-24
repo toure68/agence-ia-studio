@@ -52,14 +52,27 @@ const homeReader=(()=>{
  // After an action the next pending card comes up.
  function nextKey(c){const i=view.cards.findIndex(x=>x.key===c.key);return view.cards.slice(i+1).find(x=>!x._done)?.key||null;}
  function presentation(c){return typeof priorityPresentation==='function'?priorityPresentation(c):{state:'neutral',label:'À faire'};}
+ function updateReply(c,scroll=false){
+  if(view.cards[view.focus]!==c||view.cid!==company?.id)return;
+  view.file=-1;view.expanded=mailClient.readerReplyActive(c);showReader();
+  if(scroll)requestAnimationFrame(()=>{
+   if(view.cards[view.focus]!==c)return;
+   const body=view.host?.querySelector('.reader-body'),reply=body?.querySelector('.reader-reply');
+   if(body&&reply)body.scrollTop+=Math.max(0,reply.getBoundingClientRect().top-body.getBoundingClientRect().top-64);
+  });
+ }
  function buttons(c){
   if(c._done)return [{label:'✓ '+c._done,kind:'done',run:()=>{}}];
   if(c.sample)return sampleButtons(c);
-  if(c.mail_received&&window.mailClient)return [
-   {label:'Répondre',kind:'main',run:()=>mailClient.openNotification(c,'reply')},
-   {label:'Transférer',kind:'second',run:()=>mailClient.openNotification(c,'forward')},
-   {label:'Voir le fil',kind:'second',run:()=>mailClient.openNotification(c,'thread')},
-   ...(c.action.provider==='gmail'?[{label:'Plus',kind:'second',run:()=>mailClient.openNotification(c,'actions')}]:[])];
+  if(c.mail_received&&window.mailClient){
+   const changed=scroll=>updateReply(c,scroll),reply=mailClient.readerReplyButtons(c,changed);
+   if(reply)return reply;
+   return [
+    {label:'Répondre',kind:'main',run:()=>mailClient.openNotification(c,'reply')},
+    {label:'Transférer',kind:'second',run:()=>mailClient.openNotification(c,'forward')},
+    {label:'Voir le fil',kind:'second',run:()=>mailClient.openNotification(c,'thread')},
+    mailClient.proposalButton(c,changed)];
+  }
   const inline=typeof inlineActions!=='undefined'&&inlineActions.has(c)?inlineActions.buttons(c):[];
   const list=inline.map((b,i)=>({label:b.label,kind:i?'second':'main',run:()=>finish(c,b)}));
   list.push({label:inline.length?'Détail':(verbs[c.action?.type]||'Ouvrir'),kind:inline.length?'second':'main',run:()=>openAction(c)});
@@ -141,7 +154,8 @@ const homeReader=(()=>{
  function readerMarkup(c){
   const p=presentation(c),cp=copy(c),key=moduleOf(c),sg=sign(c),btns=buttons(c);
   const pos=view.focus+1,total=view.cards.length;
-  const spk=`<button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button>`;
+  const more=c.mail_received&&c.action.provider==='gmail'?'<button type="button" class="reader-icon" data-reader-mail-more aria-label="Autres actions sur cet e-mail">⋯</button>':'';
+  const spk=more+`<button type="button" class="reader-icon" data-reader-speak aria-label="Écouter l’essentiel" title="Écouter">${typeof speakerIcon!=='undefined'?speakerIcon:'🔊'}</button>`;
   // 22/10 (user): a tapped thumbnail turns the reader itself into an image reader — only the file, nothing else.
   const f=view.file>=0?c.files?.[view.file]:null;
   if(f)return `<div class="reader-stage" data-reader-stage>${f.type==='image'?`<img class="reader-stage-img" src="${clean(f.src)}" alt="${clean(f.name)}">`:`<div class="reader-stage-doc"${f.src?' data-open="1"':''}><span class="reader-file-kind">${FILE_ICON[f.type]||FILE_ICON.other}</span><strong>${clean(f.name)}</strong>${f.pages?`<span>${f.pages} pages</span>`:''}${f.src?'<span>Touchez pour ouvrir</span>':''}</div>`}</div>`;
@@ -174,7 +188,8 @@ const homeReader=(()=>{
    const row=(k,v)=>v?`<div><dt>${k}</dt><dd>${clean(v)}</dd></div>`:'';
    // Shown like an e-mail (22/10): header, the full text, then the attachment chosen under the reader.
    const text=c.raw??(c.mail_received?'Chargement du message…':cp.detail||'');
-   return `${n?`<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div>`:''}<dl class="reader-mail">${row('De',c.from||c.from_||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text${c.mail_received?' is-compact':''}">${c.mail_received?compactMailMarkup(text):clean(text)}</div>`;}
+   const reply=c.mail_received&&window.mailClient?mailClient.readerReplyMarkup(c):'',received=reply?'<div class="reader-received-label">Message reçu</div>':'';
+   return `${received}${n?`<div class="reader-mail-files">📎 ${n} pièce${n>1?'s':''} jointe${n>1?'s':''} · en bas</div>`:''}<dl class="reader-mail">${row('De',c.from||c.from_||c.source)}${row('À',c.to)}${row('Objet',c.subject||cp.title)}${row('Reçu',c.date||c.time)}</dl><div class="reader-mail-text${c.mail_received?' is-compact':''}">${c.mail_received?compactMailMarkup(text):clean(text)}</div>${reply}`;}
   if(view.editing===c.key){const d=view.draft;return `<div class="reader-edit">${c.edit&&('amount' in c.edit||c.amount)?`<label>Montant / quantité<input data-draft="amount" value="${clean(d.amount)}" inputmode="decimal" autocomplete="off"></label>`:''}${c.edit&&'date' in c.edit?`<label>Date<input data-draft="date" value="${clean(d.date)}" autocomplete="off"></label>`:''}<label>Message joint (facultatif)<textarea data-draft="note" rows="2" placeholder="Ex. : livraison possible le 28 plutôt que le 23">${clean(d.note)}</textarea></label></div>`;}
   if(c.sample&&view.full)return `<span class="reader-origin">Message d’origine</span>${clean(c.raw||c.body||'')}`;
   return cp.detail?clean(cp.detail):'<span class="reader-muted">Aucun détail supplémentaire.</span>';
@@ -244,6 +259,7 @@ const homeReader=(()=>{
   // The reader is always sized on the FOLDED treasury (21/10): an unfolded treasury never makes it taller.
   if(!home.classList.contains('reader-active')){const t=document.querySelector('#homeTreasury .home-treasury'),folded=Number(document.body.dataset.treasuryFolded)||0;view.treasuryH=t&&t.classList.contains('is-folded')?t.offsetHeight:(folded||(t?t.offsetHeight:view.treasuryH));}
   const c=view.cards[view.focus];if(view.keepKey!==c.key){view.expanded=false;view.full=false;view.editing=null;view.file=-1;}view.keepKey=c.key;
+  if(c.mail_received&&window.mailClient?.readerReplyActive(c))view.expanded=true;
   if(c.mail_received&&!c._mailLoaded&&!c._mailLoading&&window.mailClient){
    c._mailLoading=true;const cid=view.cid;
    mailClient.loadNotification(c).then(()=>{if(view.cid===cid&&view.cards[view.focus]===c)showReader();}).catch(error=>{c.raw=error.message;c._mailLoaded=true;if(view.cid===cid&&view.cards[view.focus]===c)showReader();}).finally(()=>{c._mailLoading=false;});
@@ -269,6 +285,7 @@ const homeReader=(()=>{
   (card.querySelector('[data-reader-hide]')||{}).onclick=()=>c.sample?sampleDone(c,'Masqué'):dismiss(c);
   (card.querySelector('[data-reader-back]')||{}).onclick=()=>host.querySelector('.reader-list')?.scrollTo({top:0,behavior:'smooth'});
   wireStage(card,c);
+  if(c.mail_received&&window.mailClient){mailClient.bindReaderReply(card,c);const more=card.querySelector('[data-reader-mail-more]');if(more)more.onclick=()=>mailClient.openNotification(c,'actions');}
   const speak=card.querySelector('[data-reader-speak]'),cp=copy(c);
   if(speak)speak.onclick=()=>{if(typeof readAloud==='function')readAloud([presentation(c).label,cp.title,(sign(c)?.s==='−'?'à payer ':sign(c)?'à recevoir ':'')+cp.amount,cp.detail].filter(Boolean).join('. '),speak);};
   card.querySelectorAll('[data-draft]').forEach(f=>f.oninput=()=>{view.draft[f.dataset.draft]=f.value;});

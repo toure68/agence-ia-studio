@@ -52,6 +52,7 @@ class FileData(BaseModel):
 
 
 class Composition(BaseModel):
+    reader:bool=False
     id:int|None=None
     revision:int=0
     source_id:int|None=None
@@ -376,6 +377,31 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
         uid=scope(req,cid)
         with db() as con:return public_draft(draft(con,uid,cid,did))
 
+    @app.get('/api/companies/{cid}/mail/unified/messages/{mid}/reader-reply')
+    def reader_reply(cid:int,mid:int,req:Request):
+        uid=scope(req,cid)
+        with db() as con:
+            m=message(con,uid,cid,mid)
+            attempted=bool(con.execute("SELECT 1 FROM mail_ai WHERE user_id=? AND company_id=? AND message_id=? AND kind='reply'",(uid,cid,mid)).fetchone())
+            rows=con.execute("SELECT id FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=? AND source_id=? AND mode='reply' ORDER BY id DESC",(uid,cid,selected.get(),mid)).fetchall()
+            for row in rows:
+                d=draft(con,uid,cid,row['id'])
+                if d['content'].get('reader'):
+                    return {'attempted':True,'draft':public_draft(d),'source_status':m['send_status']}
+            return {'attempted':attempted,'draft':None,'source_status':m['send_status']}
+
+    @app.delete('/api/companies/{cid}/mail/unified/drafts/{did}')
+    def discard_reader_reply(cid:int,did:int,payload:Confirm,req:Request):
+        uid=scope(req,cid,True)
+        if not payload.confirmed:raise HTTPException(422,'Confirmez le refus de la proposition.')
+        with db() as con:
+            con.execute('BEGIN IMMEDIATE')
+            d=draft(con,uid,cid,did)
+            if not d['content'].get('reader'):raise HTTPException(409,'Ce brouillon ne vient pas du lecteur.')
+            removed=con.execute("DELETE FROM mail_compositions WHERE id=? AND revision=? AND status='draft'",(did,payload.revision))
+            if removed.rowcount!=1:raise HTTPException(409,'Proposition modifiée ou envoi engagé. Rouvrez le message.')
+        return {'ok':True}
+
     @app.put('/api/companies/{cid}/mail/unified/drafts')
     def save(cid:int,payload:Composition,req:Request):
         uid=scope(req,cid,True);a=current(uid,cid,allow_gmail=True);total=0
@@ -387,8 +413,10 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
             if len(raw)>MAX_FILE:raise HTTPException(413,'8 Mo maximum par fichier.')
             total+=len(raw)
         if total>MAX_FILES:raise HTTPException(413,'16 Mo maximum par message.')
+        if payload.reader and payload.mode!='reply':raise HTTPException(422,'La proposition du lecteur doit répondre à un message.')
         content=payload.model_dump(exclude={'id','revision'})
         with db() as con:
+            con.execute('BEGIN IMMEDIATE')
             unchanged(con,uid,cid,a)
             if payload.mode!='new':
                 if not payload.source_id:raise HTTPException(422,'Message source requis.')
@@ -410,6 +438,10 @@ def install(app,db,require,own_company,cipher,account,message,scope,category,Tex
                 if changed.rowcount!=1:raise HTTPException(409,'Brouillon modifié ou envoi déjà engagé. Rouvrez-le.')
                 did=payload.id
             else:
+                if payload.reader:
+                    rows=con.execute("SELECT id FROM mail_compositions WHERE user_id=? AND company_id=? AND connection_id=? AND source_id=? AND mode='reply'",(uid,cid,selected.get(),payload.source_id)).fetchall()
+                    if any(draft(con,uid,cid,r['id'])['content'].get('reader') for r in rows):
+                        raise HTTPException(409,'Une proposition existe déjà. Rouvrez le message pour la retrouver.')
                 did=con.execute('INSERT INTO mail_compositions(user_id,company_id,source_id,mode,payload,account_key,operation,updated,subject,connection_id) VALUES (?,?,?,?,?,?,?,?,?,?)',(uid,cid,payload.source_id,payload.mode,blob,key(a),secrets.token_hex(20),time.time(),payload.subject,selected.get())).lastrowid
             return dict(con.execute('SELECT id,revision,status FROM mail_compositions WHERE id=?',(did,)).fetchone())
 
